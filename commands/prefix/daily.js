@@ -5,7 +5,7 @@ const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
     name: 'daily',
-    description: 'Claim your daily V-Coins.',
+    description: 'Claim your daily rewards.',
     async execute(message) {  // Changed from interaction to message for prefix commands
         const userId = message.author.id;  // Correctly referencing message author
         const user = await getUser(userId);  // Await the result of getUser
