@@ -1,4 +1,4 @@
-const { initializeUser, saveUserData, getUser, getAllUsers } = require('../dataManager');
+const { initializeUser, saveUserData, getUser, getAllUsers } = require('../../dataManager');
 const { ActivityType } = require('discord.js');
 
 async function updateBotStatus(client) {
