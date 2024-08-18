@@ -1,7 +1,7 @@
-const { getUser, updateUser } = require('../dataManager');
+const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
-const { calculateDailyReward, formatTime } = require('../utils/dailyManager');
-const numberFormat = require('../utils/numberFormat');
+const { calculateDailyReward, formatTime } = require('../../utils/dailyManager');
+const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
     name: 'daily',
