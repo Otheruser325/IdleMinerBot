@@ -1,0 +1,22 @@
+{
+  "name": "idleminerbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@discordjs/rest": "^2.3.0",
+    "@discordjs/voice": "^0.17.0",
+    "axios": "^1.5.0",
+    "discord-api-types": "^0.37.93",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.6.7",
+    "punycode": "^2.3.1"
+  }
+}
