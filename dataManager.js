@@ -31,6 +31,16 @@ db.serialize(() => {
             ownerId TEXT
         )
     `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS guild_users (
+            guildId TEXT,
+            userId TEXT,
+            PRIMARY KEY (guildId, userId),
+            FOREIGN KEY (guildId) REFERENCES guilds(id),
+            FOREIGN KEY (userId) REFERENCES users(id)
+        )
+    `);
 });
 
 // User-related functions
@@ -80,6 +90,13 @@ async function getAllUsers() {
     });
 }
 
+// Save user data
+async function saveUserData() {
+    // This function could include additional logic if needed
+    // For SQLite, data is saved automatically, but you might include file operations or additional logic here
+    console.log('User data saved.');
+}
+
 // Guild-related functions
 
 // Initialize a guild in the database
@@ -127,13 +144,76 @@ async function getAllGuilds() {
     });
 }
 
+// Guild-user related functions
+
+// Add or update a user in a specific guild
+async function addUserToGuild(guildId, userId) {
+    return new Promise((resolve, reject) => {
+        const query = `INSERT OR IGNORE INTO guild_users (guildId, userId) VALUES (?, ?)`;
+        db.run(query, [guildId, userId], (err) => {
+            if (err) reject(err);
+            resolve();
+        });
+    });
+}
+
+// Get user in a specific guild
+async function getUserInGuild(guildId, userId) {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT u.*
+            FROM users u
+            JOIN guild_users gu ON u.id = gu.userId
+            WHERE gu.guildId = ? AND u.id = ?
+        `;
+        db.get(query, [guildId, userId], (err, row) => {
+            if (err) reject(err);
+            resolve(row);
+        });
+    });
+}
+
+// Get all users in a specific guild
+async function getUsersInGuild(guildId) {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT u.*
+            FROM users u
+            JOIN guild_users gu ON u.id = gu.userId
+            WHERE gu.guildId = ?
+        `;
+        db.all(query, [guildId], (err, rows) => {
+            if (err) reject(err);
+            resolve(rows);
+        });
+    });
+}
+
+// Get all users in a specific guild (alternative implementation)
+async function getAllUsersInGuild(guildId) {
+    return getUsersInGuild(guildId);
+}
+
+// Save guild data
+async function saveGuildData() {
+    // This function could include additional logic if needed
+    // For SQLite, data is saved automatically, but you might include file operations or additional logic here
+    console.log('Guild data saved.');
+}
+
 module.exports = {
     initializeUser,
     getUser,
     updateUser,
     getAllUsers,
+    saveUserData,
     initializeGuild,
     getGuild,
     updateGuild,
     getAllGuilds,
+    addUserToGuild,
+    getUserInGuild,
+    getUsersInGuild,
+    getAllUsersInGuild,
+    saveGuildData,
 };
