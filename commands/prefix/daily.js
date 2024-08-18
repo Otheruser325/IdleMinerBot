@@ -6,9 +6,9 @@ const numberFormat = require('../../utils/numberFormat');
 module.exports = {
     name: 'daily',
     description: 'Claim your daily rewards.',
-    async execute(message) {  // Changed from interaction to message for prefix commands
-        const userId = message.author.id;  // Correctly referencing message author
-        const user = await getUser(userId);  // Await the result of getUser
+    async execute(message) {
+        const userId = message.author.id;
+        const user = await getUser(userId);
 
         if (!user) {
             return message.reply('You need to start the game first by using `im!start`.');
