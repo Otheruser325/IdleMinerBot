@@ -3,7 +3,7 @@ const { ActivityType } = require('discord.js');
 
 async function updateBotStatus(client) {
     const userCount = (await getAllUsers()).length;  // Ensure this is awaited as it interacts with the database
-    await client.user.setActivity(`${userCount} users enjoying their virtual life!`, { type: ActivityType.Playing });
+    await client.user.setActivity(`${userCount} users are mining!`, { type: ActivityType.Playing });
 }
 
 module.exports = {
@@ -21,7 +21,7 @@ module.exports = {
             await saveUserData();  // If saveUserData is needed after initialization
 
             try {
-                await message.author.send('Welcome to your virtual life! Use "/map" to see your current location.');
+                await message.author.send('Welcome to Idle Miner! Use "im!help" to get started.');
             } catch (error) {
                 console.error(`Could not send DM to ${message.author.tag}.\n`, error);
             }
