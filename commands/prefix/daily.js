@@ -6,12 +6,12 @@ const numberFormat = require('../../utils/numberFormat');
 module.exports = {
     name: 'daily',
     description: 'Claim your daily V-Coins.',
-    async execute(interaction) {
-        const userId = interaction.user.id;
-        const user = getUser(userId);
+    async execute(message) {  // Changed from interaction to message for prefix commands
+        const userId = message.author.id;  // Correctly referencing message author
+        const user = await getUser(userId);  // Await the result of getUser
 
         if (!user) {
-            return interaction.reply('You need to start the game first by using `/life`.');
+            return message.reply('You need to start the game first by using `im!start`.');
         }
 
         const currentTime = Date.now();
@@ -19,18 +19,18 @@ module.exports = {
 
         if (currentTime - user.lastDaily < cooldown) {
             const remainingTime = formatTime(user.lastDaily + cooldown - currentTime);
-            return interaction.reply(`You can claim your daily again in ${remainingTime}.`);
+            return message.reply(`You can claim your daily again in ${remainingTime}.`);
         }
 
         // Calculate the daily reward
         const coins = calculateDailyReward(user);
-        updateUser(userId, {
+        await updateUser(userId, {
             lastDaily: currentTime,
             streak: user.streak + 1,
             vCoins: user.vCoins + coins
         });
 
         const response = `You claimed ${numberFormat(coins)} V-Coins! Current streak: ${user.streak + 1}.`;
-        await interaction.reply(response);
+        await message.reply(response);
     }
 };
