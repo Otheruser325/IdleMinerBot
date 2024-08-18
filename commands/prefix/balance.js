@@ -1,6 +1,6 @@
 const { MessageEmbed } = require('discord.js');
-const numberFormat = require('../utils/numberFormat');
-const { getUser, users, saveUserData, getGuild, getUserInGuild } = require('../dataManager');
+const numberFormat = require('../../utils/numberFormat');
+const { getUser, users, saveUserData, getGuild, getUserInGuild } = require('../../dataManager');
 
 const wealthDescriptions = [
     { minCoins: 1_000_000_000_000_000, description: 'Quadrillionaire!' },
