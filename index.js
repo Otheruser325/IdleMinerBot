@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 const { deployCommands } = require('./deploy-commands');
+const { users, saveUserData, getUser, getAllUsers, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -51,9 +52,16 @@ for (const file of interactionFiles) {
     client.interactions.set(interaction.customId, interaction);
 }
 
+async function updateBotStatus(client) {
+    const userCount = getAllUsers().length;
+    await client.user.setActivity(`${userCount} users enjoying their virtual life!`, { type: 'PLAYING' });
+}
+
 client.once('ready', async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
+
+    updateBotStatus(client); // Update bot status with the user count
 
     // Deploy slash commands
     await deployCommands(clientId, token, client.slashCommands);
