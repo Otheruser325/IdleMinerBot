@@ -2,34 +2,36 @@ const { initializeUser, saveUserData, getUser, getAllUsers } = require('../../da
 const { ActivityType } = require('discord.js');
 
 async function updateBotStatus(client) {
-    const userCount = getAllUsers().length;
+    const userCount = (await getAllUsers()).length;  // Ensure this is awaited as it interacts with the database
     await client.user.setActivity(`${userCount} users enjoying their virtual life!`, { type: ActivityType.Playing });
 }
 
 module.exports = {
     name: 'start',
     description: 'Start your mining empire.',
-    async execute(interaction) {
-        const userId = interaction.user.id;
-        const username = interaction.user.username;
+    async execute(message) {  // Changed from interaction to message for prefix commands
+        const userId = message.author.id;
+        const username = message.author.username;
 
-        if (!getUser(userId)) {
+        const user = await getUser(userId);  // Await the result of getUser to ensure proper user retrieval
+
+        if (!user) {
             // Initialize the user in the database
-            initializeUser(userId, username);
-            await saveUserData();
+            await initializeUser(userId, username);
+            await saveUserData();  // If saveUserData is needed after initialization
 
             try {
-                await interaction.user.send('Welcome to your virtual life! Use "/map" to see your current location.');
+                await message.author.send('Welcome to your virtual life! Use "/map" to see your current location.');
             } catch (error) {
-                console.error(`Could not send DM to ${interaction.user.tag}.\n`, error);
+                console.error(`Could not send DM to ${message.author.tag}.\n`, error);
             }
 
-            await interaction.reply(`You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.`);
+            await message.reply(`You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.`);
             
             // Update bot status
-            await updateBotStatus(interaction.client);
+            await updateBotStatus(message.client);
         } else {
-            await interaction.reply('You are already in the game!');
+            await message.reply('You are already in the game!');
         }
     }
 };
