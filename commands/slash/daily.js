@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { getUser, updateUser, saveUserData } = require('../../dataManager');
-const { formatTime } = require('../../utils/dailyManager');
+const { formatTime, calculateDailyReward } = require('../../utils/dailyManager');
 const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
@@ -9,10 +9,10 @@ module.exports = {
         .setDescription('Claim your daily rewards.'),
     async execute(interaction) {
         const userId = interaction.user.id;
-        let user = getUser(userId);  // Fetch user using the getUser function from the data manager
+        const user = await getUser(userId);  // Fetch user data asynchronously
 
         if (!user) {
-            return message.reply('You need to start the game first by using `/start`.');
+            return interaction.reply('You need to start the game first by using `/start`.');
         }
 
         const currentTime = Date.now();
@@ -20,7 +20,7 @@ module.exports = {
 
         if (currentTime - user.lastDaily < cooldown) {
             const remainingTime = formatTime(user.lastDaily + cooldown - currentTime);
-            return message.reply(`You can claim your daily again in ${remainingTime}.`);
+            return interaction.reply(`You can claim your daily again in ${remainingTime}.`);
         }
 
         // Calculate the daily reward
@@ -32,6 +32,6 @@ module.exports = {
         });
 
         const response = `You claimed ${numberFormat(coins)} V-Coins! Current streak: ${user.streak + 1}.`;
-        await message.reply(response);
+        await interaction.reply(response);
     }
 };

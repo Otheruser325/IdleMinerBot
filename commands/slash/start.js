@@ -2,7 +2,8 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { initializeUser, saveUserData, getUser, getAllUsers } = require('../../dataManager');
 
 async function updateBotStatus(client) {
-    const userCount = getAllUsers().length;
+    const users = await getAllUsers(); // Make sure to await the result
+    const userCount = users.length;
     await client.user.setActivity(`${userCount} users are mining!`, { type: 'PLAYING' });
 }
 
@@ -16,9 +17,12 @@ module.exports = {
         const userId = interaction.user.id;
         const username = interaction.user.username; // Fetch the username from the interaction user
 
-        if (!getUser(userId)) {
-            await initializeUser(userId, username); // Pass both userId and username to initializeUser
-            await saveUserData();
+        // Fetch the user data asynchronously
+        const user = await getUser(userId);
+
+        if (!user) {
+            // Initialize user asynchronously
+            await initializeUser(userId, username);
 
             try {
                 await interaction.user.send('Welcome to Idle Miner! Use "im!help" to get started.');
@@ -26,7 +30,7 @@ module.exports = {
                 console.error(`Could not send DM to ${interaction.user.tag}.\n`, error);
             }
 
-            await interaction.editReply('You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.');
+            await interaction.editReply(`You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.`);
             
             // Update bot status
             await updateBotStatus(interaction.client);
