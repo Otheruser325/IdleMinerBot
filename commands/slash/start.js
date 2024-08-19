@@ -26,7 +26,7 @@ module.exports = {
 
             await interaction.editReply(`You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.`);
             
-            await updateBotStatus(message.client); // Update bot status after user initialization
+            await updateBotStatus(interaction.client); // Update bot status after user initialization
         } else {
             await interaction.reply('You are already in the game!');
         }
