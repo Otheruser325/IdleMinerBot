@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const { getUser, getUserInGuild } = require('../../dataManager');
+const { getUser, getUserInGuild, addUserToGuild } = require('../../dataManager');
 
 const wealthDescriptions = [
     { minCash: 1_000_000_000_000_000_000, description: 'Quadrillionaire!' },
