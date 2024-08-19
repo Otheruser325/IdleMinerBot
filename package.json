@@ -16,6 +16,8 @@
     "discord-api-types": "^0.37.93",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
+    "firebase": "^10.13.0",
+    "firebase-admin": "^12.3.1",
     "node-fetch": "^2.6.7",
     "punycode": "^2.3.1",
     "sqlite3": "^5.1.7"
