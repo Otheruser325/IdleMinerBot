@@ -119,6 +119,35 @@ async function addUserToGuild(guildId, userId) {
     }
 }
 
+// Get a user from a specific guild from Firestore
+async function getUserInGuild(guildId, userId) {
+    // Fetch the guild document from Firestore
+    const guildRef = db.collection('guilds').doc(guildId);
+    const guildDoc = await guildRef.get();
+
+    if (guildDoc.exists) {
+        const guildData = guildDoc.data();
+
+        // Check if the user is in the guild's members list
+        if (guildData.members && guildData.members.includes(userId)) {
+            // Fetch the user document from Firestore
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+
+            if (userDoc.exists) {
+                return userDoc.data();
+            } else {
+                return null; // User not found
+            }
+        } else {
+            return null; // User not a member of the guild
+        }
+    } else {
+        console.warn(`Guild ${guildId} not found in Firestore.`);
+        return null;
+    }
+}
+
 // Get users in a specific guild from Firestore
 async function getUsersInGuild(guildId) {
     const guild = await getGuild(guildId);
@@ -148,6 +177,7 @@ module.exports = {
     updateGuild,
     getAllGuilds,
     addUserToGuild,
+    getUserInGuild,
     getUsersInGuild,
     getAllUsersInGuild
 };
