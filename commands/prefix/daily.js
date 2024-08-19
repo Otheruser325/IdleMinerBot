@@ -5,7 +5,7 @@ const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
     name: 'daily',
-    description: 'Claim your daily V-Coins.',
+    description: 'Claim your daily Super Cash.',
     async execute(message) {  
         const userId = message.author.id;  
         const user = await getUser(userId);  
@@ -22,14 +22,14 @@ module.exports = {
             return message.reply(`You can claim your daily again in ${remainingTime}.`);
         }
 
-        const coins = calculateDailyReward(user);
+        const cash = calculateDailyReward(user);
         await updateUser(userId, {
             lastDaily: currentTime,
             streak: user.streak + 1,
-            vCoins: user.vCoins + coins
+            superCash: user.superCash + cash
         });
 
-        const response = `You claimed ${numberFormat(coins)} V-Coins! Current streak: ${user.streak + 1}.`;
+        const response = `You claimed ${numberFormat(cash)} Super Cash! Current streak: ${user.streak + 1}.`;
         await message.reply(response);
     }
 };
