@@ -11,7 +11,7 @@ module.exports = {
         const user = await getUser(userId);  
 
         if (!user) {
-            return message.reply('You need to start the game first by using `v start`.');
+            return message.reply('You need to start the game first by using `im!start`.');
         }
 
         const currentTime = Date.now();
