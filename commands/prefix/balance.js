@@ -3,24 +3,24 @@ const numberFormat = require('../../utils/numberFormat');
 const { getUser, getUserInGuild } = require('../../dataManager');
 
 const wealthDescriptions = [
-    { minCoins: 1_000_000_000_000_000, description: 'Quadrillionaire!' },
-    { minCoins: 10_000_000_000_000, description: 'Multitrillionaire!' },
-    { minCoins: 1_000_000_000_000, description: 'Trillionaire!' },
-    { minCoins: 10_000_000_000, description: 'Multibillionaire!' },
-    { minCoins: 1_000_000_000, description: 'Billionaire!' },
-    { minCoins: 10_000_000, description: 'Multimillionaire!' },
-    { minCoins: 1_000_000, description: 'Millionaire!' },
-    { minCoins: 100_000, description: 'Rich!' },
-    { minCoins: 10_000, description: 'Wealthy!' },
-    { minCoins: 1_000, description: 'Well-off!' },
-    { minCoins: 100, description: 'Comfortable!' },
-    { minCoins: 10, description: 'Stable!' },
-    { minCoins: 0, description: 'Average' }
+    { minCash: 1_000_000_000_000_000_000, description: 'Quadrillionaire!' },
+    { minCash: 10_000_000_000_000_000, description: 'Multitrillionaire!' },
+    { minCash: 1_000_000_000_000_000, description: 'Trillionaire!' },
+    { minCash: 10_000_000_000_000, description: 'Multibillionaire!' },
+    { minCash: 1_000_000_000_000, description: 'Billionaire!' },
+    { minCash: 10_000_000_000, description: 'Multimillionaire!' },
+    { minCash: 1_000_000_000, description: 'Millionaire!' },
+    { minCash: 100_000_000, description: 'Rich!' },
+    { minCash: 10_000_000, description: 'Wealthy!' },
+    { minCash: 1_000_000, description: 'Well-off!' },
+    { minCash: 100_000, description: 'Comfortable!' },
+    { minCash: 10_000, description: 'Stable!' },
+    { minCash: 0, description: 'Average' }
 ];
 
 module.exports = {
     name: 'balance',
-    description: 'Check your V-Coins balance.',
+    description: 'Check your balance and cash types.',
     aliases: ['bank', 'bal'],
     usage: '(optional) <user>',
     exampleUsage: 'v balance @username or v balance 1234567890',
@@ -65,13 +65,15 @@ module.exports = {
                 return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
             }
 
-            const balance = user.vCoins || 0;
-            const bankBalance = user.bankBalance || 0;
+            const cash = user.cash || 0;
+            const iceCash = user.iceCash || 0;
+            const fireCash = user.fireCash || 0;
+            const superCash = user.superCash || 0;
 
             let description = 'Average';
 
             for (const wealth of wealthDescriptions) {
-                if (balance >= wealth.minCoins) {
+                if (superCash >= wealth.minCash) {
                     description = wealth.description;
                     break;
                 }
@@ -83,9 +85,14 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
-                .setTitle(`${targetUsername}'s V-Coins Balance`)
-                .setDescription(`${targetUsername} has ${numberFormat(balance)} V-Coins.\n\n${description}`)
-                .addFields({ name: 'Bank Balance', value: `${numberFormat(bankBalance)} V-Coins`, inline: true })
+                .setTitle(`${targetUsername}'s Balance`)
+                .addFields(
+                    { name: 'Cash', value: `${numberFormat(cash)} Cash`, inline: true },
+                    { name: 'Ice Cash', value: `${numberFormat(iceCash)} Ice Cash`, inline: true },
+                    { name: 'Fire Cash', value: `${numberFormat(fireCash)} Fire Cash`, inline: true },
+                    { name: 'Super Cash', value: `${numberFormat(superCash)} Super Cash`, inline: true },
+                    { name: 'Wealth Status', value: description, inline: false }
+                )
                 .setTimestamp()
                 .setThumbnail(userAvatar);
 
