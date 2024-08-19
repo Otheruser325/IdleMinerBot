@@ -204,7 +204,7 @@ client.once('ready', async () => {
     await deployCommands(clientId, token, client.slashCommands);
 
     // Load and initialize guild data
-    loadAssignedGuilds(client);
+    scheduleNextUpdate(client);
 });
 
 client.on('messageCreate', async message => {
