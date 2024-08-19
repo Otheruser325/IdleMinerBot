@@ -59,6 +59,7 @@ module.exports = {
                     : userMention;
             }
 
+            // Fetch user data from Firestore
             const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
 
             if (!user) {
