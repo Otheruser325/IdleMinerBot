@@ -1,7 +1,8 @@
 function calculateDailyReward(user) {
-    const baseCoins = 1000;
-    const streakMultiplier = 0.1 * Math.max(user.streak - 1, 0);
-    return Math.floor(baseCoins * (1 + streakMultiplier));
+    const baseCash = 30; // Base reward
+    const streakBonus = 5; // Bonus per streak
+    const streakMultiplier = Math.max(user.streak, 0); // Ensure streak is non-negative
+    return baseCash + (streakMultiplier * streakBonus);
 }
 
 function formatTime(ms) {
@@ -13,4 +14,4 @@ function formatTime(ms) {
 module.exports = {
   calculateDailyReward,
   formatTime
-}
+};
