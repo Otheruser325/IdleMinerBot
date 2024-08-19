@@ -59,47 +59,48 @@ async function loadAssignedGuilds(client) {
         const guildsCache = client.guilds.cache;
 
         for (const [guildId, guild] of guildsCache) {
-            // Fetch all members of the guild
-            const members = await guild.members.fetch();
-
-            // Fetch or initialize the guild's data
+            // Fetch guild data from Firestore
             let guildData = await getGuild(guildId);
-            if (!guildData) {
+            const isNewGuild = !guildData;
+
+            if (isNewGuild) {
                 guildData = {
                     id: guildId,
                     name: guild.name,
                     memberCount: guild.memberCount,
                     members: [],
-                    users: {} // Start with an empty users object
+                    users: {}
                 };
-                await initializeGuild(guildId, guildData);
             } else {
                 guildData.memberCount = guild.memberCount;
             }
 
-            // Clear the guild's members list to avoid duplicates
-            guildData.members = [];
-
-            // Update guild's users object with only authorized users
-            guildData.users = {}; // Reset the users object
+            // Fetch all members in bulk
+            const members = await guild.members.fetch();
+            const authorizedUsers = {};
 
             for (const member of members.values()) {
                 const userId = member.user.id;
 
-                // Only add the user if they exist in the users collection
+                // Skip bots and unauthorized users
+                if (member.user.bot) continue;
+
                 const userData = await getUser(userId);
                 if (userData) {
-                    await addUserToGuild(guildId, userId);
                     guildData.members.push({
                         id: userId,
                         username: member.user.username
                     });
-                    guildData.users[userId] = userData; // Add user data to guild's users object
+                    authorizedUsers[userId] = userData;
                 }
             }
 
-            // Update and save the guild data
-            await updateGuild(guildId, guildData);
+            guildData.users = authorizedUsers;
+
+            // Update guild data in Firestore only if it's new or has changes
+            if (isNewGuild || guildData.members.length !== guild.memberCount) {
+                await updateGuild(guildId, guildData);
+            }
         }
     } catch (error) {
         console.error('Failed to load and update guilds:', error);
