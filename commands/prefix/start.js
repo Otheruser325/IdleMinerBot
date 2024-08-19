@@ -1,10 +1,6 @@
-const { initializeUser, getUser, getAllUsers } = require('../../dataManager');
+const { initializeUser, getUser } = require('../../dataManager');
+const { updateBotStatus } = require('../../utils/botStatus');
 const { ActivityType } = require('discord.js');
-
-async function updateBotStatus(client) {
-    const userCount = (await getAllUsers()).length;  
-    await client.user.setActivity(`${userCount} users are mining!`, { type: ActivityType.Playing });
-}
 
 module.exports = {
     name: 'start',
@@ -26,7 +22,7 @@ module.exports = {
 
             await message.reply(`You have now officially signed up to the mining world, ${username}! Check your DM for more instructions.`);
             
-            await updateBotStatus(message.client);
+            await updateBotStatus(message.client); // Update bot status after user initialization
         } else {
             await message.reply('You are already in the game!');
         }
