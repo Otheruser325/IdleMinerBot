@@ -1,20 +1,12 @@
 const admin = require('firebase-admin');
+const serviceAccount = require('./config/serviceAccountKey.json');
 
-// Initialize Firebase Admin SDK
 admin.initializeApp({
-    credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    }),
-    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com` // Use proper URL format
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
 });
 
 const db = admin.firestore();
-
-console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-console.log('FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL);
-console.log('FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY);
 
 // User-related functions
 
