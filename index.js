@@ -61,7 +61,7 @@ client.once('ready', async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
 
-    updateBotStatus(client); // Update bot status with the user count
+    await updateBotStatus(client); // Update bot status with the user count
 
     // Deploy slash commands
     await deployCommands(clientId, token, client.slashCommands);
