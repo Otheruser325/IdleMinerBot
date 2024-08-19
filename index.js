@@ -77,6 +77,11 @@ async function loadAssignedGuilds(client) {
             // Clear the guild's members list to avoid duplicates
             guildData.members = [];
 
+            // Ensure users object is initialized
+            if (!guildData.users) {
+                guildData.users = {}; // Initialize empty users object if undefined
+            }
+
             // Fetch all members of the guild in batches
             let nextBatch;
             let lastMemberId = null;
