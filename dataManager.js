@@ -1,192 +1,140 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const admin = require('firebase-admin');
 
-// Define the path to the SQLite database in the config directory
-const dbPath = path.join(__dirname, 'config', 'botData.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error opening database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database.');
-    }
+// Initialize Firebase Admin SDK using environment variables
+admin.initializeApp({
+    credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') // Ensure newlines are correctly handled
+    }),
+    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
 });
 
-// Initialize the tables if they don't exist
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            username TEXT,
-            vCoins INTEGER DEFAULT 500,
-            bankBalance INTEGER DEFAULT 0,
-            streak INTEGER DEFAULT 0,
-            lastDaily INTEGER DEFAULT 0
-        )
-    `);
-
-    db.run(`
-        CREATE TABLE IF NOT EXISTS guilds (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            ownerId TEXT
-        )
-    `);
-
-    db.run(`
-        CREATE TABLE IF NOT EXISTS guild_users (
-            guildId TEXT,
-            userId TEXT,
-            PRIMARY KEY (guildId, userId),
-            FOREIGN KEY (guildId) REFERENCES guilds(id),
-            FOREIGN KEY (userId) REFERENCES users(id)
-        )
-    `);
-});
+const db = admin.firestore();
 
 // User-related functions
 
-// Initialize a user in the database
+// Initialize a new user in Firestore
 async function initializeUser(userId, username) {
-    return new Promise((resolve, reject) => {
-        const query = `INSERT INTO users (id, username) VALUES (?, ?)`;
-        db.run(query, [userId, username], (err) => {
-            if (err) reject(err);
-            resolve();
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+        await userRef.set({
+            username: username,
+            vCoins: 500,
+            bankBalance: 0,
+            streak: 0,
+            lastDaily: 0,
+            location: 'Town.1',
+            exp: 0,
+            inventory: {},
+            properties: [],
+            hp: 100,
+            maxHp: 100,
+            stamina: 50,
+            maxStamina: 50,
+            equippedLeft: null,
+            equippedRight: null,
+            isArrested: false
         });
-    });
+    }
 }
 
-// Get user by ID
+// Get user by ID from Firestore
 async function getUser(userId) {
-    return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM users WHERE id = ?`;
-        db.get(query, [userId], (err, row) => {
-            if (err) reject(err);
-            resolve(row);
-        });
-    });
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (userDoc.exists) {
+        return userDoc.data();
+    } else {
+        return null;
+    }
 }
 
-// Update user data
+// Update user data in Firestore
 async function updateUser(userId, updates) {
-    const { streak, lastDaily, vCoins } = updates;
-    return new Promise((resolve, reject) => {
-        const query = `UPDATE users SET streak = ?, lastDaily = ?, vCoins = ? WHERE id = ?`;
-        db.run(query, [streak, lastDaily, vCoins, userId], (err) => {
-            if (err) reject(err);
-            resolve();
-        });
-    });
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update(updates);
 }
 
-// Get all users
+// Get all users from Firestore
 async function getAllUsers() {
-    return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM users`;
-        db.all(query, [], (err, rows) => {
-            if (err) reject(err);
-            resolve(rows);
-        });
-    });
-}
-
-// Save user data
-async function saveUserData() {
-    // This function could include additional logic if needed
-    // For SQLite, data is saved automatically, but you might include file operations or additional logic here
-    console.log('User data saved.');
+    const snapshot = await db.collection('users').get();
+    return snapshot.docs.map(doc => doc.data());
 }
 
 // Guild-related functions
 
-// Initialize a guild in the database
+// Initialize a new guild in Firestore
 async function initializeGuild(guildId, guildName, ownerId) {
-    return new Promise((resolve, reject) => {
-        const query = `INSERT INTO guilds (id, name, ownerId) VALUES (?, ?, ?)`;
-        db.run(query, [guildId, guildName, ownerId], (err) => {
-            if (err) reject(err);
-            resolve();
+    const guildRef = db.collection('guilds').doc(guildId);
+    const guildDoc = await guildRef.get();
+
+    if (!guildDoc.exists) {
+        await guildRef.set({
+            name: guildName,
+            ownerId: ownerId,
+            members: []
         });
-    });
+    }
 }
 
-// Get guild by ID
+// Get guild by ID from Firestore
 async function getGuild(guildId) {
-    return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM guilds WHERE id = ?`;
-        db.get(query, [guildId], (err, row) => {
-            if (err) reject(err);
-            resolve(row);
-        });
-    });
+    const guildRef = db.collection('guilds').doc(guildId);
+    const guildDoc = await guildRef.get();
+
+    if (guildDoc.exists) {
+        return guildDoc.data();
+    } else {
+        return null;
+    }
 }
 
-// Update guild data
+// Update guild data in Firestore
 async function updateGuild(guildId, updates) {
-    const { name, ownerId } = updates;
-    return new Promise((resolve, reject) => {
-        const query = `UPDATE guilds SET name = ?, ownerId = ? WHERE id = ?`;
-        db.run(query, [name, ownerId, guildId], (err) => {
-            if (err) reject(err);
-            resolve();
-        });
-    });
+    const guildRef = db.collection('guilds').doc(guildId);
+    await guildRef.update(updates);
 }
 
-// Get all guilds
+// Get all guilds from Firestore
 async function getAllGuilds() {
-    return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM guilds`;
-        db.all(query, [], (err, rows) => {
-            if (err) reject(err);
-            resolve(rows);
-        });
-    });
+    const snapshot = await db.collection('guilds').get();
+    return snapshot.docs.map(doc => doc.data());
 }
 
 // Guild-user related functions
 
-// Add or update a user in a specific guild
+// Add or update a user in a specific guild in Firestore
 async function addUserToGuild(guildId, userId) {
-    return new Promise((resolve, reject) => {
-        const query = `INSERT OR IGNORE INTO guild_users (guildId, userId) VALUES (?, ?)`;
-        db.run(query, [guildId, userId], (err) => {
-            if (err) reject(err);
-            resolve();
-        });
-    });
+    const guildRef = db.collection('guilds').doc(guildId);
+    const guildDoc = await guildRef.get();
+
+    if (guildDoc.exists) {
+        const guildData = guildDoc.data();
+        if (!guildData.members.includes(userId)) {
+            guildData.members.push(userId);
+            await guildRef.update({ members: guildData.members });
+        }
+    } else {
+        console.warn(`Guild ${guildId} not found in Firestore.`);
+    }
 }
 
-// Get user in a specific guild
-async function getUserInGuild(guildId, userId) {
-    return new Promise((resolve, reject) => {
-        const query = `
-            SELECT u.*
-            FROM users u
-            JOIN guild_users gu ON u.id = gu.userId
-            WHERE gu.guildId = ? AND u.id = ?
-        `;
-        db.get(query, [guildId, userId], (err, row) => {
-            if (err) reject(err);
-            resolve(row);
-        });
-    });
-}
-
-// Get all users in a specific guild
+// Get users in a specific guild from Firestore
 async function getUsersInGuild(guildId) {
-    return new Promise((resolve, reject) => {
-        const query = `
-            SELECT u.*
-            FROM users u
-            JOIN guild_users gu ON u.id = gu.userId
-            WHERE gu.guildId = ?
-        `;
-        db.all(query, [guildId], (err, rows) => {
-            if (err) reject(err);
-            resolve(rows);
-        });
-    });
+    const guild = await getGuild(guildId);
+
+    if (guild) {
+        const userRefs = guild.members.map(userId => db.collection('users').doc(userId));
+        const usersSnapshot = await db.getAll(...userRefs);
+
+        return usersSnapshot.map(userDoc => userDoc.exists ? userDoc.data() : null).filter(Boolean);
+    } else {
+        return [];
+    }
 }
 
 // Get all users in a specific guild (alternative implementation)
@@ -194,26 +142,16 @@ async function getAllUsersInGuild(guildId) {
     return getUsersInGuild(guildId);
 }
 
-// Save guild data
-async function saveGuildData() {
-    // This function could include additional logic if needed
-    // For SQLite, data is saved automatically, but you might include file operations or additional logic here
-    console.log('Guild data saved.');
-}
-
 module.exports = {
     initializeUser,
     getUser,
     updateUser,
     getAllUsers,
-    saveUserData,
     initializeGuild,
     getGuild,
     updateGuild,
     getAllGuilds,
     addUserToGuild,
-    getUserInGuild,
     getUsersInGuild,
-    getAllUsersInGuild,
-    saveGuildData,
+    getAllUsersInGuild
 };
