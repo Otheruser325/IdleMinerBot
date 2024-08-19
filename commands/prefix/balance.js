@@ -63,6 +63,7 @@ module.exports = {
             const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
 
             if (!user) {
+                console.log(`User data not found for userId: ${userId} in guild: ${guild.id}`); // Debugging statement
                 return message.reply(`${targetUsername} needs to start the game first by using \`v start\`.`);
             }
 
