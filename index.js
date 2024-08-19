@@ -59,48 +59,58 @@ async function loadAssignedGuilds(client) {
         const guildsCache = client.guilds.cache;
 
         for (const [guildId, guild] of guildsCache) {
-            // Fetch guild data from Firestore
+            // Fetch or initialize the guild's data
             let guildData = await getGuild(guildId);
-            const isNewGuild = !guildData;
-
-            if (isNewGuild) {
+            if (!guildData) {
                 guildData = {
                     id: guildId,
                     name: guild.name,
                     memberCount: guild.memberCount,
-                    members: [],
-                    users: {}
+                    members: [], // Initialize empty members array
+                    users: {} // Start with an empty users object
                 };
+                await initializeGuild(guildId, guildData);
             } else {
                 guildData.memberCount = guild.memberCount;
             }
 
-            // Fetch all members in bulk
-            const members = await guild.members.fetch();
-            const authorizedUsers = {};
+            // Clear the guild's members list to avoid duplicates
+            guildData.members = [];
 
-            for (const member of members.values()) {
-                const userId = member.user.id;
+            // Fetch all members of the guild in batches
+            let nextBatch;
+            let lastMemberId = null;
 
-                // Skip bots and unauthorized users
-                if (member.user.bot) continue;
+            do {
+                nextBatch = await guild.members.fetch({ 
+                    limit: 1000, 
+                    after: lastMemberId 
+                });
+                lastMemberId = nextBatch.size > 0 ? [...nextBatch.values()][nextBatch.size - 1].id : null;
 
-                const userData = await getUser(userId);
-                if (userData) {
-                    guildData.members.push({
-                        id: userId,
-                        username: member.user.username
-                    });
-                    authorizedUsers[userId] = userData;
+                for (const member of nextBatch.values()) {
+                    const userId = member.user.id;
+
+                    // Skip bot users
+                    if (member.user.bot) continue;
+
+                    // Only add the user if they exist in the users collection
+                    const userData = await getUser(userId);
+                    if (userData) {
+                        // Avoid adding duplicate users
+                        if (!guildData.members.some(m => m.id === userId)) {
+                            guildData.members.push({
+                                id: userId,
+                                username: member.user.username
+                            });
+                            guildData.users[userId] = userData; // Add user data to guild's users object
+                        }
+                    }
                 }
-            }
+            } while (nextBatch.size === 1000);
 
-            guildData.users = authorizedUsers;
-
-            // Update guild data in Firestore only if it's new or has changes
-            if (isNewGuild || guildData.members.length !== guild.memberCount) {
-                await updateGuild(guildId, guildData);
-            }
+            // Update and save the guild data
+            await updateGuild(guildId, guildData);
         }
     } catch (error) {
         console.error('Failed to load and update guilds:', error);

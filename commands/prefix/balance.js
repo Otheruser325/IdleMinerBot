@@ -26,12 +26,14 @@ module.exports = {
     exampleUsage: 'v balance @username or v balance 1234567890',
     async execute(message, args) {
         try {
-            let userId = message.author.id; 
-            let targetUsername = message.author.username; 
-
+            let userId = message.author.id;
+            let targetUsername = message.author.username;
             const guild = message.guild;
+
+            // Determine if the command is executed in a guild context
             const isGuildContext = Boolean(guild);
 
+            // Parse arguments for target user if provided
             if (args.length > 0) {
                 const userMention = args[0];
 
@@ -66,13 +68,14 @@ module.exports = {
                 return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
             }
 
+            // Extract and format user's balance data
             const cash = user.cash || 0;
             const iceCash = user.iceCash || 0;
             const fireCash = user.fireCash || 0;
             const superCash = user.superCash || 0;
 
+            // Determine user's wealth status
             let description = 'Average';
-
             for (const wealth of wealthDescriptions) {
                 if (superCash >= wealth.minCash) {
                     description = wealth.description;
@@ -80,10 +83,12 @@ module.exports = {
                 }
             }
 
+            // Fetch user's avatar
             const userAvatar = isGuildContext
                 ? guild.members.cache.get(userId)?.user.displayAvatarURL() || message.author.displayAvatarURL()
                 : message.client.users.cache.get(userId)?.displayAvatarURL() || message.author.displayAvatarURL();
 
+            // Build and send the balance embed message
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
                 .setTitle(`${targetUsername}'s Balance`)
