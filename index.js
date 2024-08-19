@@ -53,11 +53,6 @@ for (const file of interactionFiles) {
     client.interactions.set(interaction.customId, interaction);
 }
 
-async function updateBotStatus(client) {
-    const userCount = getAllUsers().length;
-    await client.user.setActivity(`${userCount} users enjoying their virtual life!`, { type: 'PLAYING' });
-}
-
 // Function to load and update guild data
 async function loadAssignedGuilds(client) {
     try {
