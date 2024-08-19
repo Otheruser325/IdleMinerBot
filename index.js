@@ -86,7 +86,7 @@ async function loadAssignedGuilds(client) {
             for (const member of members.values()) {
                 const userId = member.user.id;
 
-                // Only add the user if they exist in users collection
+                // Only add the user if they exist in the users collection
                 const userData = await getUser(userId);
                 if (userData) {
                     await addUserToGuild(guildId, userId);
