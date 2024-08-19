@@ -18,21 +18,26 @@ async function initializeUser(userId, username) {
     if (!userDoc.exists) {
         await userRef.set({
             username: username || '',
-            vCoins: 500,
-            bankBalance: 0,
+            cash: 0,
+            iceCash: 0,
+            fireCash: 0,
+            superCash: 0,
+            currentMine: 'Coal Mine', // Default mine
             streak: 0,
             lastDaily: 0,
-            location: 'Town.1',
-            exp: 0,
-            inventory: {},
-            properties: [],
-            hp: 100,
-            maxHp: 100,
-            stamina: 50,
-            maxStamina: 50,
-            equippedLeft: null,
-            equippedRight: null,
-            isArrested: false
+            mines: [
+                {
+                    mineName: 'Coal Mine',  // Default mine
+                    mineshafts: [], // Initialize with no mineshafts
+                    elevator: [],    // Initialize with default stats
+                    warehouse: []    // Initialize with default stats
+                }
+            ],
+            activeBoosts: [],    // Array for active boosts
+            idleCash: 0,
+            idleIceCash: 0,
+            idleFireCash: 0,
+            inventory: {}        // For boosters or items
         });
     }
 }
