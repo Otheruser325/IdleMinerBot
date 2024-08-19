@@ -120,8 +120,6 @@ async function addUserToGuild(guildId, userId) {
             guildData.members.push(userId);
             await guildRef.update({ members: guildData.members });
         }
-    } else {
-        console.warn(`Guild ${guildId} not found in Firestore.`);
     }
 }
 
@@ -139,16 +137,13 @@ async function getUserInGuild(guildId, userId) {
             if (userDoc.exists) {
                 return userDoc.data();
             } else {
-                console.log(`User document not found for userId: ${userId}`);  // Debugging line
                 return null; // User not found
             }
         } else {
-            console.log(`User ${userId} is not a member of guild ${guildId}`); // Debugging line
             return null; // User not a member of the guild
         }
     } else {
-        console.warn(`Guild ${guildId} not found in Firestore.`);
-        return null;
+        return null; // Guild not found
     }
 }
 
