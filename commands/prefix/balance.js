@@ -29,8 +29,11 @@ module.exports = {
             let userId = message.author.id;
             let targetUsername = message.author.username;
             const guild = message.guild;
+
+            // Determine if the command is executed in a guild context
             const isGuildContext = Boolean(guild);
 
+            // Parse arguments for target user if provided
             if (args.length > 0) {
                 const userMention = args[0];
 
@@ -58,20 +61,31 @@ module.exports = {
                     : userMention;
             }
 
-            // Fetch user data from Firestore
+            // Fetch user data from the guild
             const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
 
+            // Check if user exists
             if (!user) {
-                return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
+                // Try to add the user to the guild if they exist in the users collection but not in the guild
+                const globalUser = await getUser(userId);
+                if (globalUser) {
+                    await addUserToGuild(guild.id, userId);
+                } else {
+                    return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
+                }
             }
 
-            const cash = user.cash || 0;
-            const iceCash = user.iceCash || 0;
-            const fireCash = user.fireCash || 0;
-            const superCash = user.superCash || 0;
+            // Fetch updated user data after adding to the guild
+            const updatedUser = await getUserInGuild(guild.id, userId);
 
+            // Extract and format user's balance data
+            const cash = updatedUser.cash || 0;
+            const iceCash = updatedUser.iceCash || 0;
+            const fireCash = updatedUser.fireCash || 0;
+            const superCash = updatedUser.superCash || 0;
+
+            // Determine user's wealth status
             let description = 'Average';
-
             for (const wealth of wealthDescriptions) {
                 if (superCash >= wealth.minCash) {
                     description = wealth.description;
@@ -79,10 +93,12 @@ module.exports = {
                 }
             }
 
+            // Fetch user's avatar
             const userAvatar = isGuildContext
                 ? guild.members.cache.get(userId)?.user.displayAvatarURL() || message.author.displayAvatarURL()
                 : message.client.users.cache.get(userId)?.displayAvatarURL() || message.author.displayAvatarURL();
 
+            // Build and send the balance embed message
             const embed = new EmbedBuilder()
                 .setColor('#0099ff')
                 .setTitle(`${targetUsername}'s Balance`)
