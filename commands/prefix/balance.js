@@ -59,6 +59,7 @@ module.exports = {
                     : userMention;
             }
 
+            // Use getUserInGuild for guild context or getUser for direct messages
             const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
 
             if (!user) {
