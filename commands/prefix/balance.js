@@ -30,7 +30,7 @@ module.exports = {
             let targetUsername = message.author.username; 
 
             const guild = message.guild;
-            const isGuildContext = guild ? true : false;
+            const isGuildContext = Boolean(guild);
 
             if (args.length > 0) {
                 const userMention = args[0];
@@ -59,7 +59,6 @@ module.exports = {
                     : userMention;
             }
 
-            // Use getUserInGuild for guild context or getUser for direct messages
             const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
 
             if (!user) {
