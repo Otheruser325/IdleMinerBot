@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getUser, updateUser, saveUserData } = require('../../dataManager');
+const { getUser, updateUser } = require('../../dataManager');
 const { formatTime, calculateDailyReward } = require('../../utils/dailyManager');
 const numberFormat = require('../../utils/numberFormat');
 
@@ -24,14 +24,14 @@ module.exports = {
         }
 
         // Calculate the daily reward
-        const coins = calculateDailyReward(user);
+        const cash = calculateDailyReward(user);
         await updateUser(userId, {
             lastDaily: currentTime,
             streak: user.streak + 1,
-            vCoins: user.vCoins + coins
+            superCash: user.superCash + cash
         });
 
-        const response = `You claimed ${numberFormat(coins)} V-Coins! Current streak: ${user.streak + 1}.`;
+        const response = `You claimed ${numberFormat(cash)} Super Cash! Current streak: ${user.streak + 1}.`;
         await interaction.reply(response);
     }
 };
