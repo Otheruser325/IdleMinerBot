@@ -52,7 +52,6 @@ async function getUser(userId) {
 // Update user data in Firestore
 async function updateUser(userId, updates) {
     const userRef = db.collection('users').doc(userId);
-    // Ensure no undefined values are included in the update
     const sanitizedUpdates = Object.fromEntries(
         Object.entries(updates).filter(([_, value]) => value !== undefined)
     );
@@ -76,7 +75,7 @@ async function initializeGuild(guildId, guildName, ownerId) {
         await guildRef.set({
             name: guildName || '',
             ownerId: ownerId || '',
-            members: []
+            members: []  // Ensure members is initialized as an empty array
         });
     }
 }
@@ -96,7 +95,6 @@ async function getGuild(guildId) {
 // Update guild data in Firestore
 async function updateGuild(guildId, updates) {
     const guildRef = db.collection('guilds').doc(guildId);
-    // Ensure no undefined values are included in the update
     const sanitizedUpdates = Object.fromEntries(
         Object.entries(updates).filter(([_, value]) => value !== undefined)
     );
@@ -134,10 +132,6 @@ async function getUserInGuild(guildId, userId) {
 
     if (guildDoc.exists) {
         const guildData = guildDoc.data();
-
-        console.log('Guild Data:', guildData);  // Debugging line
-        console.log('Guild Members:', guildData.members);  // Debugging line
-
         if (guildData.members && guildData.members.includes(userId)) {
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
