@@ -135,6 +135,9 @@ async function getUserInGuild(guildId, userId) {
     if (guildDoc.exists) {
         const guildData = guildDoc.data();
 
+        console.log('Guild Data:', guildData);  // Debugging line
+        console.log('Guild Members:', guildData.members);  // Debugging line
+
         if (guildData.members && guildData.members.includes(userId)) {
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
@@ -142,9 +145,11 @@ async function getUserInGuild(guildId, userId) {
             if (userDoc.exists) {
                 return userDoc.data();
             } else {
+                console.log(`User document not found for userId: ${userId}`);  // Debugging line
                 return null; // User not found
             }
         } else {
+            console.log(`User ${userId} is not a member of guild ${guildId}`); // Debugging line
             return null; // User not a member of the guild
         }
     } else {
