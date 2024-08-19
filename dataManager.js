@@ -17,7 +17,7 @@ async function initializeUser(userId, username) {
 
     if (!userDoc.exists) {
         await userRef.set({
-            username: username,
+            username: username || '',
             vCoins: 500,
             bankBalance: 0,
             streak: 0,
@@ -52,7 +52,11 @@ async function getUser(userId) {
 // Update user data in Firestore
 async function updateUser(userId, updates) {
     const userRef = db.collection('users').doc(userId);
-    await userRef.update(updates);
+    // Ensure no undefined values are included in the update
+    const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    await userRef.update(sanitizedUpdates);
 }
 
 // Get all users from Firestore
@@ -70,8 +74,8 @@ async function initializeGuild(guildId, guildName, ownerId) {
 
     if (!guildDoc.exists) {
         await guildRef.set({
-            name: guildName,
-            ownerId: ownerId,
+            name: guildName || '',
+            ownerId: ownerId || '',
             members: []
         });
     }
@@ -92,7 +96,11 @@ async function getGuild(guildId) {
 // Update guild data in Firestore
 async function updateGuild(guildId, updates) {
     const guildRef = db.collection('guilds').doc(guildId);
-    await guildRef.update(updates);
+    // Ensure no undefined values are included in the update
+    const sanitizedUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== undefined)
+    );
+    await guildRef.update(sanitizedUpdates);
 }
 
 // Get all guilds from Firestore
@@ -121,16 +129,13 @@ async function addUserToGuild(guildId, userId) {
 
 // Get a user from a specific guild from Firestore
 async function getUserInGuild(guildId, userId) {
-    // Fetch the guild document from Firestore
     const guildRef = db.collection('guilds').doc(guildId);
     const guildDoc = await guildRef.get();
 
     if (guildDoc.exists) {
         const guildData = guildDoc.data();
 
-        // Check if the user is in the guild's members list
         if (guildData.members && guildData.members.includes(userId)) {
-            // Fetch the user document from Firestore
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
 
@@ -154,7 +159,7 @@ async function getUsersInGuild(guildId) {
 
     if (guild) {
         const userRefs = guild.members.map(userId => db.collection('users').doc(userId));
-        const usersSnapshot = await db.getAll(...userRefs);
+        const usersSnapshot = await Promise.all(userRefs.map(ref => ref.get()));
 
         return usersSnapshot.map(userDoc => userDoc.exists ? userDoc.data() : null).filter(Boolean);
     } else {
