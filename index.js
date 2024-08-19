@@ -4,6 +4,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
+const { updateBotStatus } = require('./utils/botStatus');
 
 // Load environment variables from .env file
 dotenv.config();
