@@ -61,7 +61,7 @@ async function handleWarehouseOverview(message, warehouse, currentMine) {
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Warehouse Overview (Level ${warehouse.level})`)
+        .setTitle(`Warehouse Overview in ${currentMine.MineName} (Level ${warehouse.level})`)
         .addFields(
             { name: 'Number of Workers', value: `${warehouseInfo.NumberOfWorkers}`, inline: true },
             { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
