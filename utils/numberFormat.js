@@ -1,7 +1,7 @@
 module.exports = function numberFormat(num) {
     const suffixes = ['K', 'M', 'B', 'T']; // Base suffixes for thousands, millions, billions, trillions
 
-    if (num < 1e3) return num.toFixed(3);
+    if (num < 1e3) return num.toFixed(3); // No suffix for numbers less than 1,000
 
     // Determine the scale for base suffixes
     let tier = Math.log10(num) / 3 | 0;
@@ -14,7 +14,6 @@ module.exports = function numberFormat(num) {
 
     // For large numbers beyond trillion, use alphabetical suffixes
     const base = 26;
-    tier = Math.log10(num) / 3 | 0;
     const alphabetSuffix = (n) => {
         let str = '';
         while (n >= 0) {
@@ -24,7 +23,7 @@ module.exports = function numberFormat(num) {
         return str;
     };
 
-    // Calculate the appropriate suffix
+    // Calculate the appropriate suffix for numbers larger than trillion
     const suffixIndex = tier - suffixes.length; // Offset by the length of base suffixes
     const suffix = alphabetSuffix(suffixIndex);
     const scale = Math.pow(10, (suffixes.length + suffixIndex) * 3);
