@@ -15,16 +15,17 @@ module.exports = {
         }
 
         const subcommand = args[0];
+        const mineName = args.slice(1).join(' ').toLowerCase();
 
         switch (subcommand) {
             case 'buy':
-                await handleMineBuy(message, args[1], user);
+                await handleMineBuy(message, mineName, user);
                 break;
             case 'visit':
-                await handleMineVisit(message, args[1], user);
+                await handleMineVisit(message, mineName, user);
                 break;
             case 'manage':
-                await handleMineManage(message, args[1], user);
+                await handleMineManage(message, mineName, user);
                 break;
             default:
                 return message.reply(`@${message.author.username}, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
@@ -38,13 +39,13 @@ async function handleMineBuy(message, mineName, user) {
     }
 
     // Find the mine in mineFactors
-    const mine = mineFactors.mines.find(m => m.MineName.toLowerCase() === mineName.toLowerCase());
+    const mine = mineFactors.mines.find(m => m.MineName.toLowerCase() === mineName);
 
     if (!mine) {
         return message.reply('Invalid mine name. Please specify a valid mine to buy.');
     }
 
-    const mineExists = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+    const mineExists = user.mines.find(m => m.mineName.toLowerCase() === mineName);
 
     if (mineExists) {
         return message.reply('You already own this mine.');
@@ -79,18 +80,18 @@ async function handleMineVisit(message, mineName, user) {
         return message.reply('Please specify the name of the mine you want to visit.');
     }
 
-    if (user.currentMine === mineName) {
+    if (user.currentMine.toLowerCase() === mineName) {
         return message.reply(`You are already in the ${mineName}.`);
     }
 
-    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName);
 
     if (!mine) {
         return message.reply('You do not own this mine.');
     }
 
     await updateUser(user.id, { currentMine: mineName });
-    return message.reply(`You have successfully moved to the ${mineName}.`);
+    return message.reply(`You have successfully moved to the ${mine.mineName}.`);
 }
 
 async function handleMineManage(message, mineName, user) {
@@ -98,7 +99,7 @@ async function handleMineManage(message, mineName, user) {
         return message.reply('Please specify the name of the mine you want to manage.');
     }
 
-    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName);
     if (!mine) {
         return message.reply('You do not own this mine.');
     }
