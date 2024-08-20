@@ -33,7 +33,7 @@ module.exports = {
             return interaction.reply('Current mine data not found.');
         }
 
-        if (!currentMine.warehouse) {
+        if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
             return interaction.reply('Warehouse is not initialized.');
         }
 
@@ -52,7 +52,7 @@ module.exports = {
 
 // Function to handle the "overview" subcommand for warehouse
 async function handleWarehouseOverview(interaction, user, currentMine) {
-    const warehouse = currentMine.warehouse;
+    const warehouse = currentMine.warehouse[0]; // Access the first warehouse object
 
     if (!warehouse) {
         return interaction.reply('Warehouse is not initialized.');
@@ -85,7 +85,7 @@ async function handleWarehouseOverview(interaction, user, currentMine) {
 
 // Function to handle the "upgrade" subcommand for warehouse
 async function handleWarehouseUpgrade(interaction, user, currentMine) {
-    const warehouse = currentMine.warehouse;
+    const warehouse = currentMine.warehouse[0]; // Access the first warehouse object
 
     if (!warehouse) {
         return interaction.reply('Warehouse is not initialized.');
