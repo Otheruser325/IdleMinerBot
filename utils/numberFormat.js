@@ -6,17 +6,18 @@ module.exports = function numberFormat(num) {
     if (num < 1e3) return num.toFixed(3);
 
     // Determine the tier index based on the magnitude of the number
-    // Calculate tier, ensuring that thousands use 'K'
+    // Correctly calculate tier to handle thousands (K) separately
     let tier = Math.floor(Math.log10(num) / 3);
     
+    // Ensure correct handling of thousands (K) for numbers in the thousands range
     if (num < 1e6) {
-        tier = 1; // Explicitly set to use 'K' for thousands
+        tier = 1; // Explicitly use 'K' for thousands
     }
 
     if (tier < suffixes.length) {
         // Use base suffixes for thousands to trillions
-        const suffix = suffixes[tier - 1]; // Subtract 1 to use correct suffix
-        const scale = Math.pow(10, (tier - 1) * 3); // Scale for thousands
+        const suffix = suffixes[tier - 1]; // Subtract 1 to get the correct suffix
+        const scale = Math.pow(10, (tier - 1) * 3); // Correct scaling factor
         const scaled = num / scale;
         return scaled.toFixed(3) + suffix;
     }
