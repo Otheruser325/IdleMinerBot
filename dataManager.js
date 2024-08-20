@@ -22,22 +22,25 @@ async function initializeUser(userId, username) {
             iceCash: 0,
             fireCash: 0,
             superCash: 0,
-            currentMine: 'Coal Mine', // Default mine
+            currentMine: 'Coal Mine',
             streak: 0,
             lastDaily: 0,
             mines: [
                 {
-                    mineName: 'Coal Mine',  // Default mine
-                    mineshafts: [], // Initialize with no mineshafts
-                    elevator: [],    // Initialize with default stats
-                    warehouse: []    // Initialize with default stats
+                    PrestigeCount: 0,
+                    MineNumber: 1,
+                    MineName: "Coal Mine",
+                    Factor: 1,
+                    mineshafts: [],
+                    elevator: [],
+                    warehouse: []
                 }
             ],
-            activeBoosts: [],    // Array for active boosts
+            activeBoosts: [],
             idleCash: 0,
             idleIceCash: 0,
             idleFireCash: 0,
-            inventory: {}        // For boosters or items
+            inventory: {}
         });
     }
 }
