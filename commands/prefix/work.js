@@ -38,7 +38,7 @@ module.exports = {
         }
 
         const now = Date.now();
-        const FOUR_SECONDS = 4000; // 4 seconds in milliseconds
+        const FOUR_SECONDS = 4000; // 4 seconds for mining process
 
         if (shaft.lastWorkedOn && (now - shaft.lastWorkedOn < FOUR_SECONDS)) {
             const remainingTime = FOUR_SECONDS - (now - shaft.lastWorkedOn);
@@ -57,12 +57,38 @@ module.exports = {
             return message.reply(`Unable to find data for Shaft Tier ${tier} at Level ${shaft.level}.`);
         }
 
-        // Calculate the total deposit
-        const deposit = shaft.capacityPerWorker * shaft.numberOfWorkers * mineFactor;
-        shaft.totalDeposit = (shaft.totalDeposit || 0) + deposit;
+        // Calculate the walking time
+        const walkingTimes = {
+            1: 2000, // 2 seconds
+            2: 1000, // 1 second
+            3: 750,  // 0.75 seconds
+            4: 500,  // 0.5 seconds
+            5: 400,  // ~0.4 seconds
+            6: 333   // ~0.33 seconds
+        };
 
-        await updateUser(user.id, user);
+        const walkingTime = walkingTimes[shaft.workerWalkingSpeedPerSecond] || 500; // Default to 0.5 seconds if not found
 
-        return message.reply(`Successfully mined minerals with Shaft Tier ${tier}. Total deposit now: ${numberFormat(shaft.totalDeposit)}`);
+        // Simulate the mining process
+        const mineProcess = new Promise((resolve) => {
+            setTimeout(() => {
+                message.reply(`Mining deposit in Shaft ${tier}...`);
+                setTimeout(() => {
+                    message.reply(`Extracting minerals into the basket...`);
+                    setTimeout(() => {
+                        // Calculate the total deposit
+                        const deposit = shaft.capacityPerWorker * shaft.numberOfWorkers * mineFactor;
+                        shaft.totalDeposit = (shaft.totalDeposit || 0) + deposit;
+
+                        updateUser(user.id, user).then(() => {
+                            message.reply(`Successfully mined minerals with Shaft Tier ${tier}. Total deposit now: ${numberFormat(shaft.totalDeposit)}`);
+                            resolve();
+                        });
+                    }, walkingTime); // Time to extract minerals
+                }, FOUR_SECONDS); // Time to mine
+            }, walkingTime); // Time to walk to deposit
+        });
+
+        return mineProcess;
     }
 };
