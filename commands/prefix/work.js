@@ -35,6 +35,9 @@ module.exports = {
                 await handleShaftWork(message, user, currentMine, parseInt(args[1], 10));
                 break;
             case 'elevator':
+                if (!currentMine.elevator) {
+                    return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
+                }
                 await handleElevatorWork(message, user, currentMine);
                 break;
             default:
@@ -101,6 +104,21 @@ async function handleShaftWork(message, user, currentMine, tier) {
         }, walkingTime);
     });
 
+    // Initialize the elevator if working in Mineshaft 1
+    if (tier === 1 && !currentMine.elevator) {
+        const elevatorInfo = elevatorData.find(e => e.Level === 1);
+
+        currentMine.elevator = {
+            level: 1,
+            lastWorkedOn: null,
+            speed: elevatorInfo.Speed,
+            capacity: elevatorInfo.Capacity,
+            loadingPerSecond: elevatorInfo.LoadingPerSecond
+        };
+        await updateUser(user.id, user);
+        await message.reply('Elevator has been initialized in your mine. You can now use it to collect minerals.');
+    }
+
     return mineProcess;
 }
 
@@ -109,7 +127,7 @@ async function handleElevatorWork(message, user, currentMine) {
     const elevator = currentMine.elevator;
 
     if (!elevator) {
-        return message.reply('You do not have an elevator in this mine. Please buy one first.');
+        return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
     }
 
     const now = Date.now();
