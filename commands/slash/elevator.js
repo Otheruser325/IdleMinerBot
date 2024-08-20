@@ -71,12 +71,12 @@ async function handleElevatorOverview(interaction, user, currentMine) {
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Elevator Overview`)
+        .setTitle(`Elevator Overview in ${currentMine.MineName} (Level ${elevator.level})`)
         .addFields(
-            { name: 'Level', value: `${elevator.level}`, inline: true },
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
             { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
-            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true }
+            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
+            { name: 'Total Deposit', value: `${numberFormat(elevatorInfo.totalDeposit)}`, inline: true }
         )
         .setTimestamp();
 
