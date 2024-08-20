@@ -56,7 +56,16 @@ async function handleOverview(message, user, currentMine, args) {
         return message.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.MineName}.`);
     }
 
+    // Lazy initialization of totalDeposit
+    if (shaft.totalDeposit === undefined) {
+        shaft.totalDeposit = 0; // Initialize to 0 if not set
+    }
+
     const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === shaft.level);
+
+    if (!shaftInfo) {
+        return message.reply(`Unable to find data for Shaft Tier ${tier} at Level ${shaft.level}.`);
+    }
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
@@ -64,9 +73,10 @@ async function handleOverview(message, user, currentMine, args) {
         .addFields(
             { name: 'Level', value: `${shaft.level}`, inline: true },
             { name: 'Workers', value: `${shaft.numberOfWorkers}`, inline: true },
-            { name: 'Gain per Second', value: `${numberFormat(shaft.gainPerSecondPerWorker * shaft.numberOfWorkers)}`, inline: true },
+            { name: 'Gain per Second', value: `${numberFormat(shaft.gainPerSecondPerWorker)}`, inline: true },
             { name: 'Capacity per Worker', value: `${numberFormat(shaft.capacityPerWorker)}`, inline: true },
-            { name: 'Worker Speed', value: `${shaft.workerWalkingSpeedPerSecond} units/sec`, inline: true }
+            { name: 'Worker Speed', value: `${shaft.workerWalkingSpeedPerSecond} units/sec`, inline: true },
+            { name: 'Total Deposit', value: `${numberFormat(shaft.totalDeposit)}`, inline: true }
         )
         .setTimestamp();
 
