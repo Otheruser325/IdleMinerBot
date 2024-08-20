@@ -27,7 +27,8 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
-        if (!currentMine.elevator) {
+        // Ensure elevator is properly initialized
+        if (!currentMine.elevator || Object.keys(currentMine.elevator).length === 0) {
             return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
 
@@ -48,7 +49,7 @@ module.exports = {
 async function handleElevatorOverview(message, user, currentMine) {
     const elevator = currentMine.elevator;
 
-    if (!elevator) {
+    if (!elevator || !elevator.level || !elevator.capacity) {
         return message.reply('Elevator is not initialized.');
     }
 
@@ -80,7 +81,7 @@ async function handleElevatorOverview(message, user, currentMine) {
 async function handleElevatorUpgrade(message, user, currentMine) {
     const elevator = currentMine.elevator;
 
-    if (!elevator) {
+    if (!elevator || !elevator.level) {
         return message.reply('Elevator is not initialized.');
     }
 
@@ -93,7 +94,7 @@ async function handleElevatorUpgrade(message, user, currentMine) {
 
     const mineFactor = getMineFactor(currentMine.MineName);
     const upgradeCost = nextLevelData.UpgradeCost;
-    
+
     if (user.cash < upgradeCost) {
         return message.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the elevator.`);
     }
@@ -101,8 +102,8 @@ async function handleElevatorUpgrade(message, user, currentMine) {
     user.cash -= upgradeCost;
     elevator.level += 1;
     elevator.speed = nextLevelData.Speed;
-    elevator.capacity = nextLevelData.Capacity * mineFactor; // Apply mine factor
-    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
+    elevator.capacity = nextLevelData.Capacity * mineFactor;
+    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
     await updateUser(user.id, user);
     await message.reply(`Elevator upgraded to Level ${elevator.level}.`);
