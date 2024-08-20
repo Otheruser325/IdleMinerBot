@@ -1,0 +1,204 @@
+{
+  "warehouseData": [
+    {
+      "Level": 1,
+      "Cost": 400,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 1000,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 250,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 2,
+      "Cost": 480,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 1300,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 325,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 3,
+      "Cost": 576,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 1690,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 422,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 4,
+      "Cost": 691,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 2190,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 549,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 5,
+      "Cost": 829,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 2850,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 714,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 6,
+      "Cost": 995,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 3710,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 928,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 7,
+      "Cost": 1190,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 4820,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 1200,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 8,
+      "Cost": 1430,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 6270,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 1560,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 9,
+      "Cost": 1710,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 8150,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 2030,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 10,
+      "Cost": 2060,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 10600,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 2650,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 11,
+      "Cost": 2470,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 13700,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 3440,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 12,
+      "Cost": 2970,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 17900,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 4480,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 13,
+      "Cost": 3560,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 23200,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 5820,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 14,
+      "Cost": 4270,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 30200,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 7570,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 15,
+      "Cost": 5130,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 39300,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 9840,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 16,
+      "Cost": 6160,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 51100,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 12700,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 17,
+      "Cost": 7390,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 66500,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 16600,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 18,
+      "Cost": 8870,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 86500,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 21600,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 19,
+      "Cost": 10600,
+      "NumberOfWorkers": 1,
+      "CapacityPerWorker": 112000,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 28100,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 20,
+      "Cost": 12700,
+      "NumberOfWorkers": 2,
+      "CapacityPerWorker": 146000,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "LoadingPerSecond": 36500,
+      "BigUpdate": 1,
+      "SuperCashReward": 15
+    }
+  ]
+}
