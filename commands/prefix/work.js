@@ -121,7 +121,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
             speed: elevatorInfo.Speed || 0.5,
             capacity: elevatorInfo.Capacity,
             loadingPerSecond: elevatorInfo.LoadingPerSecond,
-            totalDeposit: 0 // Initialize totalDeposit for elevator
+            totalDeposit: 0
         }];
 
         // Initialize warehouse
@@ -133,7 +133,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
             loadingPerSecond: warehouseData[0].LoadingPerSecond,
             bigUpdate: 0,
             superCashReward: 0,
-            totalDeposit: 0 // Initialize totalDeposit for warehouse
+            totalDeposit: 0
         }];
 
         await updateUser(user.id, user);
@@ -145,7 +145,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
 
 // Function to handle working with the elevator
 async function handleElevatorWork(message, user, currentMine) {
-    const elevator = currentMine.elevator[0]; // Assuming single elevator
+    const elevator = currentMine.elevator[0];
 
     if (!elevator) {
         return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
@@ -212,7 +212,7 @@ async function handleElevatorWork(message, user, currentMine) {
 
 // Function to handle working with the warehouse
 async function handleWarehouseWork(message, user, currentMine) {
-    const warehouse = currentMine.warehouse[0]; // Assuming single warehouse
+    const warehouse = currentMine.warehouse[0];
 
     if (!warehouse) {
         return message.reply('Warehouse is not initialized.');
@@ -241,8 +241,8 @@ async function handleWarehouseWork(message, user, currentMine) {
         await initialMessage.edit('Extracting minerals from the deposit base...');
         setTimeout(async () => {
             const totalDeposit = warehouse.totalDeposit || 0;
-            const cashReward = totalDeposit * 0.1; // Example: 10% of total deposit as cash reward
-            warehouse.totalDeposit = 0; // Reset warehouse deposits
+            const cashReward = totalDeposit;
+            warehouse.totalDeposit = 0;
             await updateUser(user.id, user);
             await initialMessage.edit('Returning to the warehouse with extracted goods...');
             setTimeout(async () => {
