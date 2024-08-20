@@ -2,6 +2,7 @@ const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
 const shaftData = require('../../config/shaftData.json').shaftData;
+const mineFactors = require('../../config/mineFactors.json').mines;
 
 module.exports = {
     name: 'shaft',
@@ -42,6 +43,12 @@ module.exports = {
     }
 };
 
+// Function to get the mine factor for the current mine
+function getMineFactor(mineName) {
+    const mine = mineFactors.find(m => m.MineName === mineName);
+    return mine ? mine.Factor : 1; // Default to 1 if not found
+}
+
 // Function to handle the "overview" subcommand
 async function handleOverview(message, user, currentMine, args) {
     const tier = parseInt(args[1], 10);
@@ -62,10 +69,14 @@ async function handleOverview(message, user, currentMine, args) {
     }
 
     const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === shaft.level);
-
     if (!shaftInfo) {
         return message.reply(`Unable to find data for Shaft Tier ${tier} at Level ${shaft.level}.`);
     }
+
+    // Adjust shaft stats based on the mine's factor
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
+    const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
@@ -73,8 +84,8 @@ async function handleOverview(message, user, currentMine, args) {
         .addFields(
             { name: 'Level', value: `${shaft.level}`, inline: true },
             { name: 'Workers', value: `${shaft.numberOfWorkers}`, inline: true },
-            { name: 'Gain per Second', value: `${numberFormat(shaft.gainPerSecondPerWorker)}`, inline: true },
-            { name: 'Capacity per Worker', value: `${numberFormat(shaft.capacityPerWorker)}`, inline: true },
+            { name: 'Gain per Second', value: `${numberFormat(adjustedGain)}`, inline: true },
+            { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacity)}`, inline: true },
             { name: 'Worker Speed', value: `${shaft.workerWalkingSpeedPerSecond} units/sec`, inline: true },
             { name: 'Total Deposit', value: `${numberFormat(shaft.totalDeposit)}`, inline: true }
         )
@@ -98,7 +109,6 @@ async function handleBuy(message, user, currentMine, args) {
     }
 
     const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === 1);
-
     if (!shaftInfo) {
         return message.reply(`Invalid shaft tier provided.`);
     }
@@ -108,12 +118,18 @@ async function handleBuy(message, user, currentMine, args) {
     }
 
     user.cash -= shaftInfo.Cost;
+
+    // Adjust shaft stats based on the mine's factor
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
+    const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
+
     currentMine.mineshafts.push({
         tier,
         level: 1,
         numberOfWorkers: shaftInfo.NumberOfWorkers,
-        gainPerSecondPerWorker: shaftInfo.GainPerSecondPerWorker,
-        capacityPerWorker: shaftInfo.CapacityPerWorker,
+        gainPerSecondPerWorker: adjustedGain,
+        capacityPerWorker: adjustedCapacity,
         workerWalkingSpeedPerSecond: shaftInfo.WorkerWalkingSpeedPerSecond
     });
 
@@ -148,10 +164,16 @@ async function handleUpgrade(message, user, currentMine, args) {
     }
 
     user.cash -= nextShaftInfo.Cost;
+
+    // Adjust shaft stats based on the mine's factor
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const adjustedGain = nextShaftInfo.GainPerSecondPerWorker * mineFactor;
+    const adjustedCapacity = nextShaftInfo.CapacityPerWorker * mineFactor;
+
     shaft.level = nextLevel;
     shaft.numberOfWorkers = nextShaftInfo.NumberOfWorkers;
-    shaft.gainPerSecondPerWorker = nextShaftInfo.GainPerSecondPerWorker;
-    shaft.capacityPerWorker = nextShaftInfo.CapacityPerWorker;
+    shaft.gainPerSecondPerWorker = adjustedGain;
+    shaft.capacityPerWorker = adjustedCapacity;
     shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
     await updateUser(user.id, user);
