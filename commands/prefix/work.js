@@ -7,7 +7,7 @@ const warehouseData = require('../../config/warehouseData.json').warehouseData;
 
 module.exports = {
     name: 'work',
-    description: 'Operate your mineshafts, elevator or warehouse.',
+    description: 'Operate your mineshafts or elevator.',
     usage: '<subcommand> [tier]',
     exampleUsage: 'v work shaft 1 | v work elevator | v work warehouse',
     async execute(message, args) {
@@ -36,13 +36,13 @@ module.exports = {
                 await handleShaftWork(message, user, currentMine, parseInt(args[1], 10));
                 break;
             case 'elevator':
-                if (!currentMine.elevator) {
+                if (!currentMine.elevator || currentMine.elevator.length === 0) {
                     return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
                 }
                 await handleElevatorWork(message, user, currentMine);
                 break;
             case 'warehouse':
-                if (!currentMine.warehouse) {
+                if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
                     return message.reply('You need to work in the Elevator before accessing the Warehouse.');
                 }
                 await handleWarehouseWork(message, user, currentMine);
@@ -145,7 +145,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
 
 // Function to handle working with the elevator
 async function handleElevatorWork(message, user, currentMine) {
-    const elevator = currentMine.elevator;
+    const elevator = currentMine.elevator[0]; // Assuming single elevator
 
     if (!elevator) {
         return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
@@ -196,11 +196,11 @@ async function handleElevatorWork(message, user, currentMine) {
             setTimeout(async () => {
                 await initialMessage.edit('Importing minerals into the deposit tank...');
                 setTimeout(async () => {
-                    if (!currentMine.warehouse) {
+                    if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
                         return message.reply('Warehouse is not initialized.');
                     }
 
-                    currentMine.warehouse.totalDeposit += elevator.totalDeposit;
+                    currentMine.warehouse[0].totalDeposit += elevator.totalDeposit;
                     elevator.totalDeposit = 0; // Reset elevator deposit
                     await updateUser(user.id, user);
                     await initialMessage.edit(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
@@ -212,7 +212,7 @@ async function handleElevatorWork(message, user, currentMine) {
 
 // Function to handle working with the warehouse
 async function handleWarehouseWork(message, user, currentMine) {
-    const warehouse = currentMine.warehouse;
+    const warehouse = currentMine.warehouse[0]; // Assuming single warehouse
 
     if (!warehouse) {
         return message.reply('Warehouse is not initialized.');
