@@ -69,21 +69,23 @@ module.exports = {
 
         const walkingTime = walkingTimes[shaft.workerWalkingSpeedPerSecond] || 500; // Default to 0.5 seconds if not found
 
+        // Initial message
+        const initialMessage = await message.reply('Walking to deposit...');
+
         // Simulate the mining process
         const mineProcess = new Promise((resolve) => {
-            setTimeout(() => {
-                message.reply(`Mining deposit in Shaft ${tier}...`);
-                setTimeout(() => {
-                    message.reply(`Extracting minerals into the basket...`);
-                    setTimeout(() => {
+            setTimeout(async () => {
+                await initialMessage.edit('Mining deposit in Shaft ${tier}...');
+                setTimeout(async () => {
+                    await initialMessage.edit('Extracting minerals into the basket...');
+                    setTimeout(async () => {
                         // Calculate the total deposit
                         const deposit = shaft.capacityPerWorker * shaft.numberOfWorkers * mineFactor;
                         shaft.totalDeposit = (shaft.totalDeposit || 0) + deposit;
 
-                        updateUser(user.id, user).then(() => {
-                            message.reply(`Successfully mined minerals with Shaft Tier ${tier}. Total deposit now: ${numberFormat(shaft.totalDeposit)}`);
-                            resolve();
-                        });
+                        await updateUser(user.id, user);
+                        await initialMessage.edit(`Successfully mined minerals with Shaft Tier ${tier}. Total deposit now: ${numberFormat(shaft.totalDeposit)}`);
+                        resolve();
                     }, walkingTime); // Time to extract minerals
                 }, FOUR_SECONDS); // Time to mine
             }, walkingTime); // Time to walk to deposit
