@@ -2,6 +2,7 @@ const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
 const warehouseData = require('../../config/warehouseData.json').warehouseData;
+const getMineFactor = require('../../utils/getMineFactor');
 
 module.exports = {
     name: 'warehouse',
@@ -57,15 +58,19 @@ async function handleWarehouseOverview(message, user, currentMine) {
         return message.reply('Warehouse data not found.');
     }
 
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const adjustedCapacityPerWorker = warehouseInfo.CapacityPerWorker * mineFactor;
+    const adjustedLoadingRate = warehouseInfo.LoadingPerSecond * mineFactor;
+
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`Warehouse Overview (Level ${warehouse.level})`)
         .addFields(
             { name: 'Cost', value: `${numberFormat(warehouseInfo.Cost)} cash`, inline: true },
             { name: 'Number of Workers', value: `${warehouseInfo.NumberOfWorkers}`, inline: true },
-            { name: 'Capacity per Worker', value: `${numberFormat(warehouseInfo.CapacityPerWorker)} units`, inline: true },
+            { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
             { name: 'Worker Walking Speed', value: `${warehouseInfo.WorkerWalkingSpeedPerSecond} units/sec`, inline: true },
-            { name: 'Loading Rate', value: `${warehouseInfo.LoadingPerSecond} units/sec`, inline: true }
+            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true }
         )
         .setTimestamp();
 
@@ -87,16 +92,18 @@ async function handleWarehouseUpgrade(message, user, currentMine) {
         return message.reply('Warehouse is already at the highest level.');
     }
 
+    const mineFactor = getMineFactor(currentMine.MineName);
     const upgradeCost = nextLevelData.Cost;
+
     if (user.cash < upgradeCost) {
         return message.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the warehouse.`);
     }
 
     user.cash -= upgradeCost;
     warehouse.level += 1;
-    warehouse.capacityPerWorker = nextLevelData.CapacityPerWorker;
+    warehouse.capacityPerWorker = nextLevelData.CapacityPerWorker * mineFactor; // Apply mine factor
     warehouse.workerWalkingSpeedPerSecond = nextLevelData.WorkerWalkingSpeedPerSecond;
-    warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond;
+    warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
 
     await updateUser(user.id, user);
     await message.reply(`Warehouse upgraded to Level ${warehouse.level}.`);
