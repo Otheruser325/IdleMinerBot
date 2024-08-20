@@ -6,11 +6,10 @@ module.exports = function numberFormat(num) {
     if (num < 1e3) return num.toFixed(3);
 
     // Determine the tier index based on the magnitude of the number
-    // Note: We subtract 1 to correctly index into the suffixes array
+    // Calculate tier, ensuring that thousands use 'K'
     let tier = Math.floor(Math.log10(num) / 3);
-
-    // If the number is in the thousands, the tier should be 0
-    if (tier === 0 && num >= 1e3) {
+    
+    if (num < 1e6) {
         tier = 1; // Explicitly set to use 'K' for thousands
     }
 
