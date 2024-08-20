@@ -2,6 +2,7 @@ const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
 const elevatorData = require('../../config/elevatorData.json').elevatorData;
+const getMineFactor = require('../../utils/getMineFactor');
 
 module.exports = {
     name: 'elevator',
@@ -57,14 +58,18 @@ async function handleElevatorOverview(message, user, currentMine) {
         return message.reply('Elevator data not found.');
     }
 
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const adjustedCapacity = elevatorInfo.Capacity * mineFactor;
+    const adjustedLoadingRate = elevatorInfo.LoadingPerSecond * mineFactor;
+
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`Elevator Overview`)
         .addFields(
             { name: 'Level', value: `${elevator.level}`, inline: true },
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
-            { name: 'Capacity', value: `${elevatorInfo.Capacity} units`, inline: true },
-            { name: 'Loading Rate', value: `${elevatorInfo.LoadingPerSecond} units/sec`, inline: true }
+            { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
+            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true }
         )
         .setTimestamp();
 
@@ -86,7 +91,9 @@ async function handleElevatorUpgrade(message, user, currentMine) {
         return message.reply('Elevator is already at the highest level.');
     }
 
-    const upgradeCost = nextLevelData.UpgradeCost; // Assume upgrade cost is part of elevatorData
+    const mineFactor = getMineFactor(currentMine.MineName);
+    const upgradeCost = nextLevelData.UpgradeCost;
+    
     if (user.cash < upgradeCost) {
         return message.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the elevator.`);
     }
@@ -94,8 +101,8 @@ async function handleElevatorUpgrade(message, user, currentMine) {
     user.cash -= upgradeCost;
     elevator.level += 1;
     elevator.speed = nextLevelData.Speed;
-    elevator.capacity = nextLevelData.Capacity;
-    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond;
+    elevator.capacity = nextLevelData.Capacity * mineFactor; // Apply mine factor
+    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
 
     await updateUser(user.id, user);
     await message.reply(`Elevator upgraded to Level ${elevator.level}.`);
