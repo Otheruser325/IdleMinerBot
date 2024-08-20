@@ -1,0 +1,114 @@
+{
+  "shaftData": [
+    {
+      "Tier": 1,
+      "Level": 1,
+      "Cost": 10,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 5,
+      "CapacityPerWorker": 20,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 2,
+      "Cost": 11,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 5,
+      "CapacityPerWorker": 22,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 3,
+      "Cost": 13,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 6,
+      "CapacityPerWorker": 24,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 4,
+      "Cost": 15,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 6,
+      "CapacityPerWorker": 26,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 5,
+      "Cost": 18,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 7,
+      "CapacityPerWorker": 29,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 6,
+      "Cost": 21,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 8,
+      "CapacityPerWorker": 32,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 7,
+      "Cost": 24,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 8,
+      "CapacityPerWorker": 35,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 8,
+      "Cost": 28,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 9,
+      "CapacityPerWorker": 38,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 9,
+      "Cost": 32,
+      "NumberOfWorkers": 1,
+      "GainPerSecondPerWorker": 10,
+      "CapacityPerWorker": 42,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Tier": 1,
+      "Level": 10,
+      "Cost": 38,
+      "NumberOfWorkers": 2,
+      "GainPerSecondPerWorker": 11,
+      "CapacityPerWorker": 47,
+      "WorkerWalkingSpeedPerSecond": 2,
+      "BigUpdate": 1,
+      "SuperCashReward": 2
+    }
+  ]
+}
