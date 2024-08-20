@@ -2,7 +2,7 @@ const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
 const shaftData = require('../../config/shaftData.json').shaftData;
-const mineFactors = require('../../config/mineFactors.json').mines;
+const getMineFactor = require('../../utils/getMineFactor');
 
 module.exports = {
     name: 'shaft',
@@ -42,12 +42,6 @@ module.exports = {
         }
     }
 };
-
-// Function to get the mine factor for the current mine
-function getMineFactor(mineName) {
-    const mine = mineFactors.find(m => m.MineName === mineName);
-    return mine ? mine.Factor : 1; // Default to 1 if not found
-}
 
 // Function to handle the "overview" subcommand
 async function handleOverview(message, user, currentMine, args) {
@@ -130,7 +124,8 @@ async function handleBuy(message, user, currentMine, args) {
         numberOfWorkers: shaftInfo.NumberOfWorkers,
         gainPerSecondPerWorker: adjustedGain,
         capacityPerWorker: adjustedCapacity,
-        workerWalkingSpeedPerSecond: shaftInfo.WorkerWalkingSpeedPerSecond
+        workerWalkingSpeedPerSecond: shaftInfo.WorkerWalkingSpeedPerSecond,
+        totalDeposit: 0 // Initialize totalDeposit for new shaft
     });
 
     await updateUser(user.id, user);
