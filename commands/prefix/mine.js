@@ -14,8 +14,16 @@ module.exports = {
             return message.reply('You need to start the game first by using `im!start`.');
         }
 
+        if (args.length < 1) {
+            return message.reply(`Please provide a subcommand: \`buy\`, \`visit\`, or \`manage\`.`);
+        }
+
         const subcommand = args[0];
-        const mineName = args.slice(1).join(' ').toLowerCase();
+        const mineName = args.slice(1).join(' ').toLowerCase(); // Safeguard against empty string
+
+        if (!mineName && (subcommand === 'buy' || subcommand === 'visit' || subcommand === 'manage')) {
+            return message.reply(`Please specify the name of the mine to \`${subcommand}\`.`);
+        }
 
         switch (subcommand) {
             case 'buy':
@@ -45,7 +53,7 @@ async function handleMineBuy(message, mineName, user) {
         return message.reply('Invalid mine name. Please specify a valid mine to buy.');
     }
 
-    const mineExists = user.mines.find(m => m.mineName.toLowerCase() === mineName);
+    const mineExists = user.mines.find(m => m.MineName.toLowerCase() === mineName);
 
     if (mineExists) {
         return message.reply('You already own this mine.');
@@ -57,7 +65,7 @@ async function handleMineBuy(message, mineName, user) {
 
     user.cash -= mine.Cost;
     user.mines.push({
-        mineName: mine.MineName,
+        MineName: mine.MineName,
         MineNumber: mine.MineNumber,
         Factor: mine.Factor,
         mineshafts: [],  // Initialize with no mineshafts
@@ -84,14 +92,14 @@ async function handleMineVisit(message, mineName, user) {
         return message.reply(`You are already in the ${mineName}.`);
     }
 
-    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName);
+    const mine = user.mines.find(m => m.MineName.toLowerCase() === mineName);
 
     if (!mine) {
         return message.reply('You do not own this mine.');
     }
 
     await updateUser(user.id, { currentMine: mineName });
-    return message.reply(`You have successfully moved to the ${mine.mineName}.`);
+    return message.reply(`You have successfully moved to the ${mine.MineName}.`);
 }
 
 async function handleMineManage(message, mineName, user) {
@@ -99,14 +107,14 @@ async function handleMineManage(message, mineName, user) {
         return message.reply('Please specify the name of the mine you want to manage.');
     }
 
-    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName);
+    const mine = user.mines.find(m => m.MineName.toLowerCase() === mineName);
     if (!mine) {
         return message.reply('You do not own this mine.');
     }
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`${mine.mineName} Management`)
+        .setTitle(`${mine.MineName} Management`)
         .setDescription(`Factor: ${mine.Factor}\nNumber of Shafts: ${mine.mineshafts.length}\nProduction: ${numberFormat(mine.production || 0)}`)
         .setTimestamp();
 
