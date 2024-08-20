@@ -112,20 +112,20 @@ async function handleShaftWork(message, user, currentMine, tier) {
     });
 
     // Initialize the elevator and warehouse if working in Mineshaft 1
-    if (tier === 1 && !currentMine.elevator) {
+    if (tier === 1 && (!currentMine.elevator || currentMine.elevator.length === 0)) {
         const elevatorInfo = elevatorData.find(e => e.Level === 1);
 
-        currentMine.elevator = {
+        currentMine.elevator = [{
             level: 1,
             lastWorkedOn: null,
             speed: elevatorInfo.Speed || 0.5,
             capacity: elevatorInfo.Capacity,
             loadingPerSecond: elevatorInfo.LoadingPerSecond,
             totalDeposit: 0 // Initialize totalDeposit for elevator
-        };
+        }];
 
         // Initialize warehouse
-        currentMine.warehouse = {
+        currentMine.warehouse = [{
             level: 1,
             numberOfWorkers: 1,
             capacityPerWorker: warehouseData[0].CapacityPerWorker,
@@ -134,7 +134,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
             bigUpdate: 0,
             superCashReward: 0,
             totalDeposit: 0 // Initialize totalDeposit for warehouse
-        };
+        }];
 
         await updateUser(user.id, user);
         await message.reply('Elevator and Warehouse have been initialized in your mine. You can now use them to collect and manage minerals.');
