@@ -1,7 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const mineFactors = require('../../data/mineFactors.json');  // Import the mine factors JSON
+const mineFactors = require('../../config/mineFactors.json');
 
 module.exports = {
     name: 'mine',
