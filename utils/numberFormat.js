@@ -5,13 +5,19 @@ module.exports = function numberFormat(num) {
     // Handle numbers less than 1,000
     if (num < 1e3) return num.toFixed(3);
 
-    // Determine the tier index
+    // Determine the tier index based on the magnitude of the number
+    // Note: We subtract 1 to correctly index into the suffixes array
     let tier = Math.floor(Math.log10(num) / 3);
+
+    // If the number is in the thousands, the tier should be 0
+    if (tier === 0 && num >= 1e3) {
+        tier = 1; // Explicitly set to use 'K' for thousands
+    }
 
     if (tier < suffixes.length) {
         // Use base suffixes for thousands to trillions
-        const suffix = suffixes[tier];
-        const scale = Math.pow(10, tier * 3);
+        const suffix = suffixes[tier - 1]; // Subtract 1 to use correct suffix
+        const scale = Math.pow(10, (tier - 1) * 3); // Scale for thousands
         const scaled = num / scale;
         return scaled.toFixed(3) + suffix;
     }
