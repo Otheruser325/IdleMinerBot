@@ -1,0 +1,29 @@
+[
+    {
+        "Order": 0,
+        "FromTier": 1,
+        "ToTier": 5,
+        "Cost": 0,
+        "BuildTimeInSeconds": 0,
+        "SecondsReducedPerVideoWatched": 0,
+        "MaxNumberOfVideosPerHour": 0
+    },
+    {
+        "Order": 1,
+        "FromTier": 6,
+        "ToTier": 10,
+        "Cost": 240000000,
+        "BuildTimeInSeconds": 3600,
+        "SecondsReducedPerVideoWatched": 1800,
+        "MaxNumberOfVideosPerHour": 2
+    },
+    {
+        "Order": 2,
+        "FromTier": 11,
+        "ToTier": 15,
+        "Cost": 15300000000000000,
+        "BuildTimeInSeconds": 21600,
+        "SecondsReducedPerVideoWatched": 1800,
+        "MaxNumberOfVideosPerHour": 2
+    }
+]
