@@ -2,10 +2,12 @@ module.exports = function numberFormat(num) {
     const baseSuffixes = ['K', 'M', 'B', 'T']; // Suffixes for thousands, millions, billions, trillions
     const base = 26; // Base for alphabetic suffixes
 
-    if (num < 1e3) return num.toFixed(3); // No suffix for numbers less than 1,000
+    // For numbers less than 1000, return the number as is with 3 decimal places
+    if (num < 1e3) return num.toFixed(3);
 
-    let tier = Math.log10(num) / 3 | 0;
-    
+    // Determine the tier and corresponding suffix
+    let tier = Math.floor(Math.log10(num) / 3); // Calculate the tier index
+
     if (tier < baseSuffixes.length) {
         // Use base suffixes for thousands to trillions
         const suffix = baseSuffixes[tier];
