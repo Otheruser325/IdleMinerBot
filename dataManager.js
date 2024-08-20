@@ -18,9 +18,9 @@ async function initializeUser(userId, username) {
     if (!userDoc.exists) {
         await userRef.set({
             username: username || '',
-            cash: 0,
-            iceCash: 0,
-            fireCash: 0,
+            cash: 10,
+            iceCash: 10,
+            fireCash: 10,
             superCash: 0,
             currentMine: 'Coal Mine',
             streak: 0,
