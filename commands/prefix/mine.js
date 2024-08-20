@@ -1,8 +1,6 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const mineRegions = require('../../config/mineRegions.json'); // JSON for region data
-const mineFactors = require('../../config/mineFactors.json'); // JSON for mine factors and prestige data
 
 module.exports = {
     name: 'mine',
@@ -16,33 +14,40 @@ module.exports = {
         }
 
         const subcommand = args[0];
+        const availableMines = [
+            { name: 'Gold Mine', cost: 76800000000000000, incomeFactor: 3 },
+            { name: 'Ruby Mine', cost: 3130000000000000000000000, incomeFactor: 7 },
+            { name: 'Diamond Mine', cost: 261000000000000000000000000000, incomeFactor: 12 },
+            { name: 'Emerald Mine', cost: 745000000000000000000000000000000000, incomeFactor: 20 }
+        ];
+
         switch (subcommand) {
             case 'buy':
-                await handleMineBuy(message, args[1], user);
+                await handleMineBuy(message, args[1], user, availableMines);
                 break;
             case 'visit':
                 await handleMineVisit(message, args[1], user);
                 break;
             case 'manage':
-                await handleMineManage(message, args[1], user);
+                await handleMineManage(message, args[1], user, availableMines);
                 break;
             default:
-                return message.reply(`@${message.author.username}, to manage your mines, please use \`buy\`, \`visit\`, or \`manage\`.`);
+                return message.reply(`@${message.author.username}, if you want to use the mine command for either: purchasing new mines, visiting them, or managing them, you'll need to use either \`buy\`, \`visit\`, or \`manage\` respectively.`);
         }
     }
 };
 
-async function handleMineBuy(message, mineName, user) {
+async function handleMineBuy(message, mineName, user, availableMines) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to buy.');
     }
 
-    const mine = mineFactors.find(m => m.name.toLowerCase() === mineName.toLowerCase());
+    const mine = availableMines.find(m => m.name.toLowerCase() === mineName.toLowerCase());
     if (!mine) {
         return message.reply('Invalid mine name. Please specify a valid mine to buy.');
     }
 
-    if (user.currentMine === mineName) {
+    if (user.currentMine === mine.name) {
         return message.reply('You are already working in this mine.');
     }
 
@@ -73,20 +78,20 @@ async function handleMineVisit(message, mineName, user) {
         return message.reply('Please specify the name of the mine you want to visit.');
     }
 
+    if (user.currentMine === mineName) {
+        return message.reply(`You are already in the ${mineName}.`);
+    }
+
     const userMine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
     if (!userMine) {
         return message.reply('You do not own this mine.');
-    }
-
-    if (user.currentMine === mineName) {
-        return message.reply(`You are already in the ${mineName}.`);
     }
 
     await updateUser(user.id, { currentMine: mineName });
     return message.reply(`You have successfully moved to the ${mineName}.`);
 }
 
-async function handleMineManage(message, mineName, user) {
+async function handleMineManage(message, mineName, user, availableMines) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to manage.');
     }
@@ -96,12 +101,13 @@ async function handleMineManage(message, mineName, user) {
         return message.reply('You do not own this mine.');
     }
 
-    const mineFactor = mineFactors.find(m => m.name.toLowerCase() === mineName.toLowerCase()).factor;
+    const mine = availableMines.find(m => m.name.toLowerCase() === mineName.toLowerCase());
+    const incomeFactor = mine ? mine.incomeFactor : 1;
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`${mineName} Management`)
-        .setDescription(`Factor: ${mineFactor}\nNumber of Shafts: ${userMine.mineshafts.length}\nProduction: ${numberFormat(userMine.production || 0)}`)
+        .setDescription(`Income Factor: ${incomeFactor}\nNumber of Shafts: ${userMine.mineshafts.length}\nProduction: ${numberFormat(userMine.production || 0)}`)
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });
