@@ -75,7 +75,7 @@ module.exports = {
         // Simulate the mining process
         const mineProcess = new Promise((resolve) => {
             setTimeout(async () => {
-                await initialMessage.edit('Mining deposit in Shaft ${tier}...');
+                await initialMessage.edit(`Mining deposit in Shaft ${tier}...`);
                 setTimeout(async () => {
                     await initialMessage.edit('Extracting minerals into the basket...');
                     setTimeout(async () => {
