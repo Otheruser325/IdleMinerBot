@@ -27,7 +27,8 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
-        if (!currentMine.warehouse) {
+        // Ensure warehouse is properly initialized
+        if (!currentMine.warehouse || Object.keys(currentMine.warehouse).length === 0) {
             return message.reply('Warehouse is not initialized.');
         }
 
@@ -48,7 +49,7 @@ module.exports = {
 async function handleWarehouseOverview(message, user, currentMine) {
     const warehouse = currentMine.warehouse;
 
-    if (!warehouse) {
+    if (!warehouse || !warehouse.level || !warehouse.capacityPerWorker) {
         return message.reply('Warehouse is not initialized.');
     }
 
@@ -81,7 +82,7 @@ async function handleWarehouseOverview(message, user, currentMine) {
 async function handleWarehouseUpgrade(message, user, currentMine) {
     const warehouse = currentMine.warehouse;
 
-    if (!warehouse) {
+    if (!warehouse || !warehouse.level) {
         return message.reply('Warehouse is not initialized.');
     }
 
@@ -101,9 +102,9 @@ async function handleWarehouseUpgrade(message, user, currentMine) {
 
     user.cash -= upgradeCost;
     warehouse.level += 1;
-    warehouse.capacityPerWorker = nextLevelData.CapacityPerWorker * mineFactor; // Apply mine factor
+    warehouse.capacityPerWorker = nextLevelData.CapacityPerWorker * mineFactor;
     warehouse.workerWalkingSpeedPerSecond = nextLevelData.WorkerWalkingSpeedPerSecond;
-    warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
+    warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
     await updateUser(user.id, user);
     await message.reply(`Warehouse upgraded to Level ${warehouse.level}.`);
