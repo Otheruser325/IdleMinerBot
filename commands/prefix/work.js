@@ -158,7 +158,7 @@ async function handleElevatorWork(message, user, currentMine) {
         return message.reply('Elevator data not found.');
     }
 
-    const LOADING_TIME = elevatorInfo.Capacity / elevatorInfo.LoadingPerSecond * 1000;
+    const LOADING_TIME = elevator.capacity / elevatorInfo.LoadingPerSecond * 1000;
     const TRAVEL_TIME = elevator.speed * currentMine.mineshafts.length * 1000; // Travel time to all shafts and back
 
     if (elevator.lastWorkedOn && (now - elevator.lastWorkedOn < LOADING_TIME + TRAVEL_TIME)) {
@@ -174,25 +174,23 @@ async function handleElevatorWork(message, user, currentMine) {
         await initialMessage.edit('Extracting minerals from all shafts...');
         setTimeout(async () => {
             let totalDeposit = 0;
-            let elevatorDeposit = 0;
 
             for (const shaft of currentMine.mineshafts) {
                 const shaftDeposit = shaft.totalDeposit || 0;
-                if (elevatorDeposit + shaftDeposit > elevator.capacity) {
+                if (elevator.totalDeposit + shaftDeposit > elevator.capacity) {
                     // If adding this shaft’s deposit exceeds capacity, take only the remaining space
-                    const remainingCapacity = elevator.capacity - elevatorDeposit;
-                    elevatorDeposit += remainingCapacity;
+                    const remainingCapacity = elevator.capacity - elevator.totalDeposit;
+                    elevator.totalDeposit += remainingCapacity;
                     totalDeposit += remainingCapacity;
                     shaft.totalDeposit = shaftDeposit - remainingCapacity; // Reduce the remaining deposit
                     break;
                 } else {
-                    elevatorDeposit += shaftDeposit;
+                    elevator.totalDeposit += shaftDeposit;
                     totalDeposit += shaftDeposit;
                     shaft.totalDeposit = 0; // Empty the shaft deposit
                 }
             }
 
-            elevator.totalDeposit = (elevator.totalDeposit || 0) + elevatorDeposit;
             await updateUser(user.id, user);
             await initialMessage.edit('Travelling back to extraction base...');
             setTimeout(async () => {
@@ -202,7 +200,7 @@ async function handleElevatorWork(message, user, currentMine) {
                         return message.reply('Warehouse is not initialized.');
                     }
 
-                    currentMine.warehouse.totalDeposit = (currentMine.warehouse.totalDeposit || 0) + elevator.totalDeposit;
+                    currentMine.warehouse.totalDeposit += elevator.totalDeposit;
                     elevator.totalDeposit = 0; // Reset elevator deposit
                     await updateUser(user.id, user);
                     await initialMessage.edit(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
