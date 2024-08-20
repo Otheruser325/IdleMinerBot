@@ -72,7 +72,6 @@ async function handleWarehouseOverview(interaction, user, currentMine) {
         .setColor('#0099ff')
         .setTitle(`Warehouse Overview (Level ${warehouse.level})`)
         .addFields(
-            { name: 'Cost', value: `${numberFormat(warehouseInfo.Cost)} cash`, inline: true },
             { name: 'Number of Workers', value: `${warehouseInfo.NumberOfWorkers}`, inline: true },
             { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
             { name: 'Worker Walking Speed', value: `${warehouseInfo.WorkerWalkingSpeedPerSecond} units/sec`, inline: true },
