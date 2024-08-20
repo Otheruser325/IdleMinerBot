@@ -7,7 +7,7 @@ const warehouseData = require('../../config/warehouseData.json').warehouseData;
 
 module.exports = {
     name: 'work',
-    description: 'Operate your mineshafts or elevator.',
+    description: 'Operate your mineshafts, elevator or warehouse.',
     usage: '<subcommand> [tier]',
     exampleUsage: 'v work shaft 1 | v work elevator | v work warehouse',
     async execute(message, args) {
