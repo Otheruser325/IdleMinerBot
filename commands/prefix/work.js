@@ -2,6 +2,7 @@ const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
 const shaftData = require('../../config/shaftData.json').shaftData;
+const mineFactors = require('../../config/mineFactors.json').mines;
 
 module.exports = {
     name: 'work',
@@ -48,15 +49,17 @@ module.exports = {
         // Update the shaft's last worked on timestamp
         shaft.lastWorkedOn = now;
 
-        // Simulate the mining process
+        // Get shaft info and mine factor
         const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === shaft.level);
+        const mineFactor = mineFactors.find(m => m.MineName === currentMine.MineName)?.Factor || 1;
 
         if (!shaftInfo) {
             return message.reply(`Unable to find data for Shaft Tier ${tier} at Level ${shaft.level}.`);
         }
 
-        // Increase the totalDeposit
-        shaft.totalDeposit = (shaft.totalDeposit || 0) + (shaftInfo.GainPerSecondPerWorker * shaft.numberOfWorkers);
+        // Calculate the total deposit
+        const deposit = shaft.capacityPerWorker * shaft.numberOfWorkers * mineFactor;
+        shaft.totalDeposit = (shaft.totalDeposit || 0) + deposit;
 
         await updateUser(user.id, user);
 
