@@ -1,0 +1,58 @@
+{
+  "elevatorData": [
+    {
+      "Level": 1,
+      "Cost": 400,
+      "Speed": 0.5,
+      "Capacity": 600,
+      "LoadingPerSecond": 150,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 2,
+      "Cost": 480,
+      "Speed": 0.51,
+      "Capacity": 798,
+      "LoadingPerSecond": 199,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 3,
+      "Cost": 576,
+      "Speed": 0.53,
+      "Capacity": 1060,
+      "LoadingPerSecond": 265,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 4,
+      "Cost": 691,
+      "Speed": 0.54,
+      "Capacity": 1410,
+      "LoadingPerSecond": 352,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 5,
+      "Cost": 829,
+      "Speed": 0.56,
+      "Capacity": 1870,
+      "LoadingPerSecond": 469,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    },
+    {
+      "Level": 20,
+      "Cost": 12700,
+      "Speed": 0.78,
+      "Capacity": 270000,
+      "LoadingPerSecond": 67600,
+      "BigUpdate": 0,
+      "SuperCashReward": 0
+    }
+  ]
+}
