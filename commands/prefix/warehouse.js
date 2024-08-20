@@ -28,16 +28,18 @@ module.exports = {
         }
 
         // Ensure warehouse is properly initialized
-        if (!currentMine.warehouse || Object.keys(currentMine.warehouse).length === 0) {
+        if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
             return message.reply('Warehouse is not initialized.');
         }
 
+        const warehouse = currentMine.warehouse[0]; // Accessing the first warehouse
+
         switch (subcommand) {
             case 'overview':
-                await handleWarehouseOverview(message, user, currentMine);
+                await handleWarehouseOverview(message, warehouse, currentMine);
                 break;
             case 'upgrade':
-                await handleWarehouseUpgrade(message, user, currentMine);
+                await handleWarehouseUpgrade(message, user, warehouse, currentMine);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -46,13 +48,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for warehouse
-async function handleWarehouseOverview(message, user, currentMine) {
-    const warehouse = currentMine.warehouse;
-
-    if (!warehouse || !warehouse.level || !warehouse.capacityPerWorker) {
-        return message.reply('Warehouse is not initialized.');
-    }
-
+async function handleWarehouseOverview(message, warehouse, currentMine) {
     const warehouseInfo = warehouseData.find(w => w.Level === warehouse.level);
 
     if (!warehouseInfo) {
@@ -79,13 +75,7 @@ async function handleWarehouseOverview(message, user, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for warehouse
-async function handleWarehouseUpgrade(message, user, currentMine) {
-    const warehouse = currentMine.warehouse;
-
-    if (!warehouse || !warehouse.level) {
-        return message.reply('Warehouse is not initialized.');
-    }
-
+async function handleWarehouseUpgrade(message, user, warehouse, currentMine) {
     const currentLevel = warehouse.level;
     const nextLevelData = warehouseData.find(w => w.Level === currentLevel + 1);
 
