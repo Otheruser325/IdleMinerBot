@@ -1,7 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const shaftData = require('../../data/shaftData'); // Assuming you have a JSON or JS file for shaft data.
+const shaftData = require('../../config/shaftData.json');
 
 module.exports = {
     name: 'shaft',
