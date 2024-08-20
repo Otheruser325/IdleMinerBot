@@ -51,7 +51,7 @@ async function getUser(userId) {
     const userDoc = await userRef.get();
 
     if (userDoc.exists) {
-        return userDoc.data();
+        return { id: userDoc.id, ...userDoc.data() };
     } else {
         return null;
     }
