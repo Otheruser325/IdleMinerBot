@@ -63,10 +63,10 @@ async function handleOverview(message, user, currentMine, args) {
         .setTitle(`Mineshaft Tier ${tier} Overview in ${currentMine.MineName}`)
         .addFields(
             { name: 'Level', value: `${shaft.level}`, inline: true },
-            { name: 'Workers', value: `${shaftInfo.NumberOfWorkers}`, inline: true },
-            { name: 'Gain per Second', value: `${numberFormat(shaftInfo.GainPerSecondPerWorker * shaftInfo.NumberOfWorkers)}`, inline: true },
-            { name: 'Capacity per Worker', value: `${numberFormat(shaftInfo.CapacityPerWorker)}`, inline: true },
-            { name: 'Worker Speed', value: `${shaftInfo.WorkerWalkingSpeedPerSecond} units/sec`, inline: true }
+            { name: 'Workers', value: `${shaft.numberOfWorkers}`, inline: true },
+            { name: 'Gain per Second', value: `${numberFormat(shaft.gainPerSecondPerWorker * shaft.numberOfWorkers)}`, inline: true },
+            { name: 'Capacity per Worker', value: `${numberFormat(shaft.capacityPerWorker)}`, inline: true },
+            { name: 'Worker Speed', value: `${shaft.workerWalkingSpeedPerSecond} units/sec`, inline: true }
         )
         .setTimestamp();
 
@@ -98,7 +98,14 @@ async function handleBuy(message, user, currentMine, args) {
     }
 
     user.cash -= shaftInfo.Cost;
-    currentMine.mineshafts.push({ tier, level: 1 });
+    currentMine.mineshafts.push({
+        tier,
+        level: 1,
+        numberOfWorkers: shaftInfo.NumberOfWorkers,
+        gainPerSecondPerWorker: shaftInfo.GainPerSecondPerWorker,
+        capacityPerWorker: shaftInfo.CapacityPerWorker,
+        workerWalkingSpeedPerSecond: shaftInfo.WorkerWalkingSpeedPerSecond
+    });
 
     await updateUser(user.id, user);
 
@@ -132,6 +139,10 @@ async function handleUpgrade(message, user, currentMine, args) {
 
     user.cash -= nextShaftInfo.Cost;
     shaft.level = nextLevel;
+    shaft.numberOfWorkers = nextShaftInfo.NumberOfWorkers;
+    shaft.gainPerSecondPerWorker = nextShaftInfo.GainPerSecondPerWorker;
+    shaft.capacityPerWorker = nextShaftInfo.CapacityPerWorker;
+    shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
     await updateUser(user.id, user);
 
