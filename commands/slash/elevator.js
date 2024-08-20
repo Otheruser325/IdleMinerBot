@@ -34,7 +34,7 @@ module.exports = {
             return interaction.reply('Current mine data not found.');
         }
 
-        if (!currentMine.elevator) {
+        if (!currentMine.elevator || currentMine.elevator.length === 0) {
             return interaction.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
 
@@ -53,7 +53,7 @@ module.exports = {
 
 // Function to handle the "overview" subcommand for elevator
 async function handleElevatorOverview(interaction, user, currentMine) {
-    const elevator = currentMine.elevator;
+    const elevator = currentMine.elevator[0]; // Access the first elevator object
 
     if (!elevator) {
         return interaction.reply('Elevator is not initialized.');
@@ -85,7 +85,7 @@ async function handleElevatorOverview(interaction, user, currentMine) {
 
 // Function to handle the "upgrade" subcommand for elevator
 async function handleElevatorUpgrade(interaction, user, currentMine) {
-    const elevator = currentMine.elevator;
+    const elevator = currentMine.elevator[0]; // Access the first elevator object
 
     if (!elevator) {
         return interaction.reply('Elevator is not initialized.');
@@ -100,7 +100,7 @@ async function handleElevatorUpgrade(interaction, user, currentMine) {
 
     const mineFactor = getMineFactor(currentMine.MineName);
     const upgradeCost = nextLevelData.UpgradeCost;
-    
+
     if (user.cash < upgradeCost) {
         return interaction.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the elevator.`);
     }
