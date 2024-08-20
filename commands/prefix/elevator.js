@@ -28,16 +28,18 @@ module.exports = {
         }
 
         // Ensure elevator is properly initialized
-        if (!currentMine.elevator || Object.keys(currentMine.elevator).length === 0) {
+        if (!currentMine.elevator || currentMine.elevator.length === 0) {
             return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
 
+        const elevator = currentMine.elevator[0]; // Accessing the first elevator
+
         switch (subcommand) {
             case 'overview':
-                await handleElevatorOverview(message, user, currentMine);
+                await handleElevatorOverview(message, elevator, currentMine);
                 break;
             case 'upgrade':
-                await handleElevatorUpgrade(message, user, currentMine);
+                await handleElevatorUpgrade(message, user, elevator, currentMine);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -46,13 +48,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for elevator
-async function handleElevatorOverview(message, user, currentMine) {
-    const elevator = currentMine.elevator;
-
-    if (!elevator || !elevator.level || !elevator.capacity) {
-        return message.reply('Elevator is not initialized.');
-    }
-
+async function handleElevatorOverview(message, elevator, currentMine) {
     const elevatorInfo = elevatorData.find(e => e.Level === elevator.level);
 
     if (!elevatorInfo) {
@@ -78,13 +74,7 @@ async function handleElevatorOverview(message, user, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for elevator
-async function handleElevatorUpgrade(message, user, currentMine) {
-    const elevator = currentMine.elevator;
-
-    if (!elevator || !elevator.level) {
-        return message.reply('Elevator is not initialized.');
-    }
-
+async function handleElevatorUpgrade(message, user, elevator, currentMine) {
     const currentLevel = elevator.level;
     const nextLevelData = elevatorData.find(e => e.Level === currentLevel + 1);
 
