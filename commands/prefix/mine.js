@@ -1,6 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
+const mineFactors = require('../../data/mineFactors.json');  // Import the mine factors JSON
 
 module.exports = {
     name: 'mine',
@@ -14,55 +15,55 @@ module.exports = {
         }
 
         const subcommand = args[0];
-        const availableMines = [
-            { name: 'Gold Mine', cost: 76800000000000000, incomeFactor: 3 },
-            { name: 'Ruby Mine', cost: 3130000000000000000000000, incomeFactor: 7 },
-            { name: 'Diamond Mine', cost: 261000000000000000000000000000, incomeFactor: 12 },
-            { name: 'Emerald Mine', cost: 745000000000000000000000000000000000, incomeFactor: 20 }
-        ];
 
         switch (subcommand) {
             case 'buy':
-                await handleMineBuy(message, args[1], user, availableMines);
+                await handleMineBuy(message, args[1], user);
                 break;
             case 'visit':
                 await handleMineVisit(message, args[1], user);
                 break;
             case 'manage':
-                await handleMineManage(message, args[1], user, availableMines);
+                await handleMineManage(message, args[1], user);
                 break;
             default:
-                return message.reply(`@${message.author.username}, if you want to use the mine command for either: purchasing new mines, visiting them, or managing them, you'll need to use either \`buy\`, \`visit\`, or \`manage\` respectively.`);
+                return message.reply(`@${message.author.username}, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
         }
     }
 };
 
-async function handleMineBuy(message, mineName, user, availableMines) {
+async function handleMineBuy(message, mineName, user) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to buy.');
     }
 
-    const mine = availableMines.find(m => m.name.toLowerCase() === mineName.toLowerCase());
+    // Find the mine in mineFactors
+    const mine = mineFactors.mines.find(m => m.MineName.toLowerCase() === mineName.toLowerCase());
+
     if (!mine) {
         return message.reply('Invalid mine name. Please specify a valid mine to buy.');
     }
 
-    if (user.currentMine === mine.name) {
-        return message.reply('You are already working in this mine.');
+    const mineExists = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+
+    if (mineExists) {
+        return message.reply('You already own this mine.');
     }
 
-    const userMines = user.mines.map(m => m.mineName);
-    if (userMines.includes(mine.name)) {
-        return message.reply('You have already unlocked this mine.');
+    if (user.cash < mine.Cost) {
+        return message.reply(`You don't have enough Cash to buy the ${mine.MineName}. It costs ${numberFormat(mine.Cost)} Cash.`);
     }
 
-    if (user.cash < mine.cost) {
-        return message.reply(`You don't have enough Cash to buy the ${mine.name}. It costs ${numberFormat(mine.cost)} Cash.`);
-    }
-
-    user.cash -= mine.cost;
-    user.mines.push({ mineName: mine.name, mineshafts: [], elevator: [], warehouse: [] });
-    user.currentMine = mine.name;
+    user.cash -= mine.Cost;
+    user.mines.push({
+        mineName: mine.MineName,
+        MineNumber: mine.MineNumber,
+        Factor: mine.Factor,
+        mineshafts: [],  // Initialize with no mineshafts
+        elevator: [],    // Initialize with default stats
+        warehouse: []    // Initialize with default stats
+    });
+    user.currentMine = mine.MineName;
 
     await updateUser(user.id, {
         cash: user.cash,
@@ -70,7 +71,7 @@ async function handleMineBuy(message, mineName, user, availableMines) {
         currentMine: user.currentMine
     });
 
-    return message.reply(`Congratulations! You have purchased the ${mine.name} and are now working there.`);
+    return message.reply(`Congratulations! You have purchased the ${mine.MineName} and are now working there.`);
 }
 
 async function handleMineVisit(message, mineName, user) {
@@ -82,8 +83,9 @@ async function handleMineVisit(message, mineName, user) {
         return message.reply(`You are already in the ${mineName}.`);
     }
 
-    const userMine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
-    if (!userMine) {
+    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+
+    if (!mine) {
         return message.reply('You do not own this mine.');
     }
 
@@ -91,23 +93,20 @@ async function handleMineVisit(message, mineName, user) {
     return message.reply(`You have successfully moved to the ${mineName}.`);
 }
 
-async function handleMineManage(message, mineName, user, availableMines) {
+async function handleMineManage(message, mineName, user) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to manage.');
     }
 
-    const userMine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
-    if (!userMine) {
+    const mine = user.mines.find(m => m.mineName.toLowerCase() === mineName.toLowerCase());
+    if (!mine) {
         return message.reply('You do not own this mine.');
     }
 
-    const mine = availableMines.find(m => m.name.toLowerCase() === mineName.toLowerCase());
-    const incomeFactor = mine ? mine.incomeFactor : 1;
-
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`${mineName} Management`)
-        .setDescription(`Income Factor: ${incomeFactor}\nNumber of Shafts: ${userMine.mineshafts.length}\nProduction: ${numberFormat(userMine.production || 0)}`)
+        .setTitle(`${mine.mineName} Management`)
+        .setDescription(`Factor: ${mine.Factor}\nNumber of Shafts: ${mine.mineshafts.length}\nProduction: ${numberFormat(mine.production || 0)}`)
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });
