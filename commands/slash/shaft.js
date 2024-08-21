@@ -147,7 +147,7 @@ async function handleBuy(interaction, user, currentMine, tier) {
         totalDeposit: 0 // Initialize totalDeposit for new shaft
     });
 
-    await updateUser(user.id, user);
+    await updateUser(userId, user);
 
     return interaction.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(shaftInfo.Cost)} Cash in the ${currentMine.MineName}.`);
 }
@@ -184,7 +184,7 @@ async function handleUpgrade(interaction, user, currentMine, tier) {
     shaft.capacityPerWorker = adjustedCapacity;
     shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
-    await updateUser(user.id, user);
+    await updateUser(userId, user);
 
     return interaction.reply(`Successfully upgraded Shaft Tier ${tier} to Level ${nextLevel} for ${numberFormat(nextShaftInfo.Cost)} Cash in the ${currentMine.MineName}.`);
 }
