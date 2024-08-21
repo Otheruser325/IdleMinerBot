@@ -51,6 +51,11 @@ module.exports = {
             return interaction.reply('Current mine data not found.');
         }
 
+        // Lazy initialization of mineshafts
+        if (!currentMine.mineshafts) {
+            currentMine.mineshafts = [];
+        }
+
         const tier = interaction.options.getInteger('tier');
 
         switch (subcommand) {
