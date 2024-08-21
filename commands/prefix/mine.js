@@ -74,7 +74,7 @@ async function handleMineBuy(message, mineName, user) {
     });
     user.currentMine = mine.MineName;
 
-    await updateUser(user.id, {
+    await updateUser(userId, {
         cash: user.cash,
         mines: user.mines,
         currentMine: user.currentMine
@@ -98,7 +98,7 @@ async function handleMineVisit(message, mineName, user) {
         return message.reply('You do not own this mine.');
     }
 
-    await updateUser(user.id, { currentMine: mineName });
+    await updateUser(userId, { currentMine: mineName });
     return message.reply(`You have successfully moved to the ${mine.MineName}.`);
 }
 
