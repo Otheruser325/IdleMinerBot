@@ -43,7 +43,7 @@ module.exports = {
                 await handleWarehouseOverview(message, warehouse, currentMine);
                 break;
             case 'upgrade':
-                await handleWarehouseUpgrade(message, user, warehouse, currentMine);
+                await handleWarehouseUpgrade(message, user, warehouse, currentMine, userId);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -78,7 +78,7 @@ async function handleWarehouseOverview(message, warehouse, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for warehouse
-async function handleWarehouseUpgrade(message, user, warehouse, currentMine) {
+async function handleWarehouseUpgrade(message, user, warehouse, currentMine, userId) {
     const currentLevel = warehouse.level;
     const nextLevelData = warehouseData.find(w => w.Level === currentLevel + 1);
 
