@@ -11,19 +11,24 @@ module.exports = {
             subcommand
                 .setName('hire')
                 .setDescription('Hire a new manager.')
-                .addIntegerOption(option =>
-                    option.setName('managerid')
-                        .setDescription('The ID of the manager to hire.')
+                .addStringOption(option =>
+                    option.setName('area')
+                        .setDescription('The area to hire a manager for (elevator, warehouse, shaft).')
                         .setRequired(true)
+                        .addChoices(
+                            { name: 'Elevator', value: 'elevator' },
+                            { name: 'Warehouse', value: 'warehouse' },
+                            { name: 'Shaft', value: 'shaft' }
+                        )
                 )
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('fire')
                 .setDescription('Fire a manager.')
-                .addIntegerOption(option =>
-                    option.setName('managerid')
-                        .setDescription('The ID of the manager to fire.')
+                .addStringOption(option =>
+                    option.setName('identifier')
+                        .setDescription('The ID or name of the manager to fire.')
                         .setRequired(true)
                 )
         )
@@ -121,41 +126,74 @@ module.exports = {
 
 // Function to handle hiring a manager
 async function handleManagerHire(interaction, user, currentMine, userId) {
-    const managerId = interaction.options.getInteger('managerid');
-    const manager = managerData.find(m => m.ManagerID === managerId);
+    const area = interaction.options.getString('area');
+    const managersAvailable = managerData.filter(m => m.Area.toLowerCase() === area);
 
-    if (!manager) {
-        return interaction.reply('Manager not found.');
+    if (managersAvailable.length === 0) {
+        return interaction.reply(`No managers are currently available to hire in the ${area}.`);
     }
 
-    const managerCost = managerCosts.find(c => c.AmountManagersBought === user.managers.length);
+    const numManagersHired = user.managers.filter(m => m.area === area).length;
+    const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
 
     if (!managerCost) {
-        return interaction.reply('Manager cost data not found.');
+        return interaction.reply('Cost data for hiring managers not found.');
     }
 
-    if (user.cash < managerCost.Ground) {
-        return interaction.reply(`You need ${numberFormat(managerCost.Ground)} cash to hire this manager.`);
+    if (user.cash < managerCost[area.charAt(0).toUpperCase() + area.slice(1)]) {
+        return interaction.reply(`You need ${numberFormat(managerCost[area.charAt(0).toUpperCase() + area.slice(1)])} cash to hire a manager in the ${area}.`);
     }
 
-    user.cash -= managerCost.Ground;
+    user.cash -= managerCost[area.charAt(0).toUpperCase() + area.slice(1)];
+
+    // Determine the rarity of the manager based on odds
+    const randomNum = Math.random() * 100;
+    let rarityID = 1; // Default to junior
+
+    if (randomNum <= 60) {
+        rarityID = 1; // Junior
+    } else if (randomNum <= 85) {
+        rarityID = 2; // Senior
+    } else {
+        rarityID = 3; // Executive
+    }
+
+    const availableManagersByRarity = managersAvailable.filter(m => m.RarityID === rarityID);
+    if (availableManagersByRarity.length === 0) {
+        return interaction.reply(`No managers with rarity ${rarityID} available in the ${area}.`);
+    }
+
+    const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
     user.managers.push({
-        id: manager.ManagerID,
-        name: manager.Name,
-        area: null // Area will be assigned later
+        id: newManager.ManagerID,
+        name: newManager.Name,
+        area: area
     });
 
     await updateUser(userId, user);
-    await interaction.reply(`Successfully hired ${manager.Name}.`);
+    await interaction.reply(`Successfully hired ${newManager.Name} (${newManager.ManagerID}) for the ${area}.`);
 }
 
 // Function to handle firing a manager
 async function handleManagerFire(interaction, user, currentMine, userId) {
-    const managerId = interaction.options.getInteger('managerid');
-    const managerIndex = user.managers.findIndex(m => m.id === managerId);
+    const identifier = interaction.options.getString('identifier');
+    let managerIndex;
+
+    if (!isNaN(identifier)) {
+        // Identifier is a manager ID
+        managerIndex = user.managers.findIndex(m => m.id === parseInt(identifier));
+    } else {
+        // Identifier is a manager name
+        managerIndex = user.managers.findIndex(m => m.name.toLowerCase() === identifier.toLowerCase());
+    }
 
     if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
+    }
+
+    const manager = user.managers[managerIndex];
+    if (manager.area) {
+        return interaction.reply('You cannot fire a manager who is currently assigned to an area. Use `/manager remove` to remove them from their area first.');
     }
 
     user.managers.splice(managerIndex, 1);
@@ -173,13 +211,13 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         return interaction.reply('Manager not found.');
     }
 
-    if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
-        return interaction.reply('Invalid area.');
+    if (manager.area) {
+        return interaction.reply('Manager is already assigned to an area.');
     }
 
     manager.area = area;
     await updateUser(userId, user);
-    await interaction.reply(`Successfully assigned the manager to the ${area}.`);
+    await interaction.reply(`Successfully assigned ${manager.name} to the ${area}.`);
 }
 
 // Function to handle removing a manager
@@ -198,7 +236,7 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
 
     manager.area = null;
     await updateUser(userId, user);
-    await interaction.reply(`Successfully removed the manager from the ${area}.`);
+    await interaction.reply(`Successfully removed ${manager.name} from the ${area}.`);
 }
 
 // Function to handle manager overview
