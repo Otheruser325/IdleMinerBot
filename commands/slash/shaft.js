@@ -60,13 +60,13 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleOverview(interaction, user, currentMine, tier);
+                await handleOverview(interaction, user, currentMine, tier, userId);
                 break;
             case 'buy':
-                await handleBuy(interaction, user, currentMine, tier);
+                await handleBuy(interaction, user, currentMine, tier, userId);
                 break;
             case 'upgrade':
-                await handleUpgrade(interaction, user, currentMine, tier);
+                await handleUpgrade(interaction, user, currentMine, tier, userId);
                 break;
             default:
                 return interaction.reply('Invalid subcommand. Use `overview`, `buy`, or `upgrade`.');
@@ -75,7 +75,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand
-async function handleOverview(interaction, user, currentMine, tier) {
+async function handleOverview(interaction, user, currentMine, tier, userId) {
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
@@ -114,7 +114,7 @@ async function handleOverview(interaction, user, currentMine, tier) {
 }
 
 // Function to handle the "buy" subcommand
-async function handleBuy(interaction, user, currentMine, tier) {
+async function handleBuy(interaction, user, currentMine, tier, userId) {
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
@@ -153,7 +153,7 @@ async function handleBuy(interaction, user, currentMine, tier) {
 }
 
 // Function to handle the "upgrade" subcommand
-async function handleUpgrade(interaction, user, currentMine, tier) {
+async function handleUpgrade(interaction, user, currentMine, tier, userId) {
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
