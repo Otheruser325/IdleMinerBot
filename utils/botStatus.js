@@ -4,9 +4,10 @@ const { ActivityType } = require('discord.js');
 async function updateBotStatus(client) {
     try {
         // Fetch all users
-        const users = await getAllUsers();
+        const usersSnapshot = await db.ref('users').once('value');
+        const users = usersSnapshot.val() || [];
         // Get the user count
-        const userCount = users.length;
+        const userCount = Array.isArray(users) ? users.length : 0;
         // Update the bot's status
         await client.user.setActivity(`${userCount} users are mining!`, { type: ActivityType.Playing });
         console.log(`Bot status updated: ${userCount} users are mining!`);
