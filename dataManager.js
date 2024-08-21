@@ -6,16 +6,16 @@ admin.initializeApp({
     databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
 });
 
-const db = admin.firestore();
+const db = admin.database(); // Use .database() for Realtime Database
 
 // User-related functions
 
-// Initialize a new user in Firestore
+// Initialize a new user in Realtime Database
 async function initializeUser(userId, username) {
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
+    const userRef = db.ref(`users/${userId}`);
+    const snapshot = await userRef.once('value');
 
-    if (!userDoc.exists) {
+    if (!snapshot.exists()) {
         await userRef.set({
             username: username || '',
             cash: 10,
@@ -45,85 +45,71 @@ async function initializeUser(userId, username) {
     }
 }
 
-// Get user by ID from Firestore
+// Get user by ID from Realtime Database
 async function getUser(userId) {
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-
-    if (userDoc.exists) {
-        return { id: userDoc.id, ...userDoc.data() };
-    } else {
-        return null;
-    }
+    const userRef = db.ref(`users/${userId}`);
+    const snapshot = await userRef.once('value');
+    return snapshot.exists() ? snapshot.val() : null;
 }
 
-// Update user data in Firestore
+// Update user data in Realtime Database
 async function updateUser(userId, updates) {
-    const userRef = db.collection('users').doc(userId);
-    const sanitizedUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, value]) => value !== undefined)
-    );
-    await userRef.update(sanitizedUpdates);
+    const userRef = db.ref(`users/${userId}`);
+    await userRef.update(updates);
 }
 
-// Get all users from Firestore
+// Get all users from Realtime Database
 async function getAllUsers() {
-    const snapshot = await db.collection('users').get();
-    return snapshot.docs.map(doc => doc.data());
+    const usersRef = db.ref('users');
+    const snapshot = await usersRef.once('value');
+    return snapshot.exists() ? snapshot.val() : {};
 }
 
 // Guild-related functions
 
-// Initialize a new guild in Firestore
+// Initialize a new guild in Realtime Database
 async function initializeGuild(guildId, guildName, ownerId) {
-    const guildRef = db.collection('guilds').doc(guildId);
-    const guildDoc = await guildRef.get();
+    const guildRef = db.ref(`guilds/${guildId}`);
+    const snapshot = await guildRef.once('value');
 
-    if (!guildDoc.exists) {
+    if (!snapshot.exists()) {
         await guildRef.set({
             name: guildName || '',
             ownerId: ownerId || '',
-            members: []  // Ensure members is initialized as an empty array
+            members: [] // Ensure members is initialized as an empty array
         });
     }
 }
 
-// Get guild by ID from Firestore
+// Get guild by ID from Realtime Database
 async function getGuild(guildId) {
-    const guildRef = db.collection('guilds').doc(guildId);
-    const guildDoc = await guildRef.get();
-
-    if (guildDoc.exists) {
-        return guildDoc.data();
-    } else {
-        return null;
-    }
+    const guildRef = db.ref(`guilds/${guildId}`);
+    const snapshot = await guildRef.once('value');
+    return snapshot.exists() ? snapshot.val() : null;
 }
 
-// Update guild data in Firestore
+// Update guild data in Realtime Database
 async function updateGuild(guildId, updates) {
-    const guildRef = db.collection('guilds').doc(guildId);
-    const sanitizedUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, value]) => value !== undefined)
-    );
-    await guildRef.update(sanitizedUpdates);
+    const guildRef = db.ref(`guilds/${guildId}`);
+    await guildRef.update(updates);
 }
 
-// Get all guilds from Firestore
+// Get all guilds from Realtime Database
 async function getAllGuilds() {
-    const snapshot = await db.collection('guilds').get();
-    return snapshot.docs.map(doc => doc.data());
+    const guildsRef = db.ref('guilds');
+    const snapshot = await guildsRef.once('value');
+    return snapshot.exists() ? snapshot.val() : {};
 }
 
 // Guild-user related functions
 
-// Add or update a user in a specific guild in Firestore
+// Add or update a user in a specific guild in Realtime Database
 async function addUserToGuild(guildId, userId) {
-    const guildRef = db.collection('guilds').doc(guildId);
-    const guildDoc = await guildRef.get();
+    const guildRef = db.ref(`guilds/${guildId}`);
+    const snapshot = await guildRef.once('value');
 
-    if (guildDoc.exists) {
-        const guildData = guildDoc.data();
+    if (snapshot.exists()) {
+        const guildData = snapshot.val();
         if (!guildData.members.includes(userId)) {
             guildData.members.push(userId);
             await guildRef.update({ members: guildData.members });
@@ -131,22 +117,17 @@ async function addUserToGuild(guildId, userId) {
     }
 }
 
-// Get a user from a specific guild from Firestore
+// Get a user from a specific guild from Realtime Database
 async function getUserInGuild(guildId, userId) {
-    const guildRef = db.collection('guilds').doc(guildId);
-    const guildDoc = await guildRef.get();
+    const guildRef = db.ref(`guilds/${guildId}`);
+    const snapshot = await guildRef.once('value');
 
-    if (guildDoc.exists) {
-        const guildData = guildDoc.data();
+    if (snapshot.exists()) {
+        const guildData = snapshot.val();
         if (guildData.members && guildData.members.includes(userId)) {
-            const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-
-            if (userDoc.exists) {
-                return userDoc.data();
-            } else {
-                return null; // User not found
-            }
+            const userRef = db.ref(`users/${userId}`);
+            const userSnapshot = await userRef.once('value');
+            return userSnapshot.exists() ? userSnapshot.val() : null; // User not found
         } else {
             return null; // User not a member of the guild
         }
@@ -155,15 +136,13 @@ async function getUserInGuild(guildId, userId) {
     }
 }
 
-// Get users in a specific guild from Firestore
+// Get users in a specific guild from Realtime Database
 async function getUsersInGuild(guildId) {
     const guild = await getGuild(guildId);
-
-    if (guild) {
-        const userRefs = guild.members.map(userId => db.collection('users').doc(userId));
-        const usersSnapshot = await Promise.all(userRefs.map(ref => ref.get()));
-
-        return usersSnapshot.map(userDoc => userDoc.exists ? userDoc.data() : null).filter(Boolean);
+    if (guild && guild.members) {
+        const userPromises = guild.members.map(userId => getUser(userId));
+        const users = await Promise.all(userPromises);
+        return users.filter(user => user); // Filter out null users
     } else {
         return [];
     }
