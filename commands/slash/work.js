@@ -204,7 +204,7 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
                 }
             }
 
-            await updateUser(user.id, user);
+            await updateUser(userId, user);
             await interaction.editReply('Travelling back to extraction base...');
             setTimeout(async () => {
                 await interaction.editReply('Importing minerals into the deposit tank...');
