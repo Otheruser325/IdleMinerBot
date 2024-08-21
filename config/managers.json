@@ -1,0 +1,18 @@
+{
+  "managers": [
+    {
+      "ManagerID": 1,
+      "Name": "Benjamin Booth",
+      "RarityID": 1,
+      "EffectID": 1,
+      "Area": "Warehouse",
+      "DelayPerClickInSeconds": 0.4,
+      "ValueX": 3,
+      "ActiveTime": 60,
+      "Cooldown": 300,
+      "AvailableThroughPurchase": 1,
+      "RatingReward": 0,
+      "ManagerBuyOrder": 0
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "managerCosts": [
+    { "AmountManagersBought": 0, "Ground": 100, "Elevator": 100, "Corridor": 100 },
+    { "AmountManagersBought": 1, "Ground": 500, "Elevator": 500, "Corridor": 200 },
+    { "AmountManagersBought": 2, "Ground": 2500, "Elevator": 2500, "Corridor": 400 },
+    { "AmountManagersBought": 3, "Ground": 12500, "Elevator": 12500, "Corridor": 800 },
+    { "AmountManagersBought": 4, "Ground": 100000, "Elevator": 100000, "Corridor": 3200 },
+    { "AmountManagersBought": 5, "Ground": 800000, "Elevator": 800000, "Corridor": 14400 },
+    { "AmountManagersBought": 6, "Ground": 6400000, "Elevator": 6400000, "Corridor": 64800 },
+    { "AmountManagersBought": 7, "Ground": 51200000, "Elevator": 51200000, "Corridor": 291000 },
+    { "AmountManagersBought": 8, "Ground": 409000000, "Elevator": 409000000, "Corridor": 1310000 },
+    { "AmountManagersBought": 9, "Ground": 3270000000, "Elevator": 3270000000, "Corridor": 5900000 },
+    { "AmountManagersBought": 10, "Ground": 26200000000, "Elevator": 26200000000, "Corridor": 26500000 }
+  ]
+}
