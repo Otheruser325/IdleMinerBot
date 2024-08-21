@@ -27,9 +27,13 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
-        // Ensure elevator is properly initialized
-        if (!currentMine.elevator || currentMine.elevator.length === 0) {
-            return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
+        // Lazy initialization of elevator
+        if (!currentMine.elevator) {
+            currentMine.elevator = [];
+        }
+
+        if (currentMine.elevator.length === 0) {
+            return interaction.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
 
         const elevator = currentMine.elevator[0]; // Accessing the first elevator
