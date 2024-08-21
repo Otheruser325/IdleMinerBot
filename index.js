@@ -211,11 +211,11 @@ async function handleManagerWork(userId) {
     }
 
     // Ensure user properties are defined
-    if (!user.mines) user.mines = [];
-    if (!user.cash) user.cash = 0;
-    if (!user.idleCash) user.idleCash = 0;
-    if (!user.lastDaily) user.lastDaily = Date.now();
-    if (!user.currentMine) user.currentMine = user.mines.length > 0 ? user.mines[0].MineName : null;
+    user.mines = user.mines || [];
+    user.cash = user.cash || 0;
+    user.idleCash = user.idleCash || 0;
+    user.lastDaily = user.lastDaily || Date.now();
+    user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
     const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
 
@@ -224,18 +224,21 @@ async function handleManagerWork(userId) {
         return;
     }
 
+    // Ensure managers are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
+
     // Function to handle cash production
     function produceCash(isIdle = false) {
-        let productionRate = currentMine.Factor; // Base production rate based on mine factor
+        let productionRate = currentMine.Factor || 1; // Base production rate based on mine factor
 
         // Ensure managers are properly defined
-        if (!currentMine.managers) {
-            currentMine.managers = {
-                shaft: [],
-                elevator: [],
-                warehouse: []
-            };
-        }
+        if (!currentMine.managers.shaft) currentMine.managers.shaft = [];
+        if (!currentMine.managers.elevator) currentMine.managers.elevator = [];
+        if (!currentMine.managers.warehouse) currentMine.managers.warehouse = [];
 
         // Check if all managers are assigned
         const shaftManager = currentMine.managers.shaft.some(m => m.assigned);
