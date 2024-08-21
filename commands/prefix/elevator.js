@@ -40,7 +40,7 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleElevatorOverview(message, elevator, currentMine);
+                await handleElevatorOverview(message, elevator, currentMine, userId);
                 break;
             case 'upgrade':
                 await handleElevatorUpgrade(message, user, elevator, currentMine, userId);
@@ -52,7 +52,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for elevator
-async function handleElevatorOverview(message, elevator, currentMine) {
+async function handleElevatorOverview(message, elevator, currentMine, userId) {
     const elevatorInfo = elevatorData.find(e => e.Level === elevator.level);
 
     if (!elevatorInfo) {
