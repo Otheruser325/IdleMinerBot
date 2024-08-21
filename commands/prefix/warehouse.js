@@ -40,7 +40,7 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleWarehouseOverview(message, warehouse, currentMine);
+                await handleWarehouseOverview(message, warehouse, currentMine, userId);
                 break;
             case 'upgrade':
                 await handleWarehouseUpgrade(message, user, warehouse, currentMine, userId);
@@ -52,7 +52,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for warehouse
-async function handleWarehouseOverview(message, warehouse, currentMine) {
+async function handleWarehouseOverview(message, warehouse, currentMine, userId) {
     const warehouseInfo = warehouseData.find(w => w.Level === warehouse.level);
 
     if (!warehouseInfo) {
