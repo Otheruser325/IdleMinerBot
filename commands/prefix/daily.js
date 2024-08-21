@@ -17,10 +17,14 @@ module.exports = {
         const currentTime = Date.now();
         const cooldown = 24 * 60 * 60 * 1000; 
 
+        if (user.lastDaily === undefined) user.lastDaily = 0;
         if (currentTime - user.lastDaily < cooldown) {
             const remainingTime = formatTime(user.lastDaily + cooldown - currentTime);
             return message.reply(`You can claim your daily again in ${remainingTime}.`);
         }
+
+        if (user.streak === undefined) user.streak = 0;
+        if (user.superCash === undefined) user.superCash = 0;
 
         const cash = calculateDailyReward(user);
         await updateUser(userId, {
