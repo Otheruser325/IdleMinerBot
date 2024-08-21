@@ -44,10 +44,10 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleWarehouseOverview(interaction, user, currentMine);
+                await handleWarehouseOverview(interaction, user, currentMine, userId);
                 break;
             case 'upgrade':
-                await handleWarehouseUpgrade(interaction, user, currentMine);
+                await handleWarehouseUpgrade(interaction, user, currentMine, userId);
                 break;
             default:
                 return interaction.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -56,7 +56,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for warehouse
-async function handleWarehouseOverview(interaction, user, currentMine) {
+async function handleWarehouseOverview(interaction, user, currentMine, userId) {
     const warehouse = currentMine.warehouse[0]; // Access the first warehouse object
 
     if (!warehouse) {
@@ -88,7 +88,7 @@ async function handleWarehouseOverview(interaction, user, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for warehouse
-async function handleWarehouseUpgrade(interaction, user, currentMine) {
+async function handleWarehouseUpgrade(interaction, user, currentMine, userId) {
     const warehouse = currentMine.warehouse[0]; // Access the first warehouse object
 
     if (!warehouse) {
