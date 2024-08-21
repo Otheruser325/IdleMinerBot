@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
+const admin = require('firebase-admin');
+const db = admin.database();
 
 // Load environment variables from .env file
 dotenv.config();
@@ -60,7 +62,7 @@ async function loadAssignedGuilds(client) {
 
         for (const [guildId, guild] of guildsCache) {
             // Fetch or initialize the guild's data
-            let guildData = await getGuild(guildId);
+            let guildData = (await db.ref(`guilds/${guildId}`).once('value')).val();
             if (!guildData) {
                 guildData = {
                     id: guildId,
@@ -69,7 +71,7 @@ async function loadAssignedGuilds(client) {
                     members: [], // Initialize empty members array
                     users: {} // Start with an empty users object
                 };
-                await initializeGuild(guildId, guildData);
+                await db.ref(`guilds/${guildId}`).set(guildData);
             } else {
                 guildData.memberCount = guild.memberCount;
             }
@@ -100,7 +102,7 @@ async function loadAssignedGuilds(client) {
                     if (member.user.bot) continue;
 
                     // Only add the user if they exist in the users collection
-                    const userData = await getUser(userId);
+                    const userData = (await db.ref(`users/${userId}`).once('value')).val();
                     if (userData) {
                         // Avoid adding duplicate users
                         if (!guildData.members.some(m => m.id === userId)) {
@@ -115,7 +117,7 @@ async function loadAssignedGuilds(client) {
             } while (nextBatch.size === 1000);
 
             // Update and save the guild data
-            await updateGuild(guildId, guildData);
+            await db.ref(`guilds/${guildId}`).set(guildData);
         }
     } catch (error) {
         console.error('Failed to load and update guilds:', error);
@@ -144,7 +146,7 @@ const updateGuildData = async (client, guildId) => {
         }
 
         // Get or initialize guild data
-        let existingGuild = await getGuild(guildId);
+        let existingGuild = (await db.ref(`guilds/${guildId}`).once('value')).val();
         if (!existingGuild) {
             existingGuild = {
                 id: guildId,
@@ -153,7 +155,7 @@ const updateGuildData = async (client, guildId) => {
                 members: [],
                 users: {} // Initialize with an empty users object
             };
-            await initializeGuild(guildId, existingGuild);
+            await db.ref(`guilds/${guildId}`).set(existingGuild);
         } else {
             existingGuild.memberCount = guild.memberCount;
         }
@@ -167,10 +169,10 @@ const updateGuildData = async (client, guildId) => {
             const userId = user.id;
 
             // Skip bot users and unauthorized users
-            if (user.bot || !(await getUser(userId))) continue;
+            if (user.bot || !(await db.ref(`users/${userId}`).once('value')).val()) continue;
 
-            // Fetch user data from Firestore
-            const userData = await getUser(userId);
+            // Fetch user data from Realtime Database
+            const userData = (await db.ref(`users/${userId}`).once('value')).val();
             if (userData) {
                 // Update the guild's users object with authorized user data
                 existingGuild.users[userId] = userData;
@@ -184,7 +186,7 @@ const updateGuildData = async (client, guildId) => {
         }
 
         // Update and save guild data
-        await updateGuild(guildId, existingGuild);
+        await db.ref(`guilds/${guildId}`).set(existingGuild);
     } catch (error) {
         console.error(`Error updating guild data for ${guildId}:`, error);
     }
