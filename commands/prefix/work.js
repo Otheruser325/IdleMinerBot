@@ -191,7 +191,7 @@ async function handleElevatorWork(message, user, currentMine, userId) {
                 }
             }
 
-            await updateUser(user.id, user);
+            await updateUser(userId, user);
             await initialMessage.edit('Travelling back to extraction base...');
             setTimeout(async () => {
                 await initialMessage.edit('Importing minerals into the deposit tank...');
@@ -243,7 +243,7 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
             const totalDeposit = warehouse.totalDeposit || 0;
             const cashReward = totalDeposit;
             warehouse.totalDeposit = 0;
-            await updateUser(user.id, user);
+            await updateUser(userId, user);
             await initialMessage.edit('Returning to the warehouse with extracted goods...');
             setTimeout(async () => {
                 await initialMessage.edit('Selling minerals...');
