@@ -103,7 +103,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
                 setTimeout(async () => {
                     const deposit = shaft.capacityPerWorker * shaft.numberOfWorkers;
                     shaft.totalDeposit = (shaft.totalDeposit || 0) + deposit;
-                    await updateUser(user.id, user);
+                    await updateUser(userId, user);
                     await initialMessage.edit(`Successfully mined minerals with Shaft Tier ${tier}. Total deposit now: ${numberFormat(shaft.totalDeposit)}`);
                     resolve();
                 }, walkingTime);
@@ -136,7 +136,7 @@ async function handleShaftWork(message, user, currentMine, tier) {
             totalDeposit: 0
         }];
 
-        await updateUser(user.id, user);
+        await updateUser(userId, user);
         await message.reply('Elevator and Warehouse have been initialized in your mine. You can now use them to collect and manage minerals.');
     }
 
@@ -202,7 +202,7 @@ async function handleElevatorWork(message, user, currentMine) {
 
                     currentMine.warehouse[0].totalDeposit += elevator.totalDeposit;
                     elevator.totalDeposit = 0; // Reset elevator deposit
-                    await updateUser(user.id, user);
+                    await updateUser(userId, user);
                     await initialMessage.edit(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
                 }, LOADING_TIME);
             }, TRAVEL_TIME);
@@ -249,7 +249,7 @@ async function handleWarehouseWork(message, user, currentMine) {
                 await initialMessage.edit('Selling minerals...');
                 setTimeout(async () => {
                     user.cash += cashReward;
-                    await updateUser(user.id, user);
+                    await updateUser(userId, user);
                     await initialMessage.edit(`Successfully sold minerals worth ${numberFormat(cashReward)}.`);
                 }, WALKING_TIME);
             }, WALKING_TIME);
