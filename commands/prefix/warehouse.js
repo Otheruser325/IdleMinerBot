@@ -99,6 +99,6 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine) {
     warehouse.workerWalkingSpeedPerSecond = nextLevelData.WorkerWalkingSpeedPerSecond;
     warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
-    await updateUser(user.id, user);
+    await updateUser(userId, user);
     await message.reply(`Warehouse upgraded to Level ${warehouse.level}.`);
 }
