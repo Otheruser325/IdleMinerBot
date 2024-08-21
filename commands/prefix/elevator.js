@@ -99,6 +99,6 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine) {
     elevator.capacity = nextLevelData.Capacity * mineFactor;
     elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
-    await updateUser(user.id, user);
+    await updateUser(userId, user);
     await message.reply(`Elevator upgraded to Level ${elevator.level}.`);
 }
