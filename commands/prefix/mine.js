@@ -27,13 +27,13 @@ module.exports = {
 
         switch (subcommand) {
             case 'buy':
-                await handleMineBuy(message, mineName, user);
+                await handleMineBuy(message, mineName, user, userId);
                 break;
             case 'visit':
-                await handleMineVisit(message, mineName, user);
+                await handleMineVisit(message, mineName, user, userId);
                 break;
             case 'manage':
-                await handleMineManage(message, mineName, user);
+                await handleMineManage(message, mineName, user, userId);
                 break;
             default:
                 return message.reply(`@${message.author.username}, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
@@ -41,7 +41,7 @@ module.exports = {
     }
 };
 
-async function handleMineBuy(message, mineName, user) {
+async function handleMineBuy(message, mineName, user, userId) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to buy.');
     }
@@ -83,7 +83,7 @@ async function handleMineBuy(message, mineName, user) {
     return message.reply(`Congratulations! You have purchased the ${mine.MineName} and are now working there.`);
 }
 
-async function handleMineVisit(message, mineName, user) {
+async function handleMineVisit(message, mineName, user, userId) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to visit.');
     }
@@ -102,7 +102,7 @@ async function handleMineVisit(message, mineName, user) {
     return message.reply(`You have successfully moved to the ${mine.MineName}.`);
 }
 
-async function handleMineManage(message, mineName, user) {
+async function handleMineManage(message, mineName, user, userId) {
     if (!mineName) {
         return message.reply('Please specify the name of the mine you want to manage.');
     }
