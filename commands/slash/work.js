@@ -256,7 +256,7 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
             const totalDeposit = warehouse.totalDeposit || 0;
             const cashReward = totalDeposit;
             warehouse.totalDeposit = 0;
-            await updateUser(user.id, user);
+            await updateUser(userId, user);
             await interaction.editReply('Returning to the warehouse with extracted goods...');
             setTimeout(async () => {
                 await interaction.editReply('Selling minerals...');
