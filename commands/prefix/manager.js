@@ -77,7 +77,13 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         return message.reply('Cost data for hiring managers not found.');
     }
 
-    const cost = managerCost[area.charAt(0).toUpperCase() + area.slice(1)];
+    // Get the cost based on the area
+    const areaCostKey = area.charAt(0).toUpperCase() + area.slice(1);
+    const cost = managerCost[areaCostKey];
+    if (cost === undefined) {
+        return message.reply(`Cost data for area "${area}" not found.`);
+    }
+
     if (user.cash < cost) {
         return message.reply(`You need ${numberFormat(cost)} cash to hire a manager in the ${area}.`);
     }
