@@ -294,9 +294,9 @@ client.once('ready', async () => {
 
     // Iterate through all users to start manager work
     const users = await getAllUsers(); // Assuming getAllUsers fetches all users from the database
-    for (const user of users) {
-        handleManagerWork(user.id);
-    }
+    Object.keys(users).forEach(async (userId) => {
+        await handleManagerWork(userId);
+    });
 });
 
 client.on('messageCreate', async message => {
