@@ -1,5 +1,6 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const numberFormat = require('../../utils/numberFormat');
 const managerData = require('../../config/managers.json').managers;
 const managerCosts = require('../../config/managerCosts.json').managerCosts;
 
