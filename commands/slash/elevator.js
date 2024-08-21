@@ -80,8 +80,7 @@ async function handleElevatorOverview(interaction, user, currentMine) {
         .addFields(
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
             { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
-            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
-            { name: 'Total Deposit', value: `${numberFormat(elevatorInfo.totalDeposit)}`, inline: true }
+            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true }
         )
         .setTimestamp();
 
@@ -116,6 +115,6 @@ async function handleElevatorUpgrade(interaction, user, currentMine) {
     elevator.capacity = nextLevelData.Capacity * mineFactor; // Apply mine factor
     elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
 
-    await updateUser(user.id, user);
+    await updateUser(userId, user);
     await interaction.reply(`Elevator upgraded to Level ${elevator.level}.`);
 }
