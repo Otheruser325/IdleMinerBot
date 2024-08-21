@@ -103,6 +103,9 @@ module.exports = {
             return interaction.reply('Current mine data not found.');
         }
 
+        // Initialize managers if they are not present
+        currentMine.managers = currentMine.managers || { shaft: [], elevator: [], warehouse: [] };
+
         // Initialize areas if they are not present
         currentMine.mineshafts = currentMine.mineshafts || [];
         currentMine.elevator = currentMine.elevator || [];
@@ -139,13 +142,11 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
         return interaction.reply(`No managers available for the ${area}.`);
     }
 
-    // Ensure currentMine's area array is initialized
-    if (!currentMine[area]) {
-        currentMine[area] = [];
-    }
+    // Ensure managers for the area are initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Calculate the number of managers currently hired in the specified area
-    const numManagersHired = currentMine[area].filter(m => m.assigned).length;
+    const numManagersHired = currentMine.managers[area].filter(m => m.assigned).length;
 
     // Determine the cost of hiring based on the number of managers
     const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
@@ -153,7 +154,13 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
         return interaction.reply('Cost data for hiring managers not found.');
     }
 
-    const cost = managerCost[area.charAt(0).toUpperCase() + area.slice(1)];
+    // Get the cost based on the area
+    const areaCostKey = area.charAt(0).toUpperCase() + area.slice(1);
+    const cost = managerCost[areaCostKey];
+    if (cost === undefined || isNaN(cost)) {
+        return interaction.reply(`Cost data for area "${area}" not found.`);
+    }
+
     if (user.cash < cost) {
         return interaction.reply(`You need ${numberFormat(cost)} cash to hire a manager in the ${area}.`);
     }
@@ -179,7 +186,7 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
     }
 
     const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
-    currentMine[area].push({
+    currentMine.managers[area].push({
         id: newManager.ManagerID,
         name: newManager.Name,
         assigned: false
@@ -201,7 +208,7 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     let managerIndex;
 
     // Check in all areas
-    const allManagers = [...currentMine.mineshafts, ...currentMine.elevator, ...currentMine.warehouse];
+    const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
     managerIndex = allManagers.findIndex(m => m.id === parseInt(identifier) || m.name.toLowerCase() === identifier.toLowerCase());
 
     if (managerIndex === -1) {
@@ -214,9 +221,9 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     }
 
     // Remove manager from all areas
-    currentMine.mineshafts = currentMine.mineshafts.filter(m => m.id !== manager.id);
-    currentMine.elevator = currentMine.elevator.filter(m => m.id !== manager.id);
-    currentMine.warehouse = currentMine.warehouse.filter(m => m.id !== manager.id);
+    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
+    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
+    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
 
     await updateUser(userId, user);
     await interaction.reply('Successfully fired the manager.');
@@ -227,32 +234,24 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     const managerId = interaction.options.getInteger('managerid');
     const area = interaction.options.getString('area').toLowerCase();
 
-    // Check if area is valid
-    if (!['mineshafts', 'elevator', 'warehouse'].includes(area)) {
-        return interaction.reply('Invalid area specified.');
+    if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
+        return interaction.reply('Invalid area.');
     }
 
-    const manager = currentMine.mineshafts.concat(currentMine.elevator, currentMine.warehouse)
-        .find(m => m.id === managerId);
-
-    if (!manager) {
+    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
+    if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
     }
 
-    if (manager.assigned) {
-        return interaction.reply('Manager is already assigned to another area.');
+    // Check if the manager is already assigned
+    if (currentMine.managers[area][managerIndex].assigned) {
+        return interaction.reply('This manager is already assigned.');
     }
 
-    // Remove manager from all other areas
-    currentMine.mineshafts = currentMine.mineshafts.filter(m => m.id !== manager.id);
-    currentMine.elevator = currentMine.elevator.filter(m => m.id !== manager.id);
-    currentMine.warehouse = currentMine.warehouse.filter(m => m.id !== manager.id);
-
-    // Assign manager to the new area
-    currentMine[area].push({ ...manager, assigned: true });
-
+    // Assign the manager
+    currentMine.managers[area][managerIndex].assigned = true;
     await updateUser(userId, user);
-    await interaction.reply(`Successfully assigned manager to the ${area}.`);
+    await interaction.reply(`Successfully assigned the manager to the ${area}.`);
 }
 
 // Function to handle removing a manager
@@ -260,43 +259,42 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
     const managerId = interaction.options.getInteger('managerid');
     const area = interaction.options.getString('area').toLowerCase();
 
-    // Check if area is valid
-    if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
-        return interaction.reply('Invalid area specified.');
+    if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
+        return interaction.reply('Invalid area.');
     }
 
-    const manager = currentMine[area].find(m => m.id === managerId);
-    if (!manager) {
-        return interaction.reply('Manager not found in this area.');
+    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
+    if (managerIndex === -1) {
+        return interaction.reply('Manager not found.');
     }
 
-    if (!manager.assigned) {
-        return interaction.reply('Manager is not assigned to this area.');
+    // Check if the manager is not assigned
+    if (!currentMine.managers[area][managerIndex].assigned) {
+        return interaction.reply('This manager is not currently assigned.');
     }
 
-    // Remove manager from the area
-    currentMine[area] = currentMine[area].filter(m => m.id !== managerId);
-
-    // Add manager back to available managers
-    currentMine.mineshafts.push({ ...manager, assigned: false });
-
+    // Remove the manager from the area
+    currentMine.managers[area][managerIndex].assigned = false;
     await updateUser(userId, user);
-    await interaction.reply('Successfully removed manager from the area.');
+    await interaction.reply(`Successfully removed the manager from the ${area}.`);
 }
 
-// Function to handle overview of managers in an area
+// Function to handle viewing all managers in an area
 async function handleManagerOverview(interaction, user, currentMine) {
     const area = interaction.options.getString('area').toLowerCase();
-    const areaManagers = currentMine[area] || [];
 
-    if (areaManagers.length === 0) {
-        return interaction.reply(`No managers assigned to the ${area}.`);
+    if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
+        return interaction.reply('Invalid area.');
     }
 
-    const managerList = areaManagers.map(m => `ID: ${m.id}, Name: ${m.name}, Assigned: ${m.assigned ? 'Yes' : 'No'}`).join('\n');
+    const managersInArea = currentMine.managers[area];
+    if (managersInArea.length === 0) {
+        return interaction.reply(`There are no managers currently in the ${area}.`);
+    }
+
     const embed = new EmbedBuilder()
-        .setTitle(`Managers in ${area.charAt(0).toUpperCase() + area.slice(1)}`)
-        .setDescription(managerList)
+        .setTitle(`Managers in the ${area.charAt(0).toUpperCase() + area.slice(1)}`)
+        .setDescription(managersInArea.map(m => `ID: ${m.id}, Name: ${m.name}, Assigned: ${m.assigned ? 'Yes' : 'No'}`).join('\n'))
         .setColor('#0099ff');
 
     await interaction.reply({ embeds: [embed] });
