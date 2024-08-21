@@ -45,10 +45,10 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleElevatorOverview(interaction, user, currentMine);
+                await handleElevatorOverview(interaction, user, currentMine, userId);
                 break;
             case 'upgrade':
-                await handleElevatorUpgrade(interaction, user, currentMine);
+                await handleElevatorUpgrade(interaction, user, currentMine, userId);
                 break;
             default:
                 return interaction.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -57,7 +57,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for elevator
-async function handleElevatorOverview(interaction, user, currentMine) {
+async function handleElevatorOverview(interaction, user, currentMine, userId) {
     const elevator = currentMine.elevator[0]; // Access the first elevator object
 
     if (!elevator) {
@@ -88,7 +88,7 @@ async function handleElevatorOverview(interaction, user, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for elevator
-async function handleElevatorUpgrade(interaction, user, currentMine) {
+async function handleElevatorUpgrade(interaction, user, currentMine, userId) {
     const elevator = currentMine.elevator[0]; // Access the first elevator object
 
     if (!elevator) {
