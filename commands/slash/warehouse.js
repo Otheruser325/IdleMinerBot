@@ -33,7 +33,12 @@ module.exports = {
             return interaction.reply('Current mine data not found.');
         }
 
-        if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
+        // Lazy initialization of warehouse
+        if (!currentMine.warehouse) {
+            currentMine.warehouse = [];
+        }
+
+        if (currentMine.warehouse.length === 0) {
             return interaction.reply('Warehouse is not initialized.');
         }
 
