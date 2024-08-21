@@ -8,32 +8,28 @@ module.exports = {
     description: 'Claim your daily Super Cash.',
     async execute(message) {  
         const userId = message.author.id;  
-        const user = await getUser(userId);  
+        let user = (await getUser(userId)) || {};
 
-        if (!user) {
+        if (!user || !user.lastDaily) {
             return message.reply('You need to start the game first by using `im!start`.');
         }
 
         const currentTime = Date.now();
         const cooldown = 24 * 60 * 60 * 1000; 
 
-        if (user.lastDaily === undefined) user.lastDaily = 0;
-        if (currentTime - user.lastDaily < cooldown) {
-            const remainingTime = formatTime(user.lastDaily + cooldown - currentTime);
+        if (currentTime - (user.lastDaily || 0) < cooldown) {
+            const remainingTime = formatTime((user.lastDaily || 0) + cooldown - currentTime);
             return message.reply(`You can claim your daily again in ${remainingTime}.`);
         }
-
-        if (user.streak === undefined) user.streak = 0;
-        if (user.superCash === undefined) user.superCash = 0;
 
         const cash = calculateDailyReward(user);
         await updateUser(userId, {
             lastDaily: currentTime,
-            streak: user.streak + 1,
-            superCash: user.superCash + cash
+            streak: (user.streak || 0) + 1,
+            superCash: (user.superCash || 0) + cash
         });
 
-        const response = `You claimed ${numberFormat(cash)} Super Cash! Current streak: ${user.streak + 1}.`;
+        const response = `You claimed ${numberFormat(cash)} Super Cash! Current streak: ${(user.streak || 0) + 1}.`;
         await message.reply(response);
     }
 };
