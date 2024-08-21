@@ -33,7 +33,7 @@ module.exports = {
         }
 
         if (currentMine.warehouse.length === 0) {
-            return interaction.reply('Warehouse is not initialized.');
+            return interaction.reply('You need to work in the Elevator before accessing the Warehouse.');
         }
 
         const warehouse = currentMine.warehouse[0]; // Accessing the first warehouse
