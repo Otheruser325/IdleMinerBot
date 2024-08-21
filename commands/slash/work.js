@@ -50,19 +50,19 @@ module.exports = {
                 if (tier < 1 || tier > 40) {
                     return interaction.reply('Please provide a valid shaft tier number between 1 and 40.');
                 }
-                await handleShaftWork(interaction, user, currentMine, tier);
+                await handleShaftWork(interaction, user, currentMine, userId, tier);
                 break;
             case 'elevator':
                 if (!currentMine.elevator || currentMine.elevator.length === 0) {
                     return interaction.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
                 }
-                await handleElevatorWork(interaction, user, currentMine);
+                await handleElevatorWork(interaction, user, currentMine, userId);
                 break;
             case 'warehouse':
                 if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
                     return interaction.reply('You need to work in the Elevator before accessing the Warehouse.');
                 }
-                await handleWarehouseWork(interaction, user, currentMine);
+                await handleWarehouseWork(interaction, user, currentMine, userId);
                 break;
             default:
                 return interaction.reply('Invalid subcommand. Use `shaft`, `elevator`, or `warehouse`.');
@@ -71,7 +71,7 @@ module.exports = {
 };
 
 // Function to handle working on a shaft
-async function handleShaftWork(interaction, user, currentMine, tier) {
+async function handleShaftWork(interaction, user, currentMine, userId, tier) {
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
@@ -157,7 +157,7 @@ async function handleShaftWork(interaction, user, currentMine, tier) {
 }
 
 // Function to handle working with the elevator
-async function handleElevatorWork(interaction, user, currentMine) {
+async function handleElevatorWork(interaction, user, userId, currentMine) {
     const elevator = currentMine.elevator[0];
 
     if (!elevator) {
@@ -224,7 +224,7 @@ async function handleElevatorWork(interaction, user, currentMine) {
 }
 
 // Function to handle working with the warehouse
-async function handleWarehouseWork(interaction, user, currentMine) {
+async function handleWarehouseWork(interaction, user, userId, currentMine) {
     const warehouse = currentMine.warehouse[0];
 
     if (!warehouse) {
