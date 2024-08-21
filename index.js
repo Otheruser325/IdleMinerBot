@@ -201,6 +201,85 @@ function scheduleNextUpdate(client) {
     }, 10000); // 10 seconds in milliseconds
 }
 
+// Function to start manager work
+async function handleManagerWork(userId) {
+    const user = await getUser(userId);
+
+    if (!user) {
+        console.error(`User with ID ${userId} not found.`);
+        return;
+    }
+
+    // Ensure user properties are defined
+    if (!user.mines) user.mines = [];
+    if (!user.cash) user.cash = 0;
+    if (!user.idleCash) user.idleCash = 0;
+    if (!user.lastDaily) user.lastDaily = Date.now();
+    if (!user.currentMine) user.currentMine = user.mines.length > 0 ? user.mines[0].MineName : null;
+
+    const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+
+    if (!currentMine) {
+        console.error(`Current mine data for user ${userId} not found.`);
+        return;
+    }
+
+    // Function to handle cash production
+    function produceCash(isIdle = false) {
+        let productionRate = currentMine.Factor; // Base production rate based on mine factor
+
+        // Ensure managers are properly defined
+        if (!currentMine.managers) {
+            currentMine.managers = {
+                shaft: [],
+                elevator: [],
+                warehouse: []
+            };
+        }
+
+        // Check if all managers are assigned
+        const shaftManager = currentMine.managers.shaft.some(m => m.assigned);
+        const elevatorManager = currentMine.managers.elevator.some(m => m.assigned);
+        const warehouseManager = currentMine.managers.warehouse.some(m => m.assigned);
+
+        if (shaftManager && elevatorManager && warehouseManager) {
+            // Calculate cash based on efficiency (10% when idle)
+            const efficiency = isIdle ? 0.1 : 1.0;
+            const cashProduced = productionRate * efficiency;
+
+            // Add to either active cash or idle cash
+            if (isIdle) {
+                user.idleCash += cashProduced;
+            } else {
+                user.cash += cashProduced;
+            }
+        }
+    }
+
+    // Function to start the work cycle
+    function startWorkCycle() {
+        setInterval(async () => {
+            const currentTime = Date.now();
+            const lastActivityTime = user.lastDaily;
+
+            // Check if the user is idle (inactive for over 10 minutes)
+            const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
+
+            produceCash(isIdle);
+
+            // Save user data
+            try {
+                await updateUser(userId, user);
+            } catch (error) {
+                console.error('Error updating user data:', error);
+            }
+        }, 1000); // Run every second
+    }
+
+    // Start the work cycle when the function is called
+    startWorkCycle();
+}
+
 client.once('ready', async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
@@ -212,27 +291,60 @@ client.once('ready', async () => {
 
     // Load and initialize guild data
     scheduleNextUpdate(client);
+
+    // Iterate through all users to start manager work
+    const users = await getAllUsers(); // Assuming getAllUsers fetches all users from the database
+    for (const user of users) {
+        handleManagerWork(user.id);
+    }
 });
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // Determine if message starts with a valid prefix
+    // Determine if message starts with a valid prefix or mentions the bot
     let prefix = prefixes.find(p => message.content.startsWith(p));
-    if (!prefix) return;
+    const botMention = `<@${client.user.id}>`;
+    if (!prefix && !message.content.includes(botMention)) return;
 
-    // Extract command and arguments
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
+    // Handle idle cash collection if the user mentions the bot
+    if (message.content.includes(botMention)) {
+        const user = await getUser(message.author.id);
+        if (user) {
+            const currentTime = Date.now();
+            const lastActivityTime = user.lastDaily;
+            const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
 
-    const command = client.commands.get(commandName);
-    if (!command) return;
+            if (isIdle) {
+                const cashCollected = user.idleCash;
+                user.cash += cashCollected;
+                user.idleCash = 0;
+                user.lastDaily = currentTime;
 
-    try {
-        await command.execute(message, args);
-    } catch (error) {
-        console.error('Error executing command:', error);
-        await message.reply('There was an error trying to execute that command!');
+                await updateUser(message.author.id, user);
+                await message.reply(`You have collected ${cashCollected} cash from your idle workers.`);
+            } else {
+                await message.reply('You are not idle or do not have the appropriate managers to collect idle cash.');
+            }
+        } else {
+            await message.reply('User data not found.');
+        }
+    }
+
+    // Handle commands
+    if (prefix) {
+        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const commandName = args.shift().toLowerCase();
+
+        const command = client.commands.get(commandName);
+        if (!command) return;
+
+        try {
+            await command.execute(message, args);
+        } catch (error) {
+            console.error('Error executing command:', error);
+            await message.reply('There was an error trying to execute that command!');
+        }
     }
 });
 
@@ -254,7 +366,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true });
             }
         }
-    } else if (interaction.isStringSelectMenu()) {
+    } else if (interaction.isStringSelectMenu() || interaction.isButton()) {
         const interactionHandler = client.interactions.get(interaction.customId);
         if (!interactionHandler) {
             console.error(`No interaction handler matching ${interaction.customId} was found.`);
@@ -265,23 +377,6 @@ client.on(Events.InteractionCreate, async interaction => {
             await interactionHandler.execute(interaction);
         } catch (error) {
             console.error('Error executing interaction:', error);
-            if (!interaction.replied) {
-                await interaction.reply({ content: 'There was an error executing this interaction!', ephemeral: true });
-            } else {
-                await interaction.followUp({ content: 'There was an error executing this interaction!', ephemeral: true });
-            }
-        }
-    } else if (interaction.isButton()) {
-        const interactionHandler = client.interactions.get(interaction.customId);
-        if (!interactionHandler) {
-            console.error(`No interaction handler matching ${interaction.customId} was found.`);
-            return;
-        }
-
-        try {
-            await interactionHandler.execute(interaction);
-        } catch (error) {
-            console.error('Error executing button interaction:', error);
             if (!interaction.replied) {
                 await interaction.reply({ content: 'There was an error executing this interaction!', ephemeral: true });
             } else {
