@@ -157,7 +157,7 @@ async function handleShaftWork(interaction, user, currentMine, userId, tier) {
 }
 
 // Function to handle working with the elevator
-async function handleElevatorWork(interaction, user, userId, currentMine) {
+async function handleElevatorWork(interaction, user, currentMine, userId) {
     const elevator = currentMine.elevator[0];
 
     if (!elevator) {
@@ -224,7 +224,7 @@ async function handleElevatorWork(interaction, user, userId, currentMine) {
 }
 
 // Function to handle working with the warehouse
-async function handleWarehouseWork(interaction, user, userId, currentMine) {
+async function handleWarehouseWork(interaction, user, currentMine, userId) {
     const warehouse = currentMine.warehouse[0];
 
     if (!warehouse) {
