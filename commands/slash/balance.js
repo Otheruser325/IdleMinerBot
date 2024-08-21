@@ -28,24 +28,20 @@ module.exports = {
                 .setDescription('The user whose balance you want to check.')
                 .setRequired(false)),
     async execute(interaction) {
-        // Get the user ID (either the one mentioned or the one issuing the command)
         const targetUser = interaction.options.getUser('user') || interaction.user;
         const userId = targetUser.id;
 
-        // Fetch the user's data from the database
         const user = await getUser(userId);
 
         if (!user) {
             return interaction.reply(`${targetUser.username} needs to start the game first by using \`/start\`.`);
         }
 
-        // Extract and format the user's balance data
         const cash = user.cash || 0;
         const iceCash = user.iceCash || 0;
         const fireCash = user.fireCash || 0;
         const superCash = user.superCash || 0;
 
-        // Determine the user's wealth status
         let description = 'Average';
         for (const wealth of wealthDescriptions) {
             if (superCash >= wealth.minCash) {
@@ -54,10 +50,8 @@ module.exports = {
             }
         }
 
-        // Fetch the user's avatar
         const userAvatar = targetUser.displayAvatarURL();
 
-        // Build and send the balance embed message
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle(`${targetUser.username}'s Balance`)
