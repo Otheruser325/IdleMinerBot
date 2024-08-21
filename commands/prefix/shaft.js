@@ -27,6 +27,11 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
+        // Lazy initialization of mineshafts
+        if (!currentMine.mineshafts) {
+            currentMine.mineshafts = [];
+        }
+
         switch (subcommand) {
             case 'overview':
                 await handleOverview(message, user, currentMine, args);
