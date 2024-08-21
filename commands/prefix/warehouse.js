@@ -27,9 +27,13 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
-        // Ensure warehouse is properly initialized
-        if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
-            return message.reply('Warehouse is not initialized.');
+        // Lazy initialization of warehouse
+        if (!currentMine.warehouse) {
+            currentMine.warehouse = [];
+        }
+
+        if (currentMine.warehouse.length === 0) {
+            return interaction.reply('Warehouse is not initialized.');
         }
 
         const warehouse = currentMine.warehouse[0]; // Accessing the first warehouse
