@@ -20,6 +20,9 @@ module.exports = {
             return message.reply('Current mine data not found.');
         }
 
+        // Initialize managers if they are not present
+        currentMine.managers = currentMine.managers || { shaft: [], elevator: [], warehouse: [] };
+
         // Initialize areas if they are not present
         currentMine.mineshafts = currentMine.mineshafts || [];
         currentMine.elevator = currentMine.elevator || [];
@@ -63,13 +66,11 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         return message.reply(`No managers available for the ${area}.`);
     }
 
-    // Ensure currentMine's area array is initialized
-    if (!currentMine[area]) {
-        currentMine[area] = [];
-    }
+    // Ensure managers for the area are initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Calculate the number of managers currently hired in the specified area
-    const numManagersHired = currentMine[area].filter(m => m.assigned).length;
+    const numManagersHired = currentMine.managers[area].filter(m => m.assigned).length;
 
     // Determine the cost of hiring based on the number of managers
     const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
@@ -109,7 +110,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     }
 
     const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
-    currentMine[area].push({
+    currentMine.managers[area].push({
         id: newManager.ManagerID,
         name: newManager.Name,
         assigned: false
@@ -130,7 +131,7 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     let managerIndex;
 
     // Check in all areas
-    const allManagers = [...currentMine.mineshafts, ...currentMine.elevator, ...currentMine.warehouse];
+    const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
     managerIndex = allManagers.findIndex(m => m.id === parseInt(identifierOrId) || m.name.toLowerCase() === identifierOrId.toLowerCase());
 
     if (managerIndex === -1) {
@@ -143,9 +144,9 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     }
 
     // Remove manager from all areas
-    currentMine.mineshafts = currentMine.mineshafts.filter(m => m.id !== manager.id);
-    currentMine.elevator = currentMine.elevator.filter(m => m.id !== manager.id);
-    currentMine.warehouse = currentMine.warehouse.filter(m => m.id !== manager.id);
+    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
+    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
+    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
 
     await updateUser(userId, user);
     return message.reply('Successfully fired the manager.');
@@ -154,11 +155,11 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 // Function to handle assigning a manager
 async function handleManagerAssign(message, user, currentMine, userId, managerId, area) {
     // Check if area is valid
-    if (!['mineshafts', 'elevator', 'warehouse'].includes(area)) {
+    if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
     }
 
-    const manager = currentMine.mineshafts.concat(currentMine.elevator, currentMine.warehouse)
+    const manager = currentMine.managers.shaft.concat(currentMine.managers.elevator, currentMine.managers.warehouse)
         .find(m => m.id === managerId);
 
     if (!manager) {
@@ -170,12 +171,12 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
 
     // Remove manager from all other areas
-    currentMine.mineshafts = currentMine.mineshafts.filter(m => m.id !== manager.id);
-    currentMine.elevator = currentMine.elevator.filter(m => m.id !== manager.id);
-    currentMine.warehouse = currentMine.warehouse.filter(m => m.id !== manager.id);
+    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
+    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
+    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
 
     // Assign manager to the new area
-    currentMine[area].push({ ...manager, assigned: true });
+    currentMine.managers[area].push({ ...manager, assigned: true });
 
     await updateUser(userId, user);
     return message.reply(`Successfully assigned manager to the ${area}.`);
@@ -188,7 +189,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
         return message.reply('Invalid area specified.');
     }
 
-    const manager = currentMine[area].find(m => m.id === managerId);
+    const manager = currentMine.managers[area].find(m => m.id === managerId);
     if (!manager) {
         return message.reply('Manager not found in this area.');
     }
@@ -198,10 +199,10 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     }
 
     // Remove manager from the area
-    currentMine[area] = currentMine[area].filter(m => m.id !== managerId);
+    currentMine.managers[area] = currentMine.managers[area].filter(m => m.id !== managerId);
 
     // Add manager back to available managers
-    currentMine.mineshafts.push({ ...manager, assigned: false });
+    currentMine.managers.shaft.push({ ...manager, assigned: false });
 
     await updateUser(userId, user);
     return message.reply('Successfully removed manager from the area.');
@@ -213,7 +214,7 @@ async function handleManagerOverview(message, user, currentMine, area) {
         return message.reply('Invalid area specified.');
     }
 
-    const areaManagers = currentMine[area] || [];
+    const areaManagers = currentMine.managers[area] || [];
 
     if (areaManagers.length === 0) {
         return message.reply(`No managers assigned to the ${area}.`);
