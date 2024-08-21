@@ -68,9 +68,10 @@ async function handleMineBuy(message, mineName, user, userId) {
         MineName: mine.MineName,
         MineNumber: mine.MineNumber,
         Factor: mine.Factor,
-        mineshafts: [],  // Initialize with no mineshafts
-        elevator: [],    // Initialize with default stats
-        warehouse: []    // Initialize with default stats
+        mineshafts: [],
+        elevator: [],
+        warehouse: [],
+        managers: {}
     });
     user.currentMine = mine.MineName;
 
