@@ -34,13 +34,13 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleOverview(message, user, currentMine, args);
+                await handleOverview(message, user, currentMine, args, userId);
                 break;
             case 'buy':
-                await handleBuy(message, user, currentMine, args);
+                await handleBuy(message, user, currentMine, args, userId);
                 break;
             case 'upgrade':
-                await handleUpgrade(message, user, currentMine, args);
+                await handleUpgrade(message, user, currentMine, args, userId);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview`, `buy`, or `upgrade`.');
@@ -49,7 +49,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand
-async function handleOverview(message, user, currentMine, args) {
+async function handleOverview(message, user, currentMine, args, userId) {
     const tier = parseInt(args[1], 10);
 
     if (isNaN(tier) || tier < 1 || tier > 40) {
@@ -94,7 +94,7 @@ async function handleOverview(message, user, currentMine, args) {
 }
 
 // Function to handle the "buy" subcommand
-async function handleBuy(message, user, currentMine, args) {
+async function handleBuy(message, user, currentMine, args, userId) {
     const tier = parseInt(args[1], 10);
 
     if (isNaN(tier) || tier < 1 || tier > 40) {
@@ -139,7 +139,7 @@ async function handleBuy(message, user, currentMine, args) {
 }
 
 // Function to handle the "upgrade" subcommand
-async function handleUpgrade(message, user, currentMine, args) {
+async function handleUpgrade(message, user, currentMine, args, userId) {
     const tier = parseInt(args[1], 10);
 
     if (isNaN(tier) || tier < 1 || tier > 40) {
