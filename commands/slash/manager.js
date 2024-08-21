@@ -136,22 +136,29 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
     const managersAvailable = managerData.filter(m => m.Area.toLowerCase() === area);
 
     if (managersAvailable.length === 0) {
-        return interaction.reply(`No managers in this ${area} are currently available.`);
+        return interaction.reply(`No managers available for the ${area}.`);
     }
 
-    const numManagersHired = currentMine[area].filter(m => m.assigned).length;
-    const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
+    // Ensure currentMine's area array is initialized
+    if (!currentMine[area]) {
+        currentMine[area] = [];
+    }
 
+    // Calculate the number of managers currently hired in the specified area
+    const numManagersHired = currentMine[area].filter(m => m.assigned).length;
+
+    // Determine the cost of hiring based on the number of managers
+    const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
     if (!managerCost) {
         return interaction.reply('Cost data for hiring managers not found.');
     }
 
-    const cost = managerCost[`${area.charAt(0).toUpperCase() + area.slice(1)}`];
-
+    const cost = managerCost[area.charAt(0).toUpperCase() + area.slice(1)];
     if (user.cash < cost) {
         return interaction.reply(`You need ${numberFormat(cost)} cash to hire a manager in the ${area}.`);
     }
 
+    // Deduct the cost from the user's cash
     user.cash -= cost;
 
     // Determine the rarity of the manager based on odds
@@ -178,8 +185,14 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
         assigned: false
     });
 
-    await updateUser(userId, user);
-    await interaction.reply(`Successfully hired ${newManager.Name} (${newManager.ManagerID}) for the ${area}.`);
+    // Update the user's data in the database
+    try {
+        await updateUser(userId, user);
+        await interaction.reply(`Successfully hired ${newManager.Name} (${newManager.ManagerID}) for the ${area}.`);
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        await interaction.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle firing a manager
