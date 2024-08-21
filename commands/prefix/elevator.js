@@ -33,7 +33,7 @@ module.exports = {
         }
 
         if (currentMine.elevator.length === 0) {
-            return interaction.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
+            return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
 
         const elevator = currentMine.elevator[0]; // Accessing the first elevator
@@ -43,7 +43,7 @@ module.exports = {
                 await handleElevatorOverview(message, elevator, currentMine);
                 break;
             case 'upgrade':
-                await handleElevatorUpgrade(message, user, elevator, currentMine);
+                await handleElevatorUpgrade(message, user, elevator, currentMine, userId);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -78,7 +78,7 @@ async function handleElevatorOverview(message, elevator, currentMine) {
 }
 
 // Function to handle the "upgrade" subcommand for elevator
-async function handleElevatorUpgrade(message, user, elevator, currentMine) {
+async function handleElevatorUpgrade(message, user, elevator, currentMine, userId) {
     const currentLevel = elevator.level;
     const nextLevelData = elevatorData.find(e => e.Level === currentLevel + 1);
 
