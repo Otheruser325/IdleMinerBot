@@ -34,7 +34,11 @@ async function initializeUser(userId, username) {
                     mineshafts: [],
                     elevator: [],
                     warehouse: [],
-                    managers: {}
+                    managers: {
+                        shaft: [],
+                        elevator: [],
+                        warehouse: []
+                    }
                 }
             ],
             activeBoosts: [],
