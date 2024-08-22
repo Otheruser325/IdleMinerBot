@@ -275,6 +275,9 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
+            // Ensure the area is initialized
+            currentMine.managers[a] = currentMine.managers[a] || [];
+            // Remove the manager from this area
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
