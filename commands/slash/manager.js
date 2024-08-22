@@ -244,7 +244,11 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         elevator: [],
         warehouse: []
     };
-    currentMine.managers[area] = currentMine.managers[area] || [];
+    
+    // Ensure the specific area is properly initialized
+    if (!Array.isArray(currentMine.managers[area])) {
+        currentMine.managers[area] = [];
+    }
 
     // Find the manager by ID or name
     const allManagers = [
