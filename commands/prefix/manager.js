@@ -176,6 +176,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         warehouse: []
     };
 
+    // Ensure area is properly initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
+
     // Find the manager by ID or name
     const allManagers = [
         ...currentMine.managers.shaft,
@@ -183,8 +186,8 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         ...currentMine.managers.warehouse
     ];
     
-    const manager = allManagers.find(m => 
-        m.id === parseInt(managerIdOrName) || 
+    const manager = allManagers.find(m =>
+        m.id === parseInt(managerIdOrName) ||
         m.name.toLowerCase() === managerIdOrName.toLowerCase()
     );
 
@@ -210,9 +213,6 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     });
 
     // Assign the manager to the new area
-    if (!currentMine.managers[area]) {
-        currentMine.managers[area] = [];
-    }
     currentMine.managers[area].push({ ...manager, assigned: true });
 
     try {
