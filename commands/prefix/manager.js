@@ -159,13 +159,16 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
         currentMine.managers[area] = currentMine.managers[area] || [];
     });
 
+    // Convert identifierOrId to a number if possible
+    const identifierAsNumber = Number(identifierOrId);
+
     // Find the manager by ID or name across all areas
     let manager;
     let managerArea;
 
     for (const area of areas) {
         manager = currentMine.managers[area].find(m => 
-            m.id === parseInt(identifierOrId) || 
+            m.id === identifierAsNumber || 
             m.name.toLowerCase() === identifierOrId.toLowerCase()
         );
         if (manager) {
@@ -291,9 +294,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     };
 
     // Ensure the specific area is properly initialized
-    if (!Array.isArray(currentMine.managers[area])) {
-        currentMine.managers[area] = [];
-    }
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager in the specified area
     const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
@@ -312,7 +313,15 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
 
     // Update the manager's assigned status and push it back to the general pool
     manager.assigned = false;
-    currentMine.managers.shaft.push(manager);
+
+    // Initialize shaft array if not already present
+    currentMine.managers.shaft = currentMine.managers.shaft || [];
+    currentMine.managers.elevator = currentMine.managers.elevator || [];
+    currentMine.managers.warehouse = currentMine.managers.warehouse || [];
+
+    // Add the manager to the appropriate array
+    const areaToAdd = ['shaft', 'elevator', 'warehouse'].find(a => a !== area);
+    currentMine.managers[areaToAdd].push(manager);
 
     // Update the user's data in the database
     try {
