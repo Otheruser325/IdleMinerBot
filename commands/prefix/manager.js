@@ -176,7 +176,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         warehouse: []
     };
 
-    // Ensure area is properly initialized
+    // Ensure the specific area is properly initialized
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager by ID or name
@@ -186,7 +186,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         ...currentMine.managers.warehouse
     ];
 
-    const manager = allManagers.find(m => 
+    const manager = allManagers.find(m =>
         m.id === parseInt(managerIdOrName, 10) ||
         (typeof managerIdOrName === 'string' && m.name.toLowerCase() === managerIdOrName.toLowerCase())
     );
@@ -208,6 +208,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
+            // Ensure the area is initialized
+            currentMine.managers[a] = currentMine.managers[a] || [];
+            // Remove the manager from this area
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
