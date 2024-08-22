@@ -138,28 +138,46 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
 
 // Function to handle firing a manager
 async function handleManagerFire(message, user, currentMine, userId, identifierOrId) {
-    let managerIndex;
+    // Ensure managers are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
 
-    // Check in all areas
-    const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    managerIndex = allManagers.findIndex(m => m.id === parseInt(identifierOrId) || m.name.toLowerCase() === identifierOrId.toLowerCase());
+    // Find the manager by ID or name across all areas
+    let manager;
+    let managerArea;
 
-    if (managerIndex === -1) {
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        if (!manager) {
+            manager = currentMine.managers[area].find(m => 
+                m.id === parseInt(identifierOrId) || 
+                m.name.toLowerCase() === identifierOrId.toLowerCase()
+            );
+            if (manager) managerArea = area;
+        }
+    });
+
+    if (!manager) {
         return message.reply('Manager not found.');
     }
 
-    const manager = allManagers[managerIndex];
     if (manager.assigned) {
         return message.reply('You cannot fire a manager who is currently assigned to an area. Use `!manager remove` to remove them from their area first.');
     }
 
-    // Remove manager from all areas
-    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
-    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
-    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
+    // Remove the manager from the respective area
+    currentMine.managers[managerArea] = currentMine.managers[managerArea].filter(m => m.id !== manager.id);
 
-    await updateUser(userId, user);
-    return message.reply('Successfully fired the manager.');
+    // Update the user's data in the database
+    try {
+        await updateUser(userId, user);
+        return message.reply('Successfully fired the manager.');
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        return message.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle assigning a manager
@@ -229,28 +247,50 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
 // Function to handle removing a manager
 async function handleManagerRemove(message, user, currentMine, userId, managerId, area) {
-    // Check if area is valid
+    // Check if the area is valid
     if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
         return message.reply('Invalid area specified.');
     }
 
-    const manager = currentMine.managers[area].find(m => m.id === managerId);
-    if (!manager) {
+    // Ensure managers are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
+
+    // Ensure the specific area is properly initialized
+    if (!Array.isArray(currentMine.managers[area])) {
+        currentMine.managers[area] = [];
+    }
+
+    // Find the manager in the specified area
+    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
+    if (managerIndex === -1) {
         return message.reply('Manager not found in this area.');
     }
+
+    const manager = currentMine.managers[area][managerIndex];
 
     if (!manager.assigned) {
         return message.reply('Manager is not assigned to this area.');
     }
 
     // Remove manager from the area
-    currentMine.managers[area] = currentMine.managers[area].filter(m => m.id !== managerId);
+    currentMine.managers[area].splice(managerIndex, 1);
 
-    // Add manager back to available managers
-    currentMine.managers.shaft.push({ ...manager, assigned: false });
+    // Update the manager's assigned status and push it back to the general pool
+    manager.assigned = false;
+    currentMine.managers.shaft.push(manager);
 
-    await updateUser(userId, user);
-    return message.reply('Successfully removed manager from the area.');
+    // Update the user's data in the database
+    try {
+        await updateUser(userId, user);
+        return message.reply('Successfully removed manager from the area.');
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        return message.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle overview of managers in an area
