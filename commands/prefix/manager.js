@@ -162,15 +162,16 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 
     // Convert identifierOrId to a number if possible
     const identifierAsNumber = Number(identifierOrId);
+    const isNumber = !isNaN(identifierAsNumber);
 
     // Find the manager by ID or name across all areas
     let manager;
     let managerArea;
 
     for (const area of areas) {
-        manager = currentMine.managers[area].find(m =>
-            m.ManagerID === identifierAsNumber ||
-            m.Name.toLowerCase() === identifierOrId.toLowerCase()
+        manager = currentMine.managers[area].find(m => 
+            (isNumber && m.ManagerID === identifierAsNumber) || 
+            (!isNumber && m.Name.toLowerCase() === identifierOrId.toLowerCase())
         );
         if (manager) {
             managerArea = area;
