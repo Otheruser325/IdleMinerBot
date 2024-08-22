@@ -192,9 +192,10 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
 
     const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
     currentMine.managers[area].push({
-        id: newManager.ManagerID,
-        name: newManager.Name,
-        assigned: false
+        ManagerID: newManager.ManagerID,
+        Name: newManager.Name,
+        Area: newManager.Area,
+        Assigned: false
     });
 
     // Update the user's data in the database
@@ -219,21 +220,21 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
 
     // Check in all areas
     const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    const managerIndex = allManagers.findIndex(m => m.id === parseInt(identifier) || m.name.toLowerCase() === identifier.toLowerCase());
+    const managerIndex = allManagers.findIndex(m => m.ManagerID === parseInt(identifier) || m.Name.toLowerCase() === identifier.toLowerCase());
 
     if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
     }
 
     const manager = allManagers[managerIndex];
-    if (manager.assigned) {
+    if (manager.Assigned) {
         return interaction.reply('You cannot fire a manager who is currently assigned to an area. Use `/manager remove` to remove them from their area first.');
     }
 
     // Remove manager from all areas
-    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
-    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
-    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
+    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.ManagerID !== manager.ManagerID);
+    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.ManagerID !== manager.ManagerID);
+    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.ManagerID !== manager.ManagerID);
 
     await updateUser(userId, user);
     await interaction.reply('Successfully fired the manager.');
@@ -264,8 +265,8 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     ];
 
     const manager = allManagers.find(m =>
-        m.id === parseInt(managerIdOrName, 10) ||
-        (typeof managerIdOrName === 'string' && m.name.toLowerCase() === managerIdOrName.toLowerCase())
+        m.ManagerID === parseInt(managerIdOrName, 10) ||
+        (typeof managerIdOrName === 'string' && m.Name.toLowerCase() === managerIdOrName.toLowerCase())
     );
 
     if (!manager) {
@@ -281,21 +282,21 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     // Remove the manager from all other areas and set `assigned` to false
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         currentMine.managers[a] = currentMine.managers[a].map(m => {
-            if (m.id === manager.id) {
+            if (m.ManagerID === manager.ManagerID) {
                 m.assigned = false;
             }
             return m;
-        }).filter(m => m.id !== manager.id); // Remove manager from the area
+        }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
     });
 
     // Assign the manager to the new area and set `assigned` to true
-    manager.assigned = true;
+    manager.Assigned = true;
     currentMine.managers[area].push(manager);
 
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return interaction.reply(`Successfully assigned manager ${manager.name} (${manager.id}) to the ${area}.`);
+        return interaction.reply(`Successfully assigned manager ${manager.Name} (${manager.ManagerID}) to the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return interaction.reply('There was an error while updating your data. Please try again later.');
@@ -315,18 +316,18 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
     currentMine.managers = currentMine.managers || {};
     currentMine.managers[area] = currentMine.managers[area] || [];
 
-    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
+    const managerIndex = currentMine.managers[area].findIndex(m => m.ManagerID === managerId);
     if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
     }
 
     // Check if the manager is not assigned
-    if (!currentMine.managers[area][managerIndex].assigned) {
+    if (!currentMine.managers[area][managerIndex].Assigned) {
         return interaction.reply('This manager is not currently assigned.');
     }
 
     // Remove the manager from the area
-    currentMine.managers[area][managerIndex].assigned = false;
+    currentMine.managers[area][managerIndex].Assigned = false;
     await updateUser(userId, user);
     await interaction.reply(`Successfully removed the manager from the ${area}.`);
 }
@@ -357,7 +358,7 @@ async function handleManagerOverview(interaction, user, currentMine) {
 
     const embed = new EmbedBuilder()
         .setTitle(`Managers in the ${area.charAt(0).toUpperCase() + area.slice(1)}`)
-        .setDescription(managersInArea.map(m => `ID: ${m.id}, Name: ${m.name}, Assigned: ${m.assigned ? 'Yes' : 'No'}`).join('\n'))
+        .setDescription(managersInArea.map(m => `ID: ${m.ManagerID}, Name: ${m.Name}, Assigned: ${m.Assigned ? 'Yes' : 'No'}`).join('\n'))
         .setColor('#0099ff');
 
     await interaction.reply({ embeds: [embed] });
