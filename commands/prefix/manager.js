@@ -170,13 +170,11 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
 
     // Ensure managers are properly initialized
-    if (!currentMine.managers) {
-        currentMine.managers = {
-            shaft: [],
-            elevator: [],
-            warehouse: []
-        };
-    }
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
 
     // Ensure the specific area is properly initialized
     if (!Array.isArray(currentMine.managers[area])) {
@@ -199,29 +197,24 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         return message.reply('Manager not found.');
     }
 
-    // Check if the manager is already assigned
-    if (manager.assigned) {
-        return message.reply('Manager is already assigned to another area.');
-    }
-
     // Check if the target area already has an assigned manager
-    if (currentMine.managers[area].some(m => m.assigned)) {
+    const areaHasManager = currentMine.managers[area].some(m => m.assigned);
+    if (areaHasManager) {
         return message.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
     }
 
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
-            if (!Array.isArray(currentMine.managers[a])) {
-                currentMine.managers[a] = [];
-            }
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
 
-    // Assign the manager to the new area
-    currentMine.managers[area].push({ ...manager, assigned: true });
+    // Assign the manager to the new area and set assigned to true
+    manager.assigned = true;
+    currentMine.managers[area].push(manager);
 
+    // Update the user's data in the database
     try {
         await updateUser(userId, user);
         return message.reply(`Successfully assigned manager ${manager.name} to the ${area}.`);
