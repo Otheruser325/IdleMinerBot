@@ -212,12 +212,19 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
 async function handleManagerFire(interaction, user, currentMine, userId) {
     const identifier = interaction.options.getString('identifier');
 
-    // Defensive check for uninitialized managers object and specific area arrays
+    // Ensure managers are properly initialized
     currentMine.managers = currentMine.managers || {
         shaft: [],
         elevator: [],
         warehouse: []
     };
+
+    // Ensure that each specific area is initialized as an array
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        if (!Array.isArray(currentMine.managers[area])) {
+            currentMine.managers[area] = [];
+        }
+    });
 
     // Check in all areas
     const allManagers = [
@@ -225,8 +232,11 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
         ...currentMine.managers.elevator,
         ...currentMine.managers.warehouse
     ];
-    
-    const manager = allManagers.find(m => m.ManagerID === parseInt(identifier) || m.Name.toLowerCase() === identifier.toLowerCase());
+
+    const manager = allManagers.find(m => 
+        m.ManagerID === parseInt(identifier) || 
+        m.Name.toLowerCase() === identifier.toLowerCase()
+    );
 
     if (!manager) {
         return interaction.reply('Manager not found.');
@@ -237,10 +247,10 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
         return interaction.reply('You cannot fire a manager who is currently assigned to an area. Use `/manager remove` to unassign them first.');
     }
 
-    // Remove manager from all areas
-    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.ManagerID !== manager.ManagerID);
-    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.ManagerID !== manager.ManagerID);
-    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.ManagerID !== manager.ManagerID);
+    // Remove the manager from all areas
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        currentMine.managers[area] = currentMine.managers[area].filter(m => m.ManagerID !== manager.ManagerID);
+    });
 
     // Update the user's data in the database
     try {
@@ -272,14 +282,11 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         warehouse: []
     };
 
-    // Ensure the specific area is properly initialized
-    currentMine.managers[area] = currentMine.managers[area] || [];
-
     // Find the manager by ID or name across all areas
     const allManagers = [
-        ...(currentMine.managers.shaft || []),
-        ...(currentMine.managers.elevator || []),
-        ...(currentMine.managers.warehouse || [])
+        ...currentMine.managers.shaft,
+        ...currentMine.managers.elevator,
+        ...currentMine.managers.warehouse
     ];
 
     const manager = allManagers.find(m =>
@@ -304,15 +311,13 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
 
     // Remove the manager from all other areas and set `Assigned` to false
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
-        if (a !== area) {
-            currentMine.managers[a] = currentMine.managers[a] || [];
-            currentMine.managers[a] = currentMine.managers[a].map(m => {
-                if (m.ManagerID === manager.ManagerID) {
-                    m.Assigned = false;
-                }
-                return m;
-            }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
-        }
+        currentMine.managers[a] = currentMine.managers[a] || [];
+        currentMine.managers[a] = currentMine.managers[a].map(m => {
+            if (m.ManagerID === manager.ManagerID) {
+                m.Assigned = false; // Unassign the manager
+            }
+            return m;
+        }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
     });
 
     // Assign the manager to the new area and set `Assigned` to true
