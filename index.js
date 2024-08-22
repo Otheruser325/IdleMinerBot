@@ -298,12 +298,6 @@ client.once('ready', async () => {
 
     // Load and initialize guild data
     scheduleNextUpdate(client);
-
-    // Iterate through all users to start manager work
-    const users = await getAllUsers(); // Assuming getAllUsers fetches all users from the database
-    Object.keys(users).forEach(async (userId) => {
-        await handleManagerWork(userId);
-    });
 });
 
 client.on('messageCreate', async message => {
