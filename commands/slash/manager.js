@@ -251,29 +251,46 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         currentMine.managers[area] = [];
     }
 
-    // Find the manager by ID or name in all areas
-    const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    const manager = allManagers.find(m => m.id === parseInt(managerIdOrName, 10) || m.name.toLowerCase() === managerIdOrName.toLowerCase());
+    // Find the manager by ID or name across all areas
+    const allManagers = [
+        ...(currentMine.managers.shaft || []),
+        ...(currentMine.managers.elevator || []),
+        ...(currentMine.managers.warehouse || [])
+    ];
+
+    const manager = allManagers.find(m =>
+        m.id === parseInt(managerIdOrName, 10) ||
+        (typeof managerIdOrName === 'string' && m.name.toLowerCase() === managerIdOrName.toLowerCase())
+    );
 
     if (!manager) {
         return interaction.reply('Manager not found.');
     }
 
-    // Check if the manager is already assigned
-    if (manager.assigned) {
-        return interaction.reply('This manager is already assigned to an area.');
+    // Check if the target area already has an assigned manager
+    const areaHasManager = currentMine.managers[area].some(m => m.assigned);
+    if (areaHasManager) {
+        return interaction.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
     }
 
-    // Assign the manager to the specified area
-    manager.assigned = true;
+    // Remove the manager from all other areas and set `assigned` to false
+    ['shaft', 'elevator', 'warehouse'].forEach(a => {
+        currentMine.managers[a] = currentMine.managers[a].map(m => {
+            if (m.id === manager.id) {
+                m.assigned = false;
+            }
+            return m;
+        }).filter(m => m.id !== manager.id); // Remove manager from the area
+    });
 
-    // Add the manager to the correct area
+    // Assign the manager to the new area and set `assigned` to true
+    manager.assigned = true;
     currentMine.managers[area].push(manager);
 
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return interaction.reply(`Successfully assigned ${manager.name} (${manager.id}) to the ${area}.`);
+        return interaction.reply(`Successfully assigned manager ${manager.name} (${manager.id}) to the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return interaction.reply('There was an error while updating your data. Please try again later.');
