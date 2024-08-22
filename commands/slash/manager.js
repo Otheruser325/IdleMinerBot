@@ -255,7 +255,7 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return interaction.reply('Successfully fired the manager.');
+        return interaction.reply(`Successfully fired ${manager.Name} (${manager.ManagerID}).`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return interaction.reply('There was an error while updating your data. Please try again later.');
@@ -281,6 +281,11 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         elevator: [],
         warehouse: []
     };
+
+    // Ensure the specific area is properly initialized
+    if (!Array.isArray(currentMine.managers[area])) {
+        currentMine.managers[area] = [];
+    }
 
     // Find the manager by ID or name across all areas
     const allManagers = [
@@ -311,13 +316,15 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
 
     // Remove the manager from all other areas and set `Assigned` to false
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
-        currentMine.managers[a] = currentMine.managers[a] || [];
-        currentMine.managers[a] = currentMine.managers[a].map(m => {
-            if (m.ManagerID === manager.ManagerID) {
-                m.Assigned = false; // Unassign the manager
-            }
-            return m;
-        }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
+        if (a !== area) {
+            currentMine.managers[a] = currentMine.managers[a] || [];
+            currentMine.managers[a] = currentMine.managers[a].map(m => {
+                if (m.ManagerID === manager.ManagerID) {
+                    m.Assigned = false; // Unassign the manager
+                }
+                return m;
+            }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
+        }
     });
 
     // Assign the manager to the new area and set `Assigned` to true
