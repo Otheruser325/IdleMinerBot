@@ -89,7 +89,11 @@ async function handleMineBuy(interaction, mineName, user, userId) {
         mineshafts: [],
         elevator: [],
         warehouse: [],
-        managers: {}
+        managers: {
+            shaft: [],
+            elevator: [],
+            warehouse: []
+        }
     });
     user.currentMine = mine.MineName;
 
