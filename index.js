@@ -327,7 +327,8 @@ client.on('messageCreate', async message => {
 
     // Handle idle cash collection if the user mentions the bot
     if (message.content.includes(botMention)) {
-        const user = await getUser(message.author.id);
+        const userId = message.author.id;
+        const user = await getUser(userId);
         if (user) {
             const currentTime = Date.now();
             const isIdle = currentTime - user.lastDaily > 10 * 60 * 1000;
@@ -338,13 +339,13 @@ client.on('messageCreate', async message => {
                     return message.reply('Current mine data not found.');
                 }
 
-                const idleCash = await handleManagerWork(user, currentMine);
-                user.cash += idleCash;
+                await handleManagerWork(user, userId);
+                user.cash += user.idleCash;
                 user.idleCash = 0;
                 user.lastDaily = currentTime;
 
-                await updateUser(message.author.id, user);
-                await message.reply(`You have collected ${idleCash} cash from your idle workers.`);
+                await updateUser(userId, user);
+                await message.reply(`You have collected ${user.cash} cash from your idle workers.`);
             } else {
                 await message.reply('You are not idle long enough to collect idle cash or do not have the appropriate managers assigned.');
             }
