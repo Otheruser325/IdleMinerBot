@@ -163,7 +163,7 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 }
 
 // Function to handle assigning a manager
-async function handleManagerAssign(message, user, currentMine, userId, managerId, area) {
+async function handleManagerAssign(message, user, currentMine, userId, managerIdOrName, area) {
     // Check if area is valid
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
@@ -176,25 +176,40 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         warehouse: []
     };
 
-    const manager = currentMine.managers.shaft.concat(
-        currentMine.managers.elevator,
-        currentMine.managers.warehouse
-    ).find(m => m.id === managerId);
+    // Find the manager by ID or name
+    const allManagers = [
+        ...currentMine.managers.shaft,
+        ...currentMine.managers.elevator,
+        ...currentMine.managers.warehouse
+    ];
+    
+    const manager = allManagers.find(m => 
+        m.id === parseInt(managerIdOrName) || 
+        m.name.toLowerCase() === managerIdOrName.toLowerCase()
+    );
 
     if (!manager) {
         return message.reply('Manager not found.');
     }
 
+    // Check if the manager is already assigned
     if (manager.assigned) {
         return message.reply('Manager is already assigned to another area.');
     }
 
-    // Remove manager from all other areas
-    currentMine.managers.shaft = currentMine.managers.shaft.filter(m => m.id !== manager.id);
-    currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.id !== manager.id);
-    currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.id !== manager.id);
+    // Check if the area already has an assigned manager
+    if (currentMine.managers[area].some(m => m.assigned)) {
+        return message.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
+    }
 
-    // Assign manager to the new area
+    // Remove manager from all other areas
+    ['shaft', 'elevator', 'warehouse'].forEach(a => {
+        if (a !== area) {
+            currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
+        }
+    });
+
+    // Assign the manager to the new area
     if (!currentMine.managers[area]) {
         currentMine.managers[area] = [];
     }
@@ -202,7 +217,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully assigned manager to the ${area}.`);
+        return message.reply(`Successfully assigned manager ${manager.name} to the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');
