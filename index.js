@@ -260,8 +260,6 @@ async function handleManagerWork(user, userId) {
             } else {
                 user.cash += cashProduced;
             }
-        } else {
-            console.log(`Not all managers are assigned for user ${userId}, production halted.`);
         }
     }
 
