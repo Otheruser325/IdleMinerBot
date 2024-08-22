@@ -202,11 +202,10 @@ function scheduleNextUpdate(client) {
 }
 
 // Function to start manager work
-async function handleManagerWork(userId) {
-    const user = await getUser(userId);
-
+async function handleManagerWork(user) {
+    // Check if user data is valid
     if (!user) {
-        console.error(`User with ID ${userId} not found.`);
+        console.error('User data is undefined or invalid.');
         return;
     }
 
@@ -220,7 +219,7 @@ async function handleManagerWork(userId) {
     const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
 
     if (!currentMine) {
-        console.error(`Current mine data for user ${userId} not found.`);
+        console.error(`Current mine data for user ${user.id} not found.`);
         return;
     }
 
@@ -233,12 +232,18 @@ async function handleManagerWork(userId) {
 
     // Function to handle cash production
     function produceCash(isIdle = false) {
-        let productionRate = currentMine.Factor || 1; // Base production rate based on mine factor
+        const productionRate = currentMine.Factor || 1; // Base production rate based on mine factor
+        const shaftsCount = currentMine.mineshafts.length; // Number of mineshafts
+
+        let totalGainPerSecond = 0;
+        currentMine.mineshafts.forEach(shaft => {
+            totalGainPerSecond += shaft.gainPerSecondPerWorker * shaft.numberOfWorkers;
+        });
 
         // Ensure managers are properly defined
-        if (!currentMine.managers.shaft) currentMine.managers.shaft = [];
-        if (!currentMine.managers.elevator) currentMine.managers.elevator = [];
-        if (!currentMine.managers.warehouse) currentMine.managers.warehouse = [];
+        currentMine.managers.shaft = currentMine.managers.shaft || [];
+        currentMine.managers.elevator = currentMine.managers.elevator || [];
+        currentMine.managers.warehouse = currentMine.managers.warehouse || [];
 
         // Check if all managers are assigned
         const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.assigned);
@@ -249,7 +254,7 @@ async function handleManagerWork(userId) {
         if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
             // Calculate cash based on efficiency (10% when idle)
             const efficiency = isIdle ? 0.1 : 1.0;
-            const cashProduced = productionRate * efficiency;
+            const cashProduced = totalGainPerSecond * productionRate * efficiency;
 
             // Add to either active cash or idle cash
             if (isIdle) {
@@ -258,32 +263,26 @@ async function handleManagerWork(userId) {
                 user.cash += cashProduced;
             }
         } else {
-            console.log(`Not all managers are assigned for user ${userId}, production halted.`);
+            console.log(`Not all managers are assigned for user ${user.id}, production halted.`);
         }
     }
 
-    // Function to start the work cycle
-    function startWorkCycle() {
-        setInterval(async () => {
-            const currentTime = Date.now();
-            const lastActivityTime = user.lastDaily;
+    // Determine if the user is idle
+    const currentTime = Date.now();
+    const lastActivityTime = user.lastDaily;
 
-            // Check if the user is idle (inactive for over 10 minutes)
-            const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
+    // Check if the user is idle (inactive for over 10 minutes)
+    const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
 
-            produceCash(isIdle);
+    // Produce cash
+    produceCash(isIdle);
 
-            // Save user data
-            try {
-                await updateUser(userId, user);
-            } catch (error) {
-                console.error('Error updating user data:', error);
-            }
-        }, 1000); // Run every second
+    // Save user data
+    try {
+        await updateUser(user.id, user);
+    } catch (error) {
+        console.error('Error updating user data:', error);
     }
-
-    // Start the work cycle when the function is called
-    startWorkCycle();
 }
 
 // In the bot's ready event
@@ -298,6 +297,21 @@ client.once('ready', async () => {
 
     // Load and initialize guild data
     scheduleNextUpdate(client);
+
+    // Set up an interval to call handleManagerWork for all users every second
+    setInterval(async () => {
+        try {
+            const allUsers = await getAllUsers(); // Retrieve all users
+
+            // Loop through all users and process their cash production
+            for (const userId in allUsers) {
+                const user = allUsers[userId];
+                await handleManagerWork(user);
+            }
+        } catch (error) {
+            console.error('Error handling manager work for users:', error);
+        }
+    }, 1000); // Interval set to 1000 milliseconds (1 second)
 });
 
 client.on('messageCreate', async message => {
@@ -313,19 +327,23 @@ client.on('messageCreate', async message => {
         const user = await getUser(message.author.id);
         if (user) {
             const currentTime = Date.now();
-            const lastActivityTime = user.lastDaily;
-            const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
+            const isIdle = currentTime - user.lastDaily > 10 * 60 * 1000;
 
             if (isIdle) {
-                const cashCollected = user.idleCash;
-                user.cash += cashCollected;
+                const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+                if (!currentMine) {
+                    return message.reply('Current mine data not found.');
+                }
+
+                const idleCash = await handleManagerWork(user, currentMine);
+                user.cash += idleCash;
                 user.idleCash = 0;
                 user.lastDaily = currentTime;
 
                 await updateUser(message.author.id, user);
-                await message.reply(`You have collected ${cashCollected} cash from your idle workers.`);
+                await message.reply(`You have collected ${idleCash} cash from your idle workers.`);
             } else {
-                await message.reply('You are not idle or do not have the appropriate managers to collect idle cash.');
+                await message.reply('You are not idle long enough to collect idle cash or do not have the appropriate managers assigned.');
             }
         } else {
             await message.reply('User data not found.');
