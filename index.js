@@ -193,12 +193,10 @@ const updateGuildData = async (client, guildId) => {
 };
 
 function scheduleNextUpdate(client) {
-    // Schedule the next update after 10 seconds
     setTimeout(() => {
         loadAssignedGuilds(client);
-        // Schedule the next update
         scheduleNextUpdate(client);
-    }, 10000); // 10 seconds in milliseconds
+    }, 10000);
 }
 
 // Function to start manager work
@@ -279,7 +277,7 @@ async function handleManagerWork(user) {
 
     // Save user data
     try {
-        await updateUser(user.id, user);
+        await updateUser(user, user);
     } catch (error) {
         console.error('Error updating user data:', error);
     }
