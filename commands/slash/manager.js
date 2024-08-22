@@ -238,7 +238,12 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         return interaction.reply('Invalid area specified.');
     }
 
-    // Ensure the area is initialized
+    // Ensure managers and area are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager by ID or name
@@ -247,7 +252,7 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         ...currentMine.managers.elevator,
         ...currentMine.managers.warehouse
     ];
-    
+
     const manager = allManagers.find(m =>
         m.id === parseInt(managerIdOrName) ||
         m.name.toLowerCase() === managerIdOrName.toLowerCase()
