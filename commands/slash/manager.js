@@ -276,26 +276,20 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     }
 
     // Ensure managers are properly initialized
-    if (!currentMine.managers) {
-        currentMine.managers = {
-            shaft: [],
-            elevator: [],
-            warehouse: []
-        };
-    } else {
-        // Ensure that each area is an array
-        ['shaft', 'elevator', 'warehouse'].forEach(a => {
-            if (!Array.isArray(currentMine.managers[a])) {
-                currentMine.managers[a] = [];
-            }
-        });
-    }
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
+
+    // Ensure the specific area is properly initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager by ID or name across all areas
     const allManagers = [
-        ...currentMine.managers.shaft,
-        ...currentMine.managers.elevator,
-        ...currentMine.managers.warehouse
+        ...(currentMine.managers.shaft || []),
+        ...(currentMine.managers.elevator || []),
+        ...(currentMine.managers.warehouse || [])
     ];
 
     const manager = allManagers.find(m =>
@@ -321,14 +315,18 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     // Remove the manager from all other areas and set `Assigned` to false
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
+            currentMine.managers[a] = currentMine.managers[a] || [];
             currentMine.managers[a] = currentMine.managers[a].map(m => {
                 if (m.ManagerID === manager.ManagerID) {
-                    m.Assigned = false;
+                    m.Assigned = false; // Set assigned to false for removal
                 }
                 return m;
             }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
         }
     });
+
+    // Remove any existing copy of the manager from the target area
+    currentMine.managers[area] = currentMine.managers[area].filter(m => m.ManagerID !== manager.ManagerID);
 
     // Assign the manager to the new area and set `Assigned` to true
     manager.Assigned = true;
