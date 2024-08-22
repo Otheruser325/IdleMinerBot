@@ -34,7 +34,7 @@ module.exports = {
 
         const subcommand = args[0];
         const area = args[1] ? args[1].toLowerCase() : null;
-        const identifierOrId = args.slice(2).join(' '); // Manager ID or name
+        const identifierOrId = args.slice(2).join(' ').trim(); // Manager ID or name
 
         switch (subcommand) {
             case 'hire':
@@ -164,13 +164,13 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     const identifierAsNumber = Number(identifierOrId);
     const isNumber = !isNaN(identifierAsNumber);
 
-    // Find the manager by ID or name across all areas
+    // Search across all areas
     let manager;
     let managerArea;
 
     for (const area of areas) {
-        manager = currentMine.managers[area].find(m => 
-            (isNumber && m.ManagerID === identifierAsNumber) || 
+        manager = currentMine.managers[area].find(m =>
+            (isNumber && m.ManagerID === identifierAsNumber) ||
             (!isNumber && m.Name.toLowerCase() === identifierOrId.toLowerCase())
         );
         if (manager) {
