@@ -193,7 +193,7 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply('Successfully fired the manager.');
+        return message.reply(`Successfully fired ${manager.Name} (${manager.ManagerID}).`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -319,7 +319,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply('Successfully removed manager from the area.');
+        return message.reply(`Successfully removed manager ${manager.Name} from the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');
