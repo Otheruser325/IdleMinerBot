@@ -143,10 +143,15 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
     }
 
     // Ensure managers for the area are initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Calculate the number of managers currently hired in the specified area
-    const numManagersHired = currentMine.managers[area].filter(m => m.assigned).length;
+    const numManagersHired = currentMine.managers[area].length;
 
     // Determine the cost of hiring based on the number of managers
     const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
@@ -195,10 +200,10 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        await interaction.reply(`Successfully hired ${newManager.Name} (${newManager.ManagerID}) for the ${area}.`);
+        return interaction.reply(`Successfully hired ${newManager.Name} (${newManager.ManagerID}) for the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
-        await interaction.reply('There was an error while updating your data. Please try again later.');
+        return interaction.reply('There was an error while updating your data. Please try again later.');
     }
 }
 
@@ -233,11 +238,22 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
 async function handleManagerAssign(interaction, user, currentMine, userId) {
     const managerIdOrName = interaction.options.getString('managerid_or_name');
     const area = interaction.options.getString('area').toLowerCase();
-    let manager;
+
+    // Ensure managers are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
+
+    // Ensure the specific area is properly initialized
+    if (!Array.isArray(currentMine.managers[area])) {
+        currentMine.managers[area] = [];
+    }
 
     // Find the manager by ID or name in all areas
     const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    manager = allManagers.find(m => m.id === parseInt(managerIdOrName) || m.name.toLowerCase() === managerIdOrName.toLowerCase());
+    const manager = allManagers.find(m => m.id === parseInt(managerIdOrName, 10) || m.name.toLowerCase() === managerIdOrName.toLowerCase());
 
     if (!manager) {
         return interaction.reply('Manager not found.');
@@ -255,8 +271,13 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
     currentMine.managers[area].push(manager);
 
     // Update the user's data in the database
-    await updateUser(userId, user);
-    await interaction.reply(`Successfully assigned ${manager.name} (${manager.id}) to the ${area}.`);
+    try {
+        await updateUser(userId, user);
+        return interaction.reply(`Successfully assigned ${manager.name} (${manager.id}) to the ${area}.`);
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        return interaction.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle removing a manager
