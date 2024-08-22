@@ -210,11 +210,16 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
 // Function to handle firing a manager
 async function handleManagerFire(interaction, user, currentMine, userId) {
     const identifier = interaction.options.getString('identifier');
-    let managerIndex;
+
+    // Defensive check for uninitialized managers object and specific area arrays
+    currentMine.managers = currentMine.managers || {};
+    currentMine.managers.shaft = currentMine.managers.shaft || [];
+    currentMine.managers.elevator = currentMine.managers.elevator || [];
+    currentMine.managers.warehouse = currentMine.managers.warehouse || [];
 
     // Check in all areas
     const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    managerIndex = allManagers.findIndex(m => m.id === parseInt(identifier) || m.name.toLowerCase() === identifier.toLowerCase());
+    const managerIndex = allManagers.findIndex(m => m.id === parseInt(identifier) || m.name.toLowerCase() === identifier.toLowerCase());
 
     if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
@@ -305,6 +310,10 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return interaction.reply('Invalid area.');
     }
+
+    // Defensive check for uninitialized managers object and specific area array
+    currentMine.managers = currentMine.managers || {};
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
     if (managerIndex === -1) {
