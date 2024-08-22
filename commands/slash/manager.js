@@ -213,22 +213,28 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     const identifier = interaction.options.getString('identifier');
 
     // Defensive check for uninitialized managers object and specific area arrays
-    currentMine.managers = currentMine.managers || {};
-    currentMine.managers.shaft = currentMine.managers.shaft || [];
-    currentMine.managers.elevator = currentMine.managers.elevator || [];
-    currentMine.managers.warehouse = currentMine.managers.warehouse || [];
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
 
     // Check in all areas
-    const allManagers = [...currentMine.managers.shaft, ...currentMine.managers.elevator, ...currentMine.managers.warehouse];
-    const managerIndex = allManagers.findIndex(m => m.ManagerID === parseInt(identifier) || m.Name.toLowerCase() === identifier.toLowerCase());
+    const allManagers = [
+        ...currentMine.managers.shaft,
+        ...currentMine.managers.elevator,
+        ...currentMine.managers.warehouse
+    ];
+    
+    const manager = allManagers.find(m => m.ManagerID === parseInt(identifier) || m.Name.toLowerCase() === identifier.toLowerCase());
 
-    if (managerIndex === -1) {
+    if (!manager) {
         return interaction.reply('Manager not found.');
     }
 
-    const manager = allManagers[managerIndex];
+    // Ensure the manager is unassigned before firing
     if (manager.Assigned) {
-        return interaction.reply('You cannot fire a manager who is currently assigned to an area. Use `/manager remove` to remove them from their area first.');
+        return interaction.reply('You cannot fire a manager who is currently assigned to an area. Use `/manager remove` to unassign them first.');
     }
 
     // Remove manager from all areas
@@ -236,8 +242,14 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     currentMine.managers.elevator = currentMine.managers.elevator.filter(m => m.ManagerID !== manager.ManagerID);
     currentMine.managers.warehouse = currentMine.managers.warehouse.filter(m => m.ManagerID !== manager.ManagerID);
 
-    await updateUser(userId, user);
-    await interaction.reply('Successfully fired the manager.');
+    // Update the user's data in the database
+    try {
+        await updateUser(userId, user);
+        return interaction.reply('Successfully fired the manager.');
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        return interaction.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle assigning a manager
