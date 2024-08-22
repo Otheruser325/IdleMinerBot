@@ -170,11 +170,13 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
 
     // Ensure managers are properly initialized
-    currentMine.managers = currentMine.managers || {
-        shaft: [],
-        elevator: [],
-        warehouse: []
-    };
+    if (!currentMine.managers) {
+        currentMine.managers = {
+            shaft: [],
+            elevator: [],
+            warehouse: []
+        };
+    }
 
     // Ensure the specific area is properly initialized
     if (!Array.isArray(currentMine.managers[area])) {
@@ -183,9 +185,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
     // Find the manager by ID or name
     const allManagers = [
-        ...currentMine.managers.shaft,
-        ...currentMine.managers.elevator,
-        ...currentMine.managers.warehouse
+        ...(currentMine.managers.shaft || []),
+        ...(currentMine.managers.elevator || []),
+        ...(currentMine.managers.warehouse || [])
     ];
 
     const manager = allManagers.find(m =>
@@ -210,13 +212,15 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
+            if (!Array.isArray(currentMine.managers[a])) {
+                currentMine.managers[a] = [];
+            }
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
 
     // Assign the manager to the new area
-    manager.assigned = true;
-    currentMine.managers[area].push(manager);
+    currentMine.managers[area].push({ ...manager, assigned: true });
 
     try {
         await updateUser(userId, user);
