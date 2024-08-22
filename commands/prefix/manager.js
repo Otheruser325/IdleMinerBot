@@ -125,9 +125,10 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
 
     const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
     currentMine.managers[area].push({
-        id: newManager.ManagerID,
-        name: newManager.Name,
-        assigned: false
+        ManagerID: newManager.ManagerID,
+        Name: newManager.Name,
+        Area: newManager.Area,
+        Assigned: false
     });
 
     // Update the user's data in the database
@@ -168,8 +169,8 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 
     for (const area of areas) {
         manager = currentMine.managers[area].find(m => 
-            m.id === identifierAsNumber || 
-            m.name.toLowerCase() === identifierOrId.toLowerCase()
+            m.ManagerID === identifierAsNumber || 
+            m.Name.toLowerCase() === identifierOrId.toLowerCase()
         );
         if (manager) {
             managerArea = area;
@@ -181,12 +182,12 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
         return message.reply('Manager not found.');
     }
 
-    if (manager.assigned) {
+    if (manager.Assigned) {
         return message.reply('You cannot fire a manager who is currently assigned to an area. Use `im!manager remove` to remove them from their area first.');
     }
 
     // Remove the manager from the respective area
-    currentMine.managers[managerArea] = currentMine.managers[managerArea].filter(m => m.id !== manager.id);
+    currentMine.managers[managerArea] = currentMine.managers[managerArea].filter(m => m.ManagerID !== manager.ManagerID);
 
     // Update the user's data in the database
     try {
@@ -231,8 +232,8 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     ];
 
     const manager = allManagers.find(m =>
-        m.id === parseInt(managerIdOrName, 10) ||
-        m.name.toLowerCase() === managerIdOrName.toLowerCase()
+        m.ManagerID === parseInt(managerIdOrName, 10) ||
+        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
     );
 
     if (!manager) {
@@ -240,7 +241,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
 
     // Check if the target area already has an assigned manager
-    const areaHasManager = currentMine.managers[area].some(m => m.assigned);
+    const areaHasManager = currentMine.managers[area].some(m => m.Assigned);
     if (areaHasManager) {
         return message.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
     }
@@ -250,21 +251,21 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     areas.forEach(a => {
         currentMine.managers[a] = currentMine.managers[a] || [];
         currentMine.managers[a] = currentMine.managers[a].map(m => {
-            if (m.id === manager.id) {
-                m.assigned = false;
+            if (m.ManagerID === manager.ManagerID) {
+                m.Assigned = false;
             }
             return m;
-        }).filter(m => m.id !== manager.id); // Remove manager from the area
+        }).filter(m => m.ManagerID !== manager.ManagerID); // Remove manager from the area
     });
 
     // Assign the manager to the new area and set `assigned` to true
-    manager.assigned = true;
+    manager.Assigned = true;
     currentMine.managers[area].push(manager);
 
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully assigned manager ${manager.name} to the ${area}.`);
+        return message.reply(`Successfully assigned manager ${manager.Name} to the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -282,7 +283,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     }
     
     // Check if the area is valid
-    if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
+    if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
     }
 
@@ -297,31 +298,25 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager in the specified area
-    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
+    const managerIndex = currentMine.managers[area].findIndex(m => m.ManagerID === managerId);
     if (managerIndex === -1) {
         return message.reply('Manager not found in this area.');
     }
 
     const manager = currentMine.managers[area][managerIndex];
 
-    if (!manager.assigned) {
+    if (!manager.Assigned) {
         return message.reply('Manager is not assigned to this area.');
     }
 
     // Remove manager from the area
     currentMine.managers[area].splice(managerIndex, 1);
 
-    // Update the manager's assigned status and push it back to the general pool
-    manager.assigned = false;
+    // Update the manager's assigned status to false
+    manager.Assigned = false;
 
-    // Initialize shaft array if not already present
-    currentMine.managers.shaft = currentMine.managers.shaft || [];
-    currentMine.managers.elevator = currentMine.managers.elevator || [];
-    currentMine.managers.warehouse = currentMine.managers.warehouse || [];
-
-    // Add the manager to the appropriate array
-    const areaToAdd = ['shaft', 'elevator', 'warehouse'].find(a => a !== area);
-    currentMine.managers[areaToAdd].push(manager);
+    // Ensure the manager is only removed from the specified area
+    // Managers are not moved to another area unless explicitly directed
 
     // Update the user's data in the database
     try {
@@ -349,7 +344,7 @@ async function handleManagerOverview(message, user, currentMine, area) {
         return message.reply(`No managers assigned to the ${area}.`);
     }
 
-    const managerList = areaManagers.map(m => `ID: ${m.id}, Name: ${m.name}, Assigned: ${m.assigned ? 'Yes' : 'No'}`).join('\n');
+    const managerList = areaManagers.map(m => `ID: ${m.ManagerID}, Name: ${m.Name}, Assigned: ${m.Assigned ? 'Yes' : 'No'}`).join('\n');
     const embed = new EmbedBuilder()
         .setTitle(`Managers in ${area.charAt(0).toUpperCase() + area.slice(1)}`)
         .setDescription(managerList)
