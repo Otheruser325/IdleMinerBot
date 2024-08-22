@@ -238,6 +238,9 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
         return interaction.reply('Invalid area.');
     }
 
+    // Ensure the area is initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
+
     const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
     if (managerIndex === -1) {
         return interaction.reply('Manager not found.');
