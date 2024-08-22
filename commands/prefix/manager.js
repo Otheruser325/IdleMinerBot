@@ -177,7 +177,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     };
 
     // Ensure the specific area is properly initialized
-    currentMine.managers[area] = currentMine.managers[area] || [];
+    if (!Array.isArray(currentMine.managers[area])) {
+        currentMine.managers[area] = [];
+    }
 
     // Find the manager by ID or name
     const allManagers = [
@@ -208,9 +210,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
-            // Ensure the area is initialized
-            currentMine.managers[a] = currentMine.managers[a] || [];
-            // Remove the manager from this area
+            if (!Array.isArray(currentMine.managers[a])) {
+                currentMine.managers[a] = [];
+            }
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
