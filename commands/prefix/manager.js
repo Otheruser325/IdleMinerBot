@@ -168,8 +168,8 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     let managerArea;
 
     for (const area of areas) {
-        manager = currentMine.managers[area].find(m => 
-            m.ManagerID === identifierAsNumber || 
+        manager = currentMine.managers[area].find(m =>
+            m.ManagerID === identifierAsNumber ||
             m.Name.toLowerCase() === identifierOrId.toLowerCase()
         );
         if (manager) {
@@ -280,7 +280,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 // Function to handle removing a manager
 async function handleManagerRemove(message, user, currentMine, userId, managerId, area) {
     if (!managerId) {
-        return message.reply('Please mention the ID or name of the manager you want to remove from the area. Usage: im!manager remove warehouse 1');
+        return message.reply('Please mention the ID of the manager you want to remove from the area. Usage: im!manager remove warehouse 1');
     }
 
     if (!area) {
@@ -303,25 +303,17 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager in the specified area
-    const managerIndex = currentMine.managers[area].findIndex(m => m.ManagerID === managerId);
-    if (managerIndex === -1) {
+    const manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
+    if (!manager) {
         return message.reply('Manager not found in this area.');
     }
-
-    const manager = currentMine.managers[area][managerIndex];
 
     if (!manager.Assigned) {
         return message.reply('Manager is not assigned to this area.');
     }
 
-    // Remove manager from the area
-    currentMine.managers[area].splice(managerIndex, 1);
-
     // Update the manager's assigned status to false
     manager.Assigned = false;
-
-    // Ensure the manager is only removed from the specified area
-    // Managers are not moved to another area unless explicitly directed
 
     // Update the user's data in the database
     try {
