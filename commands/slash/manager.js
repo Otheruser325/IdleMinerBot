@@ -339,7 +339,18 @@ async function handleManagerOverview(interaction, user, currentMine) {
         return interaction.reply('Invalid area.');
     }
 
+    // Ensure managers are properly initialized
+    currentMine.managers = currentMine.managers || {
+        shaft: [],
+        elevator: [],
+        warehouse: []
+    };
+
+    // Ensure the specified area is properly initialized
+    currentMine.managers[area] = currentMine.managers[area] || [];
+
     const managersInArea = currentMine.managers[area];
+
     if (managersInArea.length === 0) {
         return interaction.reply(`There are no managers currently in the ${area}.`);
     }
