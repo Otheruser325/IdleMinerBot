@@ -185,10 +185,10 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         ...currentMine.managers.elevator,
         ...currentMine.managers.warehouse
     ];
-    
-    const manager = allManagers.find(m =>
-        m.id === parseInt(managerIdOrName) ||
-        m.name.toLowerCase() === managerIdOrName.toLowerCase()
+
+    const manager = allManagers.find(m => 
+        m.id === parseInt(managerIdOrName, 10) ||
+        (typeof managerIdOrName === 'string' && m.name.toLowerCase() === managerIdOrName.toLowerCase())
     );
 
     if (!manager) {
@@ -200,12 +200,12 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         return message.reply('Manager is already assigned to another area.');
     }
 
-    // Check if the area already has an assigned manager
+    // Check if the target area already has an assigned manager
     if (currentMine.managers[area].some(m => m.assigned)) {
         return message.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
     }
 
-    // Remove manager from all other areas
+    // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
