@@ -153,19 +153,26 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
         warehouse: []
     };
 
+    // Ensure that the managers for all areas are initialized
+    const areas = ['shaft', 'elevator', 'warehouse'];
+    areas.forEach(area => {
+        currentMine.managers[area] = currentMine.managers[area] || [];
+    });
+
     // Find the manager by ID or name across all areas
     let manager;
     let managerArea;
 
-    ['shaft', 'elevator', 'warehouse'].forEach(area => {
-        if (!manager) {
-            manager = currentMine.managers[area].find(m => 
-                m.id === parseInt(identifierOrId) || 
-                m.name.toLowerCase() === identifierOrId.toLowerCase()
-            );
-            if (manager) managerArea = area;
+    for (const area of areas) {
+        manager = currentMine.managers[area].find(m => 
+            m.id === parseInt(identifierOrId) || 
+            m.name.toLowerCase() === identifierOrId.toLowerCase()
+        );
+        if (manager) {
+            managerArea = area;
+            break;
         }
-    });
+    }
 
     if (!manager) {
         return message.reply('Manager not found.');
@@ -190,14 +197,14 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 
 // Function to handle assigning a manager
 async function handleManagerAssign(message, user, currentMine, userId, managerIdOrName, area) {
-    if (!managerIdOrName) {
-        return message.reply('Please mention the ID or name of the manager you want to assign from the area. Usage: im!manager assign warehouse 1');
-    }
-
     if (!area) {
         return message.reply('Please specify the area. Available areas: shaft, elevator, warehouse.');
     }
     
+    if (!managerIdOrName) {
+        return message.reply('Please mention the ID or name of the manager you want to assign from the area. Usage: im!manager assign warehouse 1');
+    }
+
     // Check if the area is valid
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
@@ -211,9 +218,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     };
 
     // Ensure the specific area is properly initialized
-    if (!Array.isArray(currentMine.managers[area])) {
-        currentMine.managers[area] = [];
-    }
+    currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager by ID or name across all areas
     const allManagers = [
@@ -224,7 +229,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
     const manager = allManagers.find(m =>
         m.id === parseInt(managerIdOrName, 10) ||
-        (typeof managerIdOrName === 'string' && m.name.toLowerCase() === managerIdOrName.toLowerCase())
+        m.name.toLowerCase() === managerIdOrName.toLowerCase()
     );
 
     if (!manager) {
@@ -238,7 +243,9 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
 
     // Remove the manager from all other areas and set `assigned` to false
-    ['shaft', 'elevator', 'warehouse'].forEach(a => {
+    const areas = ['shaft', 'elevator', 'warehouse'];
+    areas.forEach(a => {
+        currentMine.managers[a] = currentMine.managers[a] || [];
         currentMine.managers[a] = currentMine.managers[a].map(m => {
             if (m.id === manager.id) {
                 m.assigned = false;
@@ -319,6 +326,10 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
 
 // Function to handle overview of managers in an area
 async function handleManagerOverview(message, user, currentMine, area) {
+    if (!area) {
+        return message.reply('Please specify the area. Available areas: shaft, elevator, warehouse.');
+    }
+    
     if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
         return message.reply('Invalid area specified.');
     }
