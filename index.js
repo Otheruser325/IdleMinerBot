@@ -200,7 +200,7 @@ function scheduleNextUpdate(client) {
 }
 
 // Function to start manager work
-async function handleManagerWork(user) {
+async function handleManagerWork(user, userId) {
     // Check if user data is valid
     if (!user) {
         console.error('User data is undefined or invalid.');
@@ -217,7 +217,7 @@ async function handleManagerWork(user) {
     const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
 
     if (!currentMine) {
-        console.error(`Current mine data for user ${user.id} not found.`);
+        console.error(`Current mine data for user ${userId} not found.`);
         return;
     }
 
@@ -261,7 +261,7 @@ async function handleManagerWork(user) {
                 user.cash += cashProduced;
             }
         } else {
-            console.log(`Not all managers are assigned for user ${user.id}, production halted.`);
+            console.log(`Not all managers are assigned for user ${userId}, production halted.`);
         }
     }
 
@@ -277,7 +277,12 @@ async function handleManagerWork(user) {
 
     // Save user data
     try {
-        await updateUser(user, user);
+        await updateUser(userId, {
+            cash: user.cash,
+            idleCash: user.idleCash,
+            lastDaily: user.lastDaily,
+            mines: user.mines
+        });
     } catch (error) {
         console.error('Error updating user data:', error);
     }
@@ -304,7 +309,7 @@ client.once('ready', async () => {
             // Loop through all users and process their cash production
             for (const userId in allUsers) {
                 const user = allUsers[userId];
-                await handleManagerWork(user);
+                await handleManagerWork(user, userId);
             }
         } catch (error) {
             console.error('Error handling manager work for users:', error);
