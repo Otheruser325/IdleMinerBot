@@ -60,6 +60,10 @@ module.exports = {
 
 // Function to handle hiring a manager
 async function handleManagerHire(message, user, currentMine, userId, area) {
+    if (!area) {
+        return message.reply('Please mention the area you want to hire the manager in. Available areas: shaft, elevator, warehouse.');
+    }
+    
     // Check if area is valid
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
@@ -138,6 +142,10 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
 
 // Function to handle firing a manager
 async function handleManagerFire(message, user, currentMine, userId, identifierOrId) {
+    if (!identifierOrId) {
+        return message.reply('Please mention the ID or name of the manager you want to fire.');
+    }
+
     // Ensure managers are properly initialized
     currentMine.managers = currentMine.managers || {
         shaft: [],
@@ -164,7 +172,7 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
     }
 
     if (manager.assigned) {
-        return message.reply('You cannot fire a manager who is currently assigned to an area. Use `!manager remove` to remove them from their area first.');
+        return message.reply('You cannot fire a manager who is currently assigned to an area. Use `im!manager remove` to remove them from their area first.');
     }
 
     // Remove the manager from the respective area
@@ -182,6 +190,14 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
 
 // Function to handle assigning a manager
 async function handleManagerAssign(message, user, currentMine, userId, managerIdOrName, area) {
+    if (!managerIdOrName) {
+        return message.reply('Please mention the ID or name of the manager you want to assign from the area. Usage: im!manager assign warehouse 1');
+    }
+
+    if (!area) {
+        return message.reply('Please specify the area. Available areas: shaft, elevator, warehouse.');
+    }
+    
     // Check if the area is valid
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
@@ -247,6 +263,14 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
 // Function to handle removing a manager
 async function handleManagerRemove(message, user, currentMine, userId, managerId, area) {
+    if (!managerId) {
+        return message.reply('Please mention the ID or name of the manager you want to remove from the area. Usage: im!manager remove warehouse 1');
+    }
+
+    if (!area) {
+        return message.reply('Please specify the area. Available areas: shaft, elevator, warehouse.');
+    }
+    
     // Check if the area is valid
     if (!['elevator', 'warehouse', 'shaft'].includes(area)) {
         return message.reply('Invalid area specified.');
