@@ -64,7 +64,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
         return message.reply('Invalid area specified.');
     }
-    
+
     const managersAvailable = managerData.filter(m => m.Area.toLowerCase() === area);
 
     if (managersAvailable.length === 0) {
@@ -80,7 +80,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Calculate the number of managers currently hired in the specified area
-    const numManagersHired = (currentMine.managers[area] || []).filter(m => m.assigned).length;
+    const numManagersHired = (currentMine.managers[area] || []).length;
 
     // Determine the cost of hiring based on the number of managers
     const managerCost = managerCosts.find(c => c.AmountManagersBought === numManagersHired);
@@ -210,15 +210,13 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Remove the manager from all other areas
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         if (a !== area) {
-            if (!Array.isArray(currentMine.managers[a])) {
-                currentMine.managers[a] = [];
-            }
             currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
         }
     });
 
     // Assign the manager to the new area
-    currentMine.managers[area].push({ ...manager, assigned: true });
+    manager.assigned = true;
+    currentMine.managers[area].push(manager);
 
     try {
         await updateUser(userId, user);
