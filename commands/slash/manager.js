@@ -37,9 +37,9 @@ module.exports = {
             subcommand
                 .setName('assign')
                 .setDescription('Assign a manager to a work area.')
-                .addIntegerOption(option =>
-                    option.setName('managerid')
-                        .setDescription('The ID of the manager to assign.')
+                .addStringOption(option =>
+                    option.setName('managerid_or_name')
+                        .setDescription('The ID or name of the manager to assign.')
                         .setRequired(true)
                 )
                 .addStringOption(option =>
@@ -231,30 +231,62 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
 
 // Function to handle assigning a manager
 async function handleManagerAssign(interaction, user, currentMine, userId) {
-    const managerId = interaction.options.getInteger('managerid');
+    const managerIdOrName = interaction.options.getString('managerid_or_name');
     const area = interaction.options.getString('area').toLowerCase();
 
     if (!['shaft', 'elevator', 'warehouse'].includes(area)) {
-        return interaction.reply('Invalid area.');
+        return interaction.reply('Invalid area specified.');
     }
 
     // Ensure the area is initialized
     currentMine.managers[area] = currentMine.managers[area] || [];
 
-    const managerIndex = currentMine.managers[area].findIndex(m => m.id === managerId);
-    if (managerIndex === -1) {
+    // Find the manager by ID or name
+    const allManagers = [
+        ...currentMine.managers.shaft,
+        ...currentMine.managers.elevator,
+        ...currentMine.managers.warehouse
+    ];
+    
+    const manager = allManagers.find(m =>
+        m.id === parseInt(managerIdOrName) ||
+        m.name.toLowerCase() === managerIdOrName.toLowerCase()
+    );
+
+    if (!manager) {
         return interaction.reply('Manager not found.');
     }
 
     // Check if the manager is already assigned
-    if (currentMine.managers[area][managerIndex].assigned) {
-        return interaction.reply('This manager is already assigned.');
+    if (manager.assigned) {
+        return interaction.reply('This manager is already assigned to another area.');
     }
 
-    // Assign the manager
-    currentMine.managers[area][managerIndex].assigned = true;
-    await updateUser(userId, user);
-    await interaction.reply(`Successfully assigned the manager to the ${area}.`);
+    // Check if the target area already has an assigned manager
+    if (currentMine.managers[area].some(m => m.assigned)) {
+        return interaction.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
+    }
+
+    // Remove the manager from all other areas
+    ['shaft', 'elevator', 'warehouse'].forEach(a => {
+        if (a !== area) {
+            currentMine.managers[a] = currentMine.managers[a].filter(m => m.id !== manager.id);
+        }
+    });
+
+    // Assign the manager to the new area
+    if (!currentMine.managers[area]) {
+        currentMine.managers[area] = [];
+    }
+    currentMine.managers[area].push({ ...manager, assigned: true });
+
+    try {
+        await updateUser(userId, user);
+        return interaction.reply(`Successfully assigned manager ${manager.name} to the ${area}.`);
+    } catch (error) {
+        console.error('Failed to update user data:', error);
+        return interaction.reply('There was an error while updating your data. Please try again later.');
+    }
 }
 
 // Function to handle removing a manager
