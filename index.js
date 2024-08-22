@@ -241,11 +241,12 @@ async function handleManagerWork(userId) {
         if (!currentMine.managers.warehouse) currentMine.managers.warehouse = [];
 
         // Check if all managers are assigned
-        const shaftManager = currentMine.managers.shaft.some(m => m.assigned);
-        const elevatorManager = currentMine.managers.elevator.some(m => m.assigned);
-        const warehouseManager = currentMine.managers.warehouse.some(m => m.assigned);
+        const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.assigned);
+        const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.assigned);
+        const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.assigned);
 
-        if (shaftManager && elevatorManager && warehouseManager) {
+        // Ensure all required managers are assigned before producing cash
+        if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
             // Calculate cash based on efficiency (10% when idle)
             const efficiency = isIdle ? 0.1 : 1.0;
             const cashProduced = productionRate * efficiency;
@@ -256,6 +257,8 @@ async function handleManagerWork(userId) {
             } else {
                 user.cash += cashProduced;
             }
+        } else {
+            console.log(`Not all managers are assigned for user ${userId}, production halted.`);
         }
     }
 
@@ -283,6 +286,7 @@ async function handleManagerWork(userId) {
     startWorkCycle();
 }
 
+// In the bot's ready event
 client.once('ready', async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
