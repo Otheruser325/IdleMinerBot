@@ -206,7 +206,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     }
     
     if (!managerIdOrName) {
-        return message.reply('Please mention the ID or name of the manager you want to assign from the area. Usage: im!manager assign warehouse 1');
+        return message.reply('Please mention the ID or name of the manager you want to assign. Usage: im!manager assign warehouse 1');
     }
 
     // Check if the area is valid
@@ -238,6 +238,11 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
     if (!manager) {
         return message.reply('Manager not found.');
+    }
+
+    // Verify the manager’s area compatibility
+    if (manager.Area.toLowerCase() !== area.toLowerCase()) {
+        return message.reply(`Manager ${manager.Name} cannot be assigned to the ${area}. They are only available for the ${manager.Area}.`);
     }
 
     // Check if the target area already has an assigned manager
