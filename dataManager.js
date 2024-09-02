@@ -42,7 +42,7 @@ async function initializeUser(userId, username) {
                     },
                     barriers: mineRegions.map((region, index) => ({
                         ...region,
-                        unlocked: index === 0 // The first barrier is always unlocked
+                        unlocked: index === 0
                     }))
                 }
             ],
