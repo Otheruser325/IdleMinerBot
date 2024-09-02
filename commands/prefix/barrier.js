@@ -10,7 +10,7 @@ module.exports = {
     exampleUsage: 'v barrier unlock 1',
     async execute(message, args) {
         if (args.length < 1) {
-            return message.reply('Please provide a subcommand: `unlock`.');
+            return message.reply('Please provide a subcommand: `unlock`, `overview`, or `remove`.');
         }
 
         const subcommand = args[0].toLowerCase();
@@ -30,8 +30,14 @@ module.exports = {
             case 'unlock':
                 await handleUnlock(message, user, currentMine, args, userId);
                 break;
+            case 'overview':
+                await handleOverview(message, currentMine);
+                break;
+            case 'remove':
+                await handleRemove(message, user, currentMine, args, userId);
+                break;
             default:
-                return message.reply('Invalid subcommand. Use `unlock`.');
+                return message.reply('Invalid subcommand. Use `unlock`, `overview`, or `remove`.');
         }
     }
 };
@@ -45,8 +51,21 @@ async function handleUnlock(message, user, currentMine, args, userId) {
     }
 
     const barrier = currentMine.barriers[barrierOrder];
+    const previousBarrier = currentMine.barriers[barrierOrder - 1];
+
     if (!barrier) {
         return message.reply('Barrier data not found.');
+    }
+
+    if (!previousBarrier.unlocked && barrierOrder > 1) {
+        return message.reply(`You must unlock Barrier ${barrierOrder - 1} before unlocking Barrier ${barrierOrder}.`);
+    }
+
+    const requiredTier = (barrierOrder === 1) ? 5 : 10;
+    const requiredShaftsUnlocked = currentMine.mineshafts.some(shaft => shaft.tier >= requiredTier);
+
+    if (!requiredShaftsUnlocked) {
+        return message.reply(`You must have unlocked shafts of tier ${requiredTier} to unlock Barrier ${barrierOrder}.`);
     }
 
     if (barrier.unlocked) {
@@ -57,11 +76,52 @@ async function handleUnlock(message, user, currentMine, args, userId) {
         return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(barrier.Cost)}`);
     }
 
-    // Deduct the cash and set the barrier as unlocked
+    // Deduct the cash and set the barrier as in the process of being unlocked
     user.cash -= barrier.Cost;
-    barrier.unlocked = true;
+    barrier.unlockTime = Date.now() + barrier.BuildTimeInSeconds * 1000;
 
     await updateUser(userId, user);
 
-    return message.reply(`Successfully unlocked Barrier ${barrierOrder}, allowing you to access shafts from Tier ${barrier.FromTier} to ${barrier.ToTier}.`);
+    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.BuildTimeInSeconds} seconds.`);
+}
+
+// Function to handle the "overview" subcommand
+async function handleOverview(message, currentMine) {
+    const embed = new EmbedBuilder()
+        .setTitle('Barrier Overview')
+        .setDescription('Here is the current status of your barriers:')
+        .setColor('#00FF00');
+
+    currentMine.barriers.forEach((barrier, index) => {
+        const status = barrier.unlocked ? 'Unlocked' : `Locked (Unlocking in ${Math.max(0, Math.floor((barrier.unlockTime - Date.now()) / 1000))} seconds)`;
+        embed.addFields({ name: `Barrier ${index + 1}`, value: status, inline: true });
+    });
+
+    message.reply({ embeds: [embed] });
+}
+
+// Function to handle the "remove" subcommand
+async function handleRemove(message, user, currentMine, args, userId) {
+    const barrierOrder = parseInt(args[1], 10);
+
+    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
+        return message.reply('Please provide a valid barrier order number.');
+    }
+
+    const barrier = currentMine.barriers[barrierOrder];
+
+    if (!barrier) {
+        return message.reply('Barrier data not found.');
+    }
+
+    if (!barrier.unlockTime || Date.now() < barrier.unlockTime) {
+        return message.reply(`Barrier ${barrierOrder} is still being removed. Please wait until the process is complete.`);
+    }
+
+    barrier.unlocked = true;
+    barrier.unlockTime = null;
+
+    await updateUser(userId, user);
+
+    return message.reply(`Successfully removed Barrier ${barrierOrder}. You can now access new shafts.`);
 }
