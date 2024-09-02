@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
+const mineRegions = require('./config/mineRegions.json');
 const admin = require('firebase-admin');
 const db = admin.database();
 
@@ -286,6 +287,45 @@ async function handleManagerWork(user, userId) {
     }
 }
 
+// Function to handle missing data for all users
+async function handleMissingData() {
+    try {
+        const allUsers = await getAllUsers();
+
+        for (const userId in allUsers) {
+            const user = allUsers[userId];
+
+            user.mines = user.mines || [];
+            user.cash = user.cash || 0;
+            user.idleCash = user.idleCash || 0;
+            user.lastDaily = user.lastDaily || Date.now();
+            user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
+
+            for (const mine of user.mines) {
+                mine.PrestigeCount = mine.PrestigeCount || 0;
+                mine.MineNumber = mine.MineNumber || 1;
+                mine.Factor = mine.Factor || 1;
+                mine.mineshafts = mine.mineshafts || [];
+                mine.elevator = mine.elevator || [];
+                mine.warehouse = mine.warehouse || [];
+                mine.managers = mine.managers || { shaft: [], elevator: [], warehouse: [] };
+
+                // Initialize barriers if not present
+                if (!mine.barriers) {
+                    mine.barriers = mineRegions.map((region, index) => ({
+                        ...region,
+                        unlocked: index === 0
+                    }));
+                }
+            }
+
+            await updateUser(userId, user);
+        }
+    } catch (error) {
+        console.error('Error handling missing data for users:', error);
+    }
+}
+
 // In the bot's ready event
 client.once('ready', async () => {
     console.log('Bot is online!');
@@ -313,6 +353,11 @@ client.once('ready', async () => {
             console.error('Error handling manager work for users:', error);
         }
     }, 1000); // Interval set to 1000 milliseconds (1 second)
+
+    // Set up an interval to handle missing data every 10 seconds
+    setInterval(async () => {
+        await handleMissingData();
+    }, 10000); // Interval set to 10000 milliseconds (10 seconds)
 });
 
 client.on('messageCreate', async message => {
