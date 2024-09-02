@@ -115,6 +115,11 @@ async function handleOverview(interaction, user, currentMine, tier, userId) {
 
 // Function to handle the "buy" subcommand
 async function handleBuy(interaction, user, currentMine, tier, userId) {
+    const previousTierShaft = currentMine.mineshafts.find(s => s.tier === tier - 1);
+    if (tier > 1 && !previousTierShaft) {
+        return message.reply(`You need to own Shaft Tier ${tier - 1} before purchasing Shaft Tier ${tier}.`);
+    }
+    
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
