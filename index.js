@@ -326,6 +326,30 @@ async function handleMissingData() {
     }
 }
 
+// Function to handle barrier unlock time
+async function handleBarrierUnlockTime() {
+    try {
+        const allUsers = await getAllUsers();
+
+        for (const userId in allUsers) {
+            const user = allUsers[userId];
+
+            user.mines.forEach(mine => {
+                mine.barriers.forEach(barrier => {
+                    if (barrier.unlockTime && Date.now() >= barrier.unlockTime) {
+                        barrier.unlocked = true;
+                        barrier.unlockTime = null;
+                    }
+                });
+            });
+
+            await updateUser(userId, user);
+        }
+    } catch (error) {
+        console.error('Error handling barrier unlock time:', error);
+    }
+}
+
 // In the bot's ready event
 client.once('ready', async () => {
     console.log('Bot is online!');
@@ -358,6 +382,11 @@ client.once('ready', async () => {
     setInterval(async () => {
         await handleMissingData();
     }, 10000); // Interval set to 10000 milliseconds (10 seconds)
+
+    // Check barrier unlock time
+    setInterval(async () => {
+        await handleBarrierUnlockTime();
+    }, 1000); // Check every second
 });
 
 client.on('messageCreate', async message => {
