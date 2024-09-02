@@ -103,7 +103,7 @@ async function handleUnlock(interaction, user, currentMine, userId) {
 async function handleOverview(interaction, currentMine) {
     const embed = new EmbedBuilder()
         .setTitle('Barrier Overview')
-        .setDescription(`Here is the current status of your barriers in the ${currentMine}:`)
+        .setDescription(`Here is the current status of your barriers in the ${currentMine.MineName}:`)
         .setColor('#00FF00');
 
     currentMine.barriers.forEach((barrier, index) => {
