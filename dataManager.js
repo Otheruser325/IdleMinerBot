@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 const serviceAccount = require('./config/serviceAccountKey.json');
+const mineRegions = require('./config/mineRegions.json');
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -38,7 +39,11 @@ async function initializeUser(userId, username) {
                         shaft: [],
                         elevator: [],
                         warehouse: []
-                    }
+                    },
+                    barriers: mineRegions.map((region, index) => ({
+                        ...region,
+                        unlocked: index === 0 // The first barrier is always unlocked
+                    }))
                 }
             ],
             activeBoosts: [],
