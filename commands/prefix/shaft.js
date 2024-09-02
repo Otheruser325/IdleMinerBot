@@ -101,6 +101,12 @@ async function handleBuy(message, user, currentMine, args, userId) {
         return message.reply('Please provide a valid shaft tier number between 1 and 40.');
     }
 
+    // Check if the shaft can be purchased based on tier order
+    const previousTierShaft = currentMine.mineshafts.find(s => s.tier === tier - 1);
+    if (tier > 1 && !previousTierShaft) {
+        return message.reply(`You need to own Shaft Tier ${tier - 1} before purchasing Shaft Tier ${tier}.`);
+    }
+
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
