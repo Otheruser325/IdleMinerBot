@@ -93,7 +93,11 @@ async function handleMineBuy(interaction, mineName, user, userId) {
             shaft: [],
             elevator: [],
             warehouse: []
-        }
+        },
+        barriers: mineRegions.map((region, index) => ({
+            ...region,
+            unlocked: index === 0
+        }))
     });
     user.currentMine = mine.MineName;
 
