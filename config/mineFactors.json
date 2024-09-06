@@ -12,7 +12,7 @@
             "PrestigeCount": 0,
             "MineNumber": 2,
             "MineName": "Gold Mine",
-            "Cost": 76800000000000000,
+            "Cost": 7.68e+19,
             "Factor": 3,
             "SuperCashGained": 0
         },
@@ -20,25 +20,65 @@
             "PrestigeCount": 0,
             "MineNumber": 3,
             "MineName": "Ruby Mine",
-            "Cost": 3130000000000000000000000,
-            "Factor": 7,
+            "Cost": 6.1399999999999999e+24,
+            "Factor": 6,
             "SuperCashGained": 0
         },
         {
             "PrestigeCount": 0,
             "MineNumber": 4,
             "MineName": "Diamond Mine",
-            "Cost": 261000000000000000000000000000,
-            "Factor": 12,
+            "Cost": 2.4500000000000001e+29,
+            "Factor": 10,
             "SuperCashGained": 0
         },
         {
             "PrestigeCount": 0,
             "MineNumber": 5,
             "MineName": "Emerald Mine",
-            "Cost": 745000000000000000000000000000000000,
-            "Factor": 20,
+            "Cost": 2.4500000000000001e+35,
+            "Factor": 14,
             "SuperCashGained": 0
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 1,
+            "MineName": "Coal Mine",
+            "Cost": 2.3299999999999999e+22,
+            "Factor": 4,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 2,
+            "MineName": "Gold Mine",
+            "Cost": 1.42e+26,
+            "Factor": 8,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 3,
+            "MineName": "Ruby Mine",
+            "Cost": 5.8000000000000005e+33,
+            "Factor": 12,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 4,
+            "MineName": "Diamond Mine",
+            "Cost": 2.4000000000000002e+41,
+            "Factor": 17,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 5,
+            "MineName": "Emerald Mine",
+            "Cost": 9.8000000000000003e+55,
+            "Factor": 24,
+            "SuperCashGained": 200
         }
     ]
 }

@@ -194,10 +194,33 @@ const updateGuildData = async (client, guildId) => {
 };
 
 function scheduleNextUpdate(client) {
-    setTimeout(() => {
+    setInterval(() => {
         loadAssignedGuilds(client);
-        scheduleNextUpdate(client);
     }, 10000);
+	
+	// Check barrier unlock time
+    setInterval(async () => {
+        await handleBarrierUnlockTime();
+    }, 1000);
+
+    setInterval(async () => {
+        await handleMissingData();
+    }, 10000);
+	
+	// Set up an interval to call handleManagerWork for all users every second
+    setInterval(async () => {
+        try {
+            const allUsers = await getAllUsers(); // Retrieve all users
+
+            // Loop through all users and process their cash production
+            for (const userId in allUsers) {
+                const user = allUsers[userId];
+                await handleManagerWork(user, userId);
+            }
+        } catch (error) {
+            console.error('Error handling manager work for users:', error);
+        }
+    }, 1000); // Interval set to 1000 milliseconds (1 second)
 }
 
 // Function to start manager work
@@ -362,31 +385,6 @@ client.once('ready', async () => {
 
     // Load and initialize guild data
     scheduleNextUpdate(client);
-
-    // Set up an interval to call handleManagerWork for all users every second
-    setInterval(async () => {
-        try {
-            const allUsers = await getAllUsers(); // Retrieve all users
-
-            // Loop through all users and process their cash production
-            for (const userId in allUsers) {
-                const user = allUsers[userId];
-                await handleManagerWork(user, userId);
-            }
-        } catch (error) {
-            console.error('Error handling manager work for users:', error);
-        }
-    }, 1000); // Interval set to 1000 milliseconds (1 second)
-
-    // Set up an interval to handle missing data every 10 seconds
-    setInterval(async () => {
-        await handleMissingData();
-    }, 10000); // Interval set to 10000 milliseconds (10 seconds)
-
-    // Check barrier unlock time
-    setInterval(async () => {
-        await handleBarrierUnlockTime();
-    }, 1000); // Check every second
 });
 
 client.on('messageCreate', async message => {

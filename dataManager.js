@@ -128,23 +128,21 @@ async function addUserToGuild(guildId, userId) {
 }
 
 // Get a user from a specific guild from Realtime Database
-async function getUserInGuild(guildId, userId) {
-    const guildRef = db.ref(`guilds/${guildId}`);
-    const snapshot = await guildRef.once('value');
+const getUserInGuild = async (guildId, userId) => {
+    try {
+        const guild = await db.ref(`guilds/${guildId}`).once('value');
+        if (!guild.exists()) return null;
 
-    if (snapshot.exists()) {
-        const guildData = snapshot.val();
-        if (guildData.members && guildData.members.includes(userId)) {
-            const userRef = db.ref(`users/${userId}`);
-            const userSnapshot = await userRef.once('value');
-            return userSnapshot.exists() ? userSnapshot.val() : null; // User not found
-        } else {
-            return null; // User not a member of the guild
-        }
-    } else {
-        return null; // Guild not found
+        const guildData = guild.val();
+        if (!guildData || !guildData.users) return null;
+
+        const userData = guildData.users[userId];
+        return userData ? { ...userData, userId } : null;
+    } catch (error) {
+        console.error(`Error fetching user ${userId} in guild ${guildId}:`, error);
+        return null;
     }
-}
+};
 
 // Get users in a specific guild from Realtime Database
 async function getUsersInGuild(guildId) {
