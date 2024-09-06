@@ -61,65 +61,38 @@ async function loadAssignedGuilds(client) {
     try {
         const guildsCache = client.guilds.cache;
 
+        // Array to hold the promises for each guild processing
+        const guildPromises = [];
+
         for (const [guildId, guild] of guildsCache) {
-            // Fetch or initialize the guild's data
-            let guildData = (await db.ref(`guilds/${guildId}`).once('value')).val();
-            if (!guildData) {
-                guildData = {
-                    id: guildId,
-                    name: guild.name,
-                    memberCount: guild.memberCount,
-                    members: [], // Initialize empty members array
-                    users: {} // Start with an empty users object
-                };
-                await db.ref(`guilds/${guildId}`).set(guildData);
-            } else {
-                guildData.memberCount = guild.memberCount;
-            }
-
-            // Clear the guild's members list to avoid duplicates
-            guildData.members = [];
-
-            // Ensure users object is initialized
-            if (!guildData.users) {
-                guildData.users = {}; // Initialize empty users object if undefined
-            }
-
-            // Fetch all members of the guild in batches
-            let nextBatch;
-            let lastMemberId = null;
-
-            do {
-                nextBatch = await guild.members.fetch({ 
-                    limit: 1000, 
-                    after: lastMemberId 
-                });
-                lastMemberId = nextBatch.size > 0 ? [...nextBatch.values()][nextBatch.size - 1].id : null;
-
-                for (const member of nextBatch.values()) {
-                    const userId = member.user.id;
-
-                    // Skip bot users
-                    if (member.user.bot) continue;
-
-                    // Only add the user if they exist in the users collection
-                    const userData = (await db.ref(`users/${userId}`).once('value')).val();
-                    if (userData) {
-                        // Avoid adding duplicate users
-                        if (!guildData.members.some(m => m.id === userId)) {
-                            guildData.members.push({
-                                id: userId,
-                                username: member.user.username
-                            });
-                            guildData.users[userId] = userData; // Add user data to guild's users object
-                        }
+            guildPromises.push((async () => {
+                try {
+                    // Fetch or initialize the guild's data
+                    let guildData = (await db.ref(`guilds/${guildId}`).once('value')).val();
+                    if (!guildData) {
+                        guildData = {
+                            id: guildId,
+                            name: guild.name,
+                            memberCount: guild.memberCount,
+                            members: [], // Initialize empty members array
+                            users: {} // Start with an empty users object
+                        };
+                        await db.ref(`guilds/${guildId}`).set(guildData);
+                    } else {
+                        guildData.memberCount = guild.memberCount;
                     }
-                }
-            } while (nextBatch.size === 1000);
 
-            // Update and save the guild data
-            await db.ref(`guilds/${guildId}`).set(guildData);
+                    // Use updateGuildData() to update members and users
+                    await updateGuildData(client, guildId);
+                } catch (error) {
+                    console.error(`Failed to process guild ${guildId}:`, error);
+                }
+            })());
         }
+
+        // Execute all guild processing promises
+        await Promise.all(guildPromises);
+
     } catch (error) {
         console.error('Failed to load and update guilds:', error);
     }
@@ -134,19 +107,16 @@ const updateGuildData = async (client, guildId) => {
             return;
         }
 
-        // Fetch members in batches of 1000
         let members = [];
-        let nextBatch = await guild.members.fetch({ limit: 1000 });
+        let nextBatch = await guild.members.fetch({ limit: 100 });
         members.push(...nextBatch.values());
 
-        // Fetch additional members if available
-        while (nextBatch.size === 1000) {
+        while (nextBatch.size === 100) {
             const lastMemberId = [...nextBatch.values()][nextBatch.size - 1].id;
-            nextBatch = await guild.members.fetch({ limit: 1000, after: lastMemberId });
+            nextBatch = await guild.members.fetch({ limit: 100, after: lastMemberId });
             members.push(...nextBatch.values());
         }
 
-        // Get or initialize guild data
         let existingGuild = (await db.ref(`guilds/${guildId}`).once('value')).val();
         if (!existingGuild) {
             existingGuild = {
@@ -154,39 +124,38 @@ const updateGuildData = async (client, guildId) => {
                 name: guild.name,
                 memberCount: guild.memberCount,
                 members: [],
-                users: {} // Initialize with an empty users object
+                users: {}
             };
-            await db.ref(`guilds/${guildId}`).set(existingGuild);
         } else {
             existingGuild.memberCount = guild.memberCount;
         }
 
-        // Clear current members list to avoid duplicates
-        existingGuild.members = [];
+        // Fetch user data from users.json
+        const allUserData = (await db.ref(`users`).once('value')).val() || {};
 
-        // Update members and users
+        existingGuild.members = [];
+        existingGuild.users = {};
+
         for (const member of members) {
             const user = member.user;
             const userId = user.id;
 
-            // Skip bot users and unauthorized users
-            if (user.bot || !(await db.ref(`users/${userId}`).once('value')).val()) continue;
+            // Skip bot users
+            if (user.bot) continue;
 
-            // Fetch user data from Realtime Database
-            const userData = (await db.ref(`users/${userId}`).once('value')).val();
-            if (userData) {
-                // Update the guild's users object with authorized user data
-                existingGuild.users[userId] = userData;
+            // Ensure user data exists in users.json
+            if (allUserData[userId]) {
+                // Add user if it doesn't exist in the users object
+                existingGuild.users[userId] = existingGuild.users[userId] || allUserData[userId];
 
-                // Add member to the guild's members list
-                existingGuild.members.push({
-                    id: userId,
-                    username: user.username
-                });
+                // Only push new members if they don't already exist
+                if (!existingGuild.members.some(m => m.id === userId)) {
+                    existingGuild.members.push({ id: userId, username: user.username });
+                }
             }
         }
 
-        // Update and save guild data
+        // Update the guild data in the database
         await db.ref(`guilds/${guildId}`).set(existingGuild);
     } catch (error) {
         console.error(`Error updating guild data for ${guildId}:`, error);
