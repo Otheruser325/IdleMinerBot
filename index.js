@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const cron = require('node-cron');
 const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
@@ -52,53 +53,97 @@ for (const file of slashCommandFiles) {
 // Load interaction handlers
 const interactionFiles = fs.readdirSync(path.join(__dirname, 'commands/interactions')).filter(file => file.endsWith('.js'));
 for (const file of interactionFiles) {
-    const interaction = require(path.join(__dirname, 'commands/interactions', file));
+    const interaction = require(`./commands/interactions/${file}`);
     client.interactions.set(interaction.customId, interaction);
 }
 
-// Function to load and update guild data
+// Categorize guilds based on member count
 async function loadAssignedGuilds(client) {
     try {
         const guildsCache = client.guilds.cache;
+        const categorizedGuilds = {
+            tiny: [],
+            small: [],
+            medium: [],
+            large: [],
+            huge: []
+        };
 
-        // Array to hold the promises for each guild processing
-        const guildPromises = [];
-
+        // Categorize guilds based on their member count
         for (const [guildId, guild] of guildsCache) {
-            guildPromises.push((async () => {
-                try {
-                    // Fetch or initialize the guild's data
-                    let guildData = (await db.ref(`guilds/${guildId}`).once('value')).val();
-                    if (!guildData) {
-                        guildData = {
-                            id: guildId,
-                            name: guild.name,
-                            memberCount: guild.memberCount,
-                            members: [], // Initialize empty members array
-                            users: {} // Start with an empty users object
-                        };
-                        await db.ref(`guilds/${guildId}`).set(guildData);
-                    } else {
-                        guildData.memberCount = guild.memberCount;
-                    }
-
-                    // Use updateGuildData() to update members and users
-                    await updateGuildData(client, guildId);
-                } catch (error) {
-                    console.error(`Failed to process guild ${guildId}:`, error);
-                }
-            })());
+            const memberCount = guild.memberCount;
+            if (memberCount <= 50) categorizedGuilds.tiny.push(guild);
+            else if (memberCount <= 250) categorizedGuilds.small.push(guild);
+            else if (memberCount <= 1000) categorizedGuilds.medium.push(guild);
+            else if (memberCount <= 5000) categorizedGuilds.large.push(guild);
+            else categorizedGuilds.huge.push(guild);
         }
 
-        // Execute all guild processing promises
-        await Promise.all(guildPromises);
-
+        // Trigger updates for each category at their respective intervals
+        scheduleGuildUpdates(client, categorizedGuilds);
     } catch (error) {
         console.error('Failed to load and update guilds:', error);
     }
 }
 
-// Load guild data and initialize users
+// Function to schedule guild updates for different size categories
+function scheduleGuildUpdates(client, categorizedGuilds) {
+    // Schedule updates for tiny guilds every 10 seconds
+    setTimeout(async function updateTinyGuilds() {
+        await processGuildBatch(client, categorizedGuilds.tiny, 500); // Tiny guilds with 500ms delay between each
+        setTimeout(updateTinyGuilds, 10000); // Repeat every 10 seconds
+    }, 10000);
+
+    // Schedule updates for small guilds every 15 seconds
+    setTimeout(async function updateSmallGuilds() {
+        await processGuildBatch(client, categorizedGuilds.small, 1000); // Small guilds with 1000ms delay
+        setTimeout(updateSmallGuilds, 15000); // Repeat every 15 seconds
+    }, 15000);
+
+    // Schedule updates for medium guilds every 30 seconds
+    setTimeout(async function updateMediumGuilds() {
+        await processGuildBatch(client, categorizedGuilds.medium, 3000); // Medium guilds with 3000ms delay
+        setTimeout(updateMediumGuilds, 30000); // Repeat every 30 seconds
+    }, 30000);
+
+    // Schedule updates for large guilds every 60 seconds
+    setTimeout(async function updateLargeGuilds() {
+        await processGuildBatch(client, categorizedGuilds.large, 5000); // Large guilds with 5000ms delay
+        setTimeout(updateLargeGuilds, 60000); // Repeat every 60 seconds
+    }, 60000);
+
+    // Schedule updates for huge guilds every 120 seconds
+    setTimeout(async function updateHugeGuilds() {
+        await processGuildBatch(client, categorizedGuilds.huge, 10000); // Huge guilds with 10000ms delay
+        setTimeout(updateHugeGuilds, 120000); // Repeat every 120 seconds
+    }, 120000);
+}
+
+// Batch process guilds with retries and delays
+async function processGuildBatch(client, guilds, delay) {
+    for (const guild of guilds) {
+        await retryFetchGuildData(client, guild.id, 3, delay); // Retry up to 3 times
+        await new Promise(resolve => setTimeout(resolve, delay)); // Apply delay between each guild
+    }
+}
+
+// Retry fetching guild data with exponential backoff
+const retryFetchGuildData = async (client, guildId, retries, delay) => {
+    try {
+        await updateGuildData(client, guildId);
+    } catch (error) {
+        if (error.code === 'GuildMembersTimeout' || retries > 0) {
+            const jitter = Math.floor(Math.random() * 500);
+            console.warn(`GuildMembersTimeout for ${guildId}. Retrying... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay + jitter)); // Add jitter for randomness
+            return retryFetchGuildData(client, guildId, retries - 1, delay * 2); // Exponential backoff
+        } else {
+            console.error(`Failed to update guild ${guildId} after max retries.`);
+        }
+    }
+};
+
+// Update guild data from Discord API
 const updateGuildData = async (client, guildId) => {
     try {
         const guild = await client.guilds.fetch(guildId);
@@ -111,70 +156,58 @@ const updateGuildData = async (client, guildId) => {
         let nextBatch = await guild.members.fetch({ limit: 100 });
         members.push(...nextBatch.values());
 
+        // Fetch members in batches to avoid timeouts
         while (nextBatch.size === 100) {
             const lastMemberId = [...nextBatch.values()][nextBatch.size - 1].id;
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Small delay between batches
             nextBatch = await guild.members.fetch({ limit: 100, after: lastMemberId });
             members.push(...nextBatch.values());
         }
 
-        let existingGuild = (await db.ref(`guilds/${guildId}`).once('value')).val();
-        if (!existingGuild) {
-            existingGuild = {
-                id: guildId,
-                name: guild.name,
-                memberCount: guild.memberCount,
-                members: [],
-                users: {}
-            };
-        } else {
-            existingGuild.memberCount = guild.memberCount;
-        }
+        let existingGuild = (await db.ref(`guilds/${guildId}`).once('value')).val() || {
+            id: guildId,
+            name: guild.name,
+            memberCount: guild.memberCount,
+            members: [],
+            users: {}
+        };
 
-        // Fetch user data from users.json
-        const allUserData = (await db.ref(`users`).once('value')).val() || {};
-
+        existingGuild.memberCount = guild.memberCount;
         existingGuild.members = [];
         existingGuild.users = {};
+
+        const allUserData = (await db.ref(`users`).once('value')).val() || {};
 
         for (const member of members) {
             const user = member.user;
             const userId = user.id;
 
-            // Skip bot users
-            if (user.bot) continue;
+            if (user.bot) continue; // Skip bot users
 
-            // Ensure user data exists in users.json
             if (allUserData[userId]) {
-                // Add user if it doesn't exist in the users object
-                existingGuild.users[userId] = existingGuild.users[userId] || allUserData[userId];
-
-                // Only push new members if they don't already exist
+                existingGuild.users[userId] = allUserData[userId];
                 if (!existingGuild.members.some(m => m.id === userId)) {
                     existingGuild.members.push({ id: userId, username: user.username });
                 }
             }
         }
 
-        // Update the guild data in the database
-        await db.ref(`guilds/${guildId}`).set(existingGuild);
+        await db.ref(`guilds/${guildId}`).set(existingGuild); // Update the guild in the database
     } catch (error) {
-        console.error(`Error updating guild data for ${guildId}:`, error);
+        throw error; // Throw error for retry logic
     }
-};
+}
 
-function scheduleNextUpdate(client) {
-    setInterval(() => {
-        loadAssignedGuilds(client);
-    }, 10000);
+// Schedule updates regularly
+async function scheduleNextUpdate(client) {
+    cron.schedule('*/10 * * * * *', async () => {
+        await handleMissingData(); // Run every 10 seconds
+    });
 	
 	// Check barrier unlock time
-    setInterval(async () => {
-        await handleBarrierUnlockTime();
-    }, 1000);
-
-    setInterval(async () => {
-        await handleMissingData();
-    }, 10000);
+    cron.schedule('* * * * * *', async () => {
+        await handleBarrierUnlockTime(); // Run every second
+    });
 	
 	// Set up an interval to call handleManagerWork for all users every second
     setInterval(async () => {
@@ -190,6 +223,9 @@ function scheduleNextUpdate(client) {
             console.error('Error handling manager work for users:', error);
         }
     }, 1000); // Interval set to 1000 milliseconds (1 second)
+	
+	// Schedule dynamic updates for all guilds based on size category
+	await loadAssignedGuilds(client);
 }
 
 // Function to start manager work
@@ -342,18 +378,53 @@ async function handleBarrierUnlockTime() {
     }
 }
 
-// In the bot's ready event
+// Function to check if the bot is online based on the readyAt property
+async function isBotOnline(client) {
+    if (client.readyAt) {
+        return true; // Bot is online if readyAt is set
+    } else {
+        console.warn('Bot is not ready or offline.');
+        return false;
+    }
+}
+
+// Retry mechanism for status check
+async function retryOnlineCheck(client, retries = 5) {
+    let isOnline = await isBotOnline(client);
+    while (!isOnline && retries > 0) {
+        console.warn(`Retrying online check... (${retries} attempts remaining)`);
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
+        isOnline = await isBotOnline(client);
+        retries--;
+    }
+    return isOnline;
+}
+
+// Main function to initialize bot tasks when online
+async function initializeBotTasks(client) {
+    const isOnline = await retryOnlineCheck(client);
+    if (isOnline) {
+        console.log('Bot is confirmed to be online. Proceeding with updates.');
+		
+		// Updates the bot status
+        await updateBotStatus(client);
+
+        // Deploy slash commands on bot startup
+        await deployCommands(clientId, token, client.slashCommands);
+
+        // Load and initialize guild data
+        await scheduleNextUpdate(client);
+    } else {
+        console.error('Failed to confirm bot online status after multiple retries. Skipping updates.');
+    }
+}
+
 client.once('ready', async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
 
-    await updateBotStatus(client); // Update bot status with the user count
-
-    // Deploy slash commands
-    await deployCommands(clientId, token, client.slashCommands);
-
-    // Load and initialize guild data
-    scheduleNextUpdate(client);
+    // Check if the bot is online and proceed with task initialization
+    await initializeBotTasks(client);
 });
 
 client.on('messageCreate', async message => {
