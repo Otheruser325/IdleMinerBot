@@ -19,6 +19,7 @@ async function initializeUser(userId, username) {
     if (!snapshot.exists()) {
         await userRef.set({
             username: username || '',
+			userId: userId || '',
             cash: 10,
             iceCash: 10,
             fireCash: 10,

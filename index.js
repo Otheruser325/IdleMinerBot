@@ -319,13 +319,18 @@ async function handleManagerWork(user, userId) {
 async function handleMissingData() {
     try {
         const allUsers = await getAllUsers();
-
         for (const userId in allUsers) {
             const user = allUsers[userId];
 
+            user.username = user.username || 'Unknown',
+            user.userId = user.userId || userId,
             user.mines = user.mines || [];
             user.cash = user.cash || 0;
+			user.iceCash = user.iceCash || 0;
+			user.fireCash = user.fireCash || 0;
             user.idleCash = user.idleCash || 0;
+			user.idleIceCash = user.idleIceCash || 0;
+			user.idleFireCash = user.idleFireCash || 0;
             user.lastDaily = user.lastDaily || Date.now();
             user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
