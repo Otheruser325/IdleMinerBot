@@ -122,7 +122,7 @@ function scheduleGuildUpdates(client, categorizedGuilds) {
 // Batch process guilds with retries and delays
 async function processGuildBatch(client, guilds, delay) {
     for (const guild of guilds) {
-        await retryFetchGuildData(client, guild.id, 3, delay); // Retry up to 3 times
+        await retryFetchGuildData(client, guild.id, 3, 2000); // Retry up to 3 times with 2000ms delay
         await new Promise(resolve => setTimeout(resolve, delay)); // Apply delay between each guild
     }
 }
@@ -132,10 +132,10 @@ const retryFetchGuildData = async (client, guildId, retries, delay) => {
     try {
         await updateGuildData(client, guildId);
     } catch (error) {
-        if (error.code === 'GuildMembersTimeout' || retries > 0) {
-            const jitter = Math.floor(Math.random() * 500);
+        if (error.code === 'GuildMembersTimeout' && retries > 0) {
             console.warn(`GuildMembersTimeout for ${guildId}. Retrying... (${retries} retries left)`);
-            await new Promise(resolve => setTimeout(resolve, delay + jitter)); // Add jitter for randomness
+            const jitter = Math.floor(Math.random() * 500);
+            await new Promise(resolve => setTimeout(resolve, delay + jitter));
             return retryFetchGuildData(client, guildId, retries - 1, delay * 2); // Exponential backoff
         } else {
             console.error(`Failed to update guild ${guildId} after max retries.`);
@@ -143,27 +143,18 @@ const retryFetchGuildData = async (client, guildId, retries, delay) => {
     }
 };
 
-// Update guild data from Discord API
-const updateGuildData = async (client, guildId) => {
+// Update guild data with more robust logic
+async function updateGuildData(client, guildId) {
     try {
         const guild = await client.guilds.fetch(guildId);
         if (!guild) {
             console.error(`Guild with ID ${guildId} not found.`);
+            // Optionally, remove the guild from the database if it's not found
+            await db.ref(`guilds/${guildId}`).remove();
             return;
         }
 
-        let members = [];
-        let nextBatch = await guild.members.fetch({ limit: 100 });
-        members.push(...nextBatch.values());
-
-        // Fetch members in batches to avoid timeouts
-        while (nextBatch.size === 100) {
-            const lastMemberId = [...nextBatch.values()][nextBatch.size - 1].id;
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Small delay between batches
-            nextBatch = await guild.members.fetch({ limit: 100, after: lastMemberId });
-            members.push(...nextBatch.values());
-        }
-
+        // Initialize or fetch existing guild data from the database
         let existingGuild = (await db.ref(`guilds/${guildId}`).once('value')).val() || {
             id: guildId,
             name: guild.name,
@@ -172,29 +163,101 @@ const updateGuildData = async (client, guildId) => {
             users: {}
         };
 
-        existingGuild.memberCount = guild.memberCount;
-        existingGuild.members = [];
-        existingGuild.users = {};
+        // Ensure members array is initialized correctly
+        existingGuild.members = existingGuild.members || [];
 
-        const allUserData = (await db.ref(`users`).once('value')).val() || {};
+        // Fetch valid members from the guild who exist in the users database
+        const validMembers = await fetchValidGuildMembers(guild);
 
-        for (const member of members) {
-            const user = member.user;
-            const userId = user.id;
+        // Safeguard: If validMembers is undefined or null, log a warning and continue
+        if (!Array.isArray(validMembers)) {
+            console.warn(`No valid members found for guild ${guildId}`);
+            return;
+        }
 
-            if (user.bot) continue; // Skip bot users
+        // Safely filter out members no longer valid
+        existingGuild.members = existingGuild.members.filter(member =>
+            validMembers.some(validMember => validMember?.user?.id === member.id)
+        );
 
-            if (allUserData[userId]) {
-                existingGuild.users[userId] = allUserData[userId];
-                if (!existingGuild.members.some(m => m.id === userId)) {
-                    existingGuild.members.push({ id: userId, username: user.username });
-                }
+        // Iterate over valid members and update both members and users data
+        for (const member of validMembers) {
+            if (!member?.user?.id) continue; // Skip invalid users
+
+            const userId = member.user.id;
+
+            // Check if the user exists in the database
+            const userSnapshot = await db.ref(`users/${userId}`).once('value');
+            if (!userSnapshot.exists()) continue; // Skip if user doesn't exist in DB
+
+            const userData = userSnapshot.val();
+
+            // Safely update the user data in the guild's `users` object
+            existingGuild.users = existingGuild.users || {};
+            existingGuild.users[userId] = userData;
+
+            // Ensure the user is in the members array if they aren't already
+            if (!existingGuild.members.some(m => m.id === userId)) {
+                existingGuild.members.push({
+                    id: userId,
+                    username: userData.username || member.user.username
+                });
             }
         }
 
-        await db.ref(`guilds/${guildId}`).set(existingGuild); // Update the guild in the database
+        // Save updated guild data to the database
+        await db.ref(`guilds/${guildId}`).set(existingGuild);
+
     } catch (error) {
-        throw error; // Throw error for retry logic
+        if (error.code === 10004) {
+            console.warn(`Guild with ID ${guildId} is unknown or the bot is no longer in it.`);
+            await db.ref(`guilds/${guildId}`).remove();
+        } else {
+            console.error(`Failed to update guild data for ${guildId}:`, error);
+            throw error;
+        }
+    }
+}
+
+// Efficiently fetch guild members, reducing API calls when possible
+async function fetchValidGuildMembers(guild) {
+    let members = [];
+
+    try {
+        // Use cached members first, falling back to fetch if necessary
+        if (guild.memberCount <= 500) {
+            // For smaller guilds, try to use the cache if available
+            members = [...guild.members.cache.values()];
+        } else {
+            // For larger guilds, fetch members in batches to reduce API load
+            let nextBatch = await guild.members.fetch({ limit: 100 });
+            while (nextBatch.size > 0) {
+                members.push(...nextBatch.values());
+                const lastMemberId = nextBatch.last()?.id;
+                if (nextBatch.size < 100) break;
+                nextBatch = await guild.members.fetch({ limit: 100, after: lastMemberId });
+            }
+        }
+
+        // Filter valid members who exist in the users database and are not bots
+        const validMembers = await Promise.all(members.map(async member => {
+            if (!member?.user?.id || member.user.bot) return null; // Skip bots and invalid users
+
+            const userId = member.user.id;
+
+            // Check if the user exists in the database
+            const userSnapshot = await db.ref(`users/${userId}`).once('value');
+            if (!userSnapshot.exists()) return null;
+
+            return member;
+        }));
+
+        // Filter out null entries (invalid members)
+        return validMembers.filter(Boolean);
+
+    } catch (error) {
+        console.error(`Error fetching members for guild ${guild.id}:`, error);
+        return []; // Return an empty array on failure to avoid further errors
     }
 }
 
