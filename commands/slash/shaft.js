@@ -116,7 +116,7 @@ async function handleOverview(interaction, user, currentMine, tier, userId) {
 // Function to handle the "buy" subcommand
 async function handleBuy(interaction, user, currentMine, tier, userId) {
 	if (isNaN(tier) || tier < 1 || tier > 40) {
-        return message.reply('Please provide a valid shaft tier number between 1 and 40.');
+        return interaction.reply('Please provide a valid shaft tier number between 1 and 40.');
     }
 	
 	// Check if the shaft can be purchased based on tier order
@@ -128,7 +128,7 @@ async function handleBuy(interaction, user, currentMine, tier, userId) {
 	// Check if there is a locked barrier preventing further shaft unlocks
     const barrierBlocking = currentMine.barriers.find(barrier => !barrier.unlocked && tier > barrier.FromTier && tier <= barrier.ToTier);
     if (barrierBlocking) {
-        return message.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.FromTier} to Tier ${barrierBlocking.ToTier} first.`);
+        return interaction.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.FromTier} to Tier ${barrierBlocking.ToTier} first.`);
     }
     
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
@@ -171,7 +171,7 @@ async function handleBuy(interaction, user, currentMine, tier, userId) {
 // Function to handle the "upgrade" subcommand
 async function handleUpgrade(interaction, user, currentMine, tier, userId) {
 	if (isNaN(tier) || tier < 1 || tier > 40) {
-        return message.reply('Please provide a valid shaft tier number between 1 and 40.');
+        return interaction.reply('Please provide a valid shaft tier number between 1 and 40.');
     }
 	
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
