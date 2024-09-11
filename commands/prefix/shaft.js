@@ -107,6 +107,12 @@ async function handleBuy(message, user, currentMine, args, userId) {
         return message.reply(`You need to own Shaft Tier ${tier - 1} before purchasing Shaft Tier ${tier}.`);
     }
 
+    // Check if there is a locked barrier preventing further shaft unlocks
+    const barrierBlocking = currentMine.barriers.find(barrier => !barrier.unlocked && tier > barrier.FromTier && tier <= barrier.ToTier);
+    if (barrierBlocking) {
+        return message.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.FromTier} to Tier ${barrierBlocking.ToTier} first.`);
+    }
+
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
