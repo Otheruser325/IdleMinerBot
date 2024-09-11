@@ -331,6 +331,8 @@ async function handleMissingData() {
             user.idleCash = user.idleCash || 0;
 			user.idleIceCash = user.idleIceCash || 0;
 			user.idleFireCash = user.idleFireCash || 0;
+			user.superCash = user.superCash || 0;
+			user.streak = user.streak || 0,
             user.lastDaily = user.lastDaily || Date.now();
             user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
