@@ -336,7 +336,9 @@ async function handleMissingData() {
             user.lastDaily = user.lastDaily || Date.now();
             user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
-            for (const mine of user.mines) {
+            for (const mineIndex of user.mines) {
+				const mine = user.mines[mineIndex];
+				
                 mine.PrestigeCount = mine.PrestigeCount || 0;
                 mine.MineNumber = mine.MineNumber || 1;
                 mine.Factor = mine.Factor || 1;
