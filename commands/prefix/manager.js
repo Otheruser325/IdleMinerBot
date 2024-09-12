@@ -194,11 +194,6 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
                   currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
     }
 
-    const manager = allManagers.find(m => 
-        m.ManagerID === parseInt(managerIdOrName, 10) || 
-        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
-    );
-
     if (!manager) {
         return message.reply('Manager not found.');
     }
