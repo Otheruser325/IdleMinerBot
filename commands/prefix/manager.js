@@ -37,6 +37,7 @@ module.exports = {
 		
         // Capture manager ID or name (ensure we join all args beyond index 2 in case of names with spaces)
         const managerIdOrName = args.slice(2).join(' '); 
+		const managerIdOrName2 = args.slice(1).join(' '); 
 
         // Helper function to check if the manager input is a number or a name
         const isNumeric = (str) => !isNaN(str) && !isNaN(parseFloat(str));
@@ -46,7 +47,11 @@ module.exports = {
                 await handleManagerHire(message, user, currentMine, userId, area);
                 break;
             case 'fire':
-                await handleManagerFire(message, user, currentMine, userId, managerIdOrName.toLowerCase());
+			    if (isNumeric(managerIdOrName2)) {
+                    await handleManagerFire(message, user, currentMine, userId, parseInt(managerIdOrName));
+                } else {
+                    await handleManagerFire(message, user, currentMine, userId, managerIdOrName.toLowerCase());
+                }
                 break;
             case 'assign':
                 if (isNumeric(managerIdOrName)) {
