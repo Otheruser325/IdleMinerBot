@@ -34,7 +34,7 @@ module.exports = {
 
         const subcommand = args[0];
         const area = args[1] ? args[1].toLowerCase() : null;
-        const managerIdOrName = args.slice(2).join(' ').toLowerCase(); // Manager ID or name
+        const managerIdOrName = args.slice(2).join(' ').toLowerCase();
 
         switch (subcommand) {
             case 'hire':
@@ -223,18 +223,23 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 
     // Ensure the specific area is properly initialized
     currentMine.managers[area] = currentMine.managers[area] || [];
-
-    // Find the manager by ID or name across all areas
-    const allManagers = [
-        ...(currentMine.managers.shaft || []),
-        ...(currentMine.managers.elevator || []),
-        ...(currentMine.managers.warehouse || [])
-    ];
 	
-	const manager = allManagers.find(m =>
-        m.ManagerID === parseInt(managerIdOrName, 10) ||
-        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
-    );
+	let manager;
+	
+	// First, try to find the manager by ID
+    const managerId = parseInt(managerIdOrName, 10);
+    if (!isNaN(managerId)) {
+        manager = currentMine.managers.shaft.find(m => m.ManagerID === managerId) ||
+                  currentMine.managers.elevator.find(m => m.ManagerID === managerId) ||
+                  currentMine.managers.warehouse.find(m => m.ManagerID === managerId);
+    }
+
+    // If not found by ID, try by name
+    if (!manager) {
+        manager = currentMine.managers.shaft.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
+                  currentMine.managers.elevator.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
+                  currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+    }
 
     if (!manager) {
         return message.reply('Manager not found.');
@@ -251,10 +256,8 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         return message.reply(`The ${area} already has an assigned manager. Remove the current manager before assigning a new one.`);
     }
 
-    // Remove the manager from all other areas and set `assigned` to false
-    const areas = ['shaft', 'elevator', 'warehouse'];
-    areas.forEach(a => {
-        currentMine.managers[a] = currentMine.managers[a] || [];
+    // Remove the manager from all other areas and set `Assigned` to false
+    ['shaft', 'elevator', 'warehouse'].forEach(a => {
         currentMine.managers[a] = currentMine.managers[a].map(m => {
             if (m.ManagerID === manager.ManagerID) {
                 m.Assigned = false;
