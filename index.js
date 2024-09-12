@@ -306,7 +306,7 @@ async function handleManagerWork(user, userId) {
     user.mines = user.mines || [];
     user.cash = user.cash || 0;
     user.idleCash = user.idleCash || 0;
-    user.lastDaily = user.lastDaily || Date.now();
+    user.lastIdle = user.lastIdle || Date.now();
     user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
     const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
