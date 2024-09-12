@@ -330,7 +330,10 @@ async function handleManagerWork(user, userId) {
 
         let totalGainPerSecond = 0;
         currentMine.mineshafts.forEach(shaft => {
-            totalGainPerSecond += (shaft.gainPerSecondPerWorker * shaft.numberOfWorkers) || 0;
+            // Ensure shaft values are defined and valid
+            if (shaft.gainPerSecondPerWorker && shaft.numberOfWorkers) {
+                totalGainPerSecond += (shaft.gainPerSecondPerWorker * shaft.numberOfWorkers);
+            }
         });
 
         // Ensure managers are properly defined
