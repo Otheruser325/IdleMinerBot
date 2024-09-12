@@ -384,11 +384,6 @@ async function handleManagerWork(user, userId) {
     } catch (error) {
         console.error('Error updating user data:', error);
     }
-
-    // Set a timeout for the next idle cash production to avoid overflows
-    setTimeout(async () => {
-        await handleManagerWork(user, userId);
-    }, cooldownDelay);
 }
 
 // Function to handle missing data for all users
