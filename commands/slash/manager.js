@@ -347,7 +347,7 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
 
 // Function to handle removing a manager
 async function handleManagerRemove(interaction, user, currentMine, userId) {
-    const managerIdOrName = interaction.options.getInteger('managerid_or_name');
+    const managerIdOrName = interaction.options.getString('managerid_or_name');
     const area = interaction.options.getString('area').toLowerCase();
 
     if (!managerIdOrName) {
