@@ -304,12 +304,23 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
 
     // Ensure the specific area is properly initialized
     currentMine.managers[area] = currentMine.managers[area] || [];
+	
+	let manager;
 
-    // Find the manager in the specified area
-	const manager = currentMine.managers[area].find(m =>
-        m.ManagerID === parseInt(managerIdOrName, 10) ||
-        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
-    );
+    // Try to find the manager by ID first
+    const managerId = parseInt(managerIdOrName, 10);
+    if (!isNaN(managerId)) {
+        manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
+    }
+
+    // If not found by ID, try by name
+    if (!manager) {
+        manager = currentMine.managers[area].find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+    }
+
+    if (!manager) {
+        return message.reply('Manager not found.');
+    }
 
     if (!manager.Assigned) {
         return message.reply('Manager is not assigned to this area.');
