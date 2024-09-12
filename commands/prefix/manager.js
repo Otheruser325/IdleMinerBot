@@ -177,7 +177,7 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
     );
 
     if (!manager) {
-        return interaction.reply('Manager not found.');
+        return message.reply('Manager not found.');
     }
 
     if (manager.Assigned) {
