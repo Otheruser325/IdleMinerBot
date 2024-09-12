@@ -34,20 +34,20 @@ module.exports = {
 
         const subcommand = args[0];
         const area = args[1] ? args[1].toLowerCase() : null;
-        const identifierOrId = args.slice(2).join(' ').trim(); // Manager ID or name
+        const managerIdOrName = args.slice(2).join(' ').trim(); // Manager ID or name
 
         switch (subcommand) {
             case 'hire':
                 await handleManagerHire(message, user, currentMine, userId, area);
                 break;
             case 'fire':
-                await handleManagerFire(message, user, currentMine, userId, identifierOrId);
+                await handleManagerFire(message, user, currentMine, userId, managerIdOrName);
                 break;
             case 'assign':
-                await handleManagerAssign(message, user, currentMine, userId, parseInt(identifierOrId), area);
+                await handleManagerAssign(message, user, currentMine, userId, parseInt(managerIdOrName), area);
                 break;
             case 'remove':
-                await handleManagerRemove(message, user, currentMine, userId, parseInt(identifierOrId), area);
+                await handleManagerRemove(message, user, currentMine, userId, parseInt(managerIdOrName), area);
                 break;
             case 'overview':
                 await handleManagerOverview(message, user, currentMine, area);
@@ -145,8 +145,8 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
 }
 
 // Function to handle firing a manager
-async function handleManagerFire(message, user, currentMine, userId, identifierOrId) {
-    if (!identifierOrId) {
+async function handleManagerFire(message, user, currentMine, userId, managerIdOrName) {
+    if (!managerIdOrName) {
         return message.reply('Please mention the ID or name of the manager you want to fire.');
     }
 
@@ -157,41 +157,37 @@ async function handleManagerFire(message, user, currentMine, userId, identifierO
         warehouse: []
     };
 
-    // Ensure that the managers for all areas are initialized
-    const areas = ['shaft', 'elevator', 'warehouse'];
-    areas.forEach(area => {
-        currentMine.managers[area] = currentMine.managers[area] || [];
-    });
-
-    // Convert identifierOrId to a number if possible
-    const identifierAsNumber = Number(identifierOrId);
-    const isNumber = !isNaN(identifierAsNumber);
-
-    // Search across all areas
-    let manager;
-    let managerArea;
-
-    for (const area of areas) {
-        manager = currentMine.managers[area].find(m =>
-            (isNumber && m.ManagerID === identifierAsNumber) ||
-            (!isNumber && m.Name.toLowerCase() === identifierOrId.toLowerCase())
-        );
-        if (manager) {
-            managerArea = area;
-            break;
+    // Ensure that each specific area is initialized as an array
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        if (!Array.isArray(currentMine.managers[area])) {
+            currentMine.managers[area] = [];
         }
-    }
+    });
+	
+	// Check in all areas
+    const allManagers = [
+        ...currentMine.managers.shaft,
+        ...currentMine.managers.elevator,
+        ...currentMine.managers.warehouse
+    ];
+
+    const manager = allManagers.find(m => 
+        m.ManagerID === parseInt(managerIdOrName, 19) || 
+        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
+    );
 
     if (!manager) {
-        return message.reply('Manager not found.');
+        return interaction.reply('Manager not found.');
     }
 
     if (manager.Assigned) {
         return message.reply('You cannot fire a manager who is currently assigned to an area. Use `im!manager remove` to remove them from their area first.');
     }
 
-    // Remove the manager from the respective area
-    currentMine.managers[managerArea] = currentMine.managers[managerArea].filter(m => m.ManagerID !== manager.ManagerID);
+    // Remove the manager from all areas
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        currentMine.managers[area] = currentMine.managers[area].filter(m => m.ManagerID !== manager.ManagerID);
+    });
 
     // Update the user's data in the database
     try {
@@ -234,8 +230,8 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         ...(currentMine.managers.elevator || []),
         ...(currentMine.managers.warehouse || [])
     ];
-
-    const manager = allManagers.find(m =>
+	
+	const manager = allManagers.find(m =>
         m.ManagerID === parseInt(managerIdOrName, 10) ||
         m.Name.toLowerCase() === managerIdOrName.toLowerCase()
     );
@@ -274,7 +270,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully assigned manager ${manager.Name} to the ${area}.`);
+        return message.reply(`Successfully assigned manager ${manager.Name} (${manager.ManagerID}) to the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -282,8 +278,8 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 }
 
 // Function to handle removing a manager
-async function handleManagerRemove(message, user, currentMine, userId, managerId, area) {
-    if (!managerId) {
+async function handleManagerRemove(message, user, currentMine, userId, managerIdOrName, area) {
+    if (!managerIdOrName) {
         return message.reply('Please mention the ID of the manager you want to remove from the area. Usage: im!manager remove warehouse 1');
     }
 
@@ -307,10 +303,10 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager in the specified area
-    const manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
-    if (!manager) {
-        return message.reply('Manager not found in this area.');
-    }
+	const manager = currentMine.managers[area].find(m =>
+        m.ManagerID === parseInt(managerIdOrName, 10) ||
+        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
+    );
 
     if (!manager.Assigned) {
         return message.reply('Manager is not assigned to this area.');
@@ -322,7 +318,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully removed manager ${manager.Name} from the ${area}.`);
+        return message.reply(`Successfully removed manager ${manager.Name} (${manager.ManagerID}) from the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return message.reply('There was an error while updating your data. Please try again later.');

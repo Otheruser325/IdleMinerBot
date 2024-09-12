@@ -388,7 +388,7 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return interaction.reply(`Successfully removed manager ${manager.Name} from the ${area}.`);
+        return interaction.reply(`Successfully removed manager ${manager.Name} (${manager.ManagerID}) from the ${area}.`);
     } catch (error) {
         console.error('Failed to update user data:', error);
         return interaction.reply('There was an error while updating your data. Please try again later.');
