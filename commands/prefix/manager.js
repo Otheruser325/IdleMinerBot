@@ -34,7 +34,7 @@ module.exports = {
 
         const subcommand = args[0];
         const area = args[1] ? args[1].toLowerCase() : null;
-        const managerIdOrName = args.slice(2).join(' ').trim(); // Manager ID or name
+        const managerIdOrName = args.slice(2).join(' ').toLowerCase(); // Manager ID or name
 
         switch (subcommand) {
             case 'hire':
