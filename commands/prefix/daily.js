@@ -8,9 +8,9 @@ module.exports = {
     description: 'Claim your daily Super Cash.',
     async execute(message) {  
         const userId = message.author.id;  
-        let user = (await getUser(userId)) || {};
+        const user = await getUser(userId);
 
-        if (!user || !user.lastDaily) {
+        if (!user) {
             return message.reply('You need to start the game first by using `im!start`.');
         }
 
