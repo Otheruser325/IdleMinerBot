@@ -326,12 +326,11 @@ async function handleManagerWork(user, userId) {
     // Function to handle cash production
     async function produceCash(isIdle = false) {
         try {
-            const productionRate = currentMine.Factor || 1; // Base production rate based on mine factor
-            const shaftsCount = currentMine.mineshafts.length; // Number of mineshafts
+            const productionRate = currentMine.Factor || 1;
+            const shaftsCount = currentMine.mineshafts.length;
 
             let totalGainPerSecond = 0;
             currentMine.mineshafts.forEach(shaft => {
-                // Ensure shaft values are defined and valid
                 if (shaft.gainPerSecondPerWorker && shaft.numberOfWorkers) {
                     totalGainPerSecond += (shaft.gainPerSecondPerWorker * shaft.numberOfWorkers);
                 }
@@ -346,12 +345,14 @@ async function handleManagerWork(user, userId) {
                 // Calculate cash based on efficiency (10% when idle)
                 const efficiency = isIdle ? 0.1 : 1.0;
                 const cashProduced = totalGainPerSecond * productionRate * efficiency;
+				const multiplier = 5;
+				const adjustedCashProduced = cashProduced * multiplier;
 
                 // Add to either active cash or idle cash
                 if (isIdle) {
-                    user.idleCash += cashProduced;
+                    user.idleCash += adjustedCashProduced;
                 } else {
-                    user.cash += cashProduced;
+                    user.cash += adjustedCashProduced;
                 }
             }
         } catch (error) {
@@ -371,13 +372,12 @@ async function handleManagerWork(user, userId) {
 
     // Adjusting cooldown and balancing factor
     const cooldownDelay = 5000; // 5 seconds delay
-    const balanceFactor = 5; // Multiply cash production fivefold
 
     // Save user data with adjusted balance
     try {
         await updateUser(userId, {
             cash: user.cash,
-            idleCash: user.idleCash * balanceFactor, // Apply balance factor
+            idleCash: user.idleCash,
             lastIdle: user.lastIdle,
             mines: user.mines
         });
