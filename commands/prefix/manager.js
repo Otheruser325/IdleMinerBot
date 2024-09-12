@@ -172,7 +172,7 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
     ];
 
     const manager = allManagers.find(m => 
-        m.ManagerID === parseInt(managerIdOrName, 19) || 
+        m.ManagerID === parseInt(managerIdOrName, 10) || 
         m.Name.toLowerCase() === managerIdOrName.toLowerCase()
     );
 
