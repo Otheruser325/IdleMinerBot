@@ -165,6 +165,11 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
     }
 
     const nextLevel = shaft.level + 1;
+
+    if (nextLevel > 1000) {
+        return message.reply(`Your Mineshaft ${tier} is currently maxed out and cannot be upgraded any further!`);
+    }
+
     const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
 
     if (!nextShaftInfo) {
@@ -187,6 +192,11 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
     shaft.gainPerSecondPerWorker = adjustedGain;
     shaft.capacityPerWorker = adjustedCapacity;
     shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
+
+    // Check for Big Update and adjust SuperCash
+    if (nextShaftInfo.BigUpdate === 1) {
+        user.superCash = (user.superCash || 0) + nextShaftInfo.SuperCashReward;
+    }
 
     await updateUser(userId, user);
 
