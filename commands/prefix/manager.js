@@ -126,8 +126,11 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     const newManager = availableManagersByRarity[Math.floor(Math.random() * availableManagersByRarity.length)];
     currentMine.managers[area].push({
         ManagerID: newManager.ManagerID,
-        Name: newManager.Name,
+		Name: newManager.Name,
+		RarityID: newManager.RarityID,
+		EffectID: newManager.EffectID,
         Area: newManager.Area,
+		ValueX: newManager.ValueX,
         Assigned: false
     });
 
