@@ -27,6 +27,7 @@ async function initializeUser(userId, username) {
             currentMine: 'Coal Mine',
             streak: 0,
             lastDaily: 0,
+			lastIdle: 0,
             mines: [
                 {
                     PrestigeCount: 0,

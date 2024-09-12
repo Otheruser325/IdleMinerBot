@@ -360,7 +360,7 @@ async function handleManagerWork(user, userId) {
 
     // Determine if the user is idle
     const currentTime = Date.now();
-    const lastActivityTime = user.lastDaily;
+    const lastActivityTime = user.lastIdle;
 
     // Check if the user is idle (inactive for over 10 minutes)
     const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
@@ -400,6 +400,7 @@ async function handleMissingData() {
 			user.superCash = user.superCash || 0;
 			user.streak = user.streak || 0,
             user.lastDaily = user.lastDaily || Date.now();
+			user.lastIdle = user.lastIdle || Date.now();
             user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
             for (const mine of user.mines) {
