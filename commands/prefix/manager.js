@@ -34,20 +34,33 @@ module.exports = {
 
         const subcommand = args[0];
         const area = args[1] ? args[1].toLowerCase() : null;
-        const managerIdOrName = args.slice(2).join(' ').toLowerCase();
+		
+        // Capture manager ID or name (ensure we join all args beyond index 2 in case of names with spaces)
+        const managerIdOrName = args.slice(2).join(' '); 
+
+        // Helper function to check if the manager input is a number or a name
+        const isNumeric = (str) => !isNaN(str) && !isNaN(parseFloat(str));
 
         switch (subcommand) {
             case 'hire':
                 await handleManagerHire(message, user, currentMine, userId, area);
                 break;
             case 'fire':
-                await handleManagerFire(message, user, currentMine, userId, managerIdOrName);
+                await handleManagerFire(message, user, currentMine, userId, managerIdOrName.toLowerCase());
                 break;
             case 'assign':
-                await handleManagerAssign(message, user, currentMine, userId, parseInt(managerIdOrName), area);
+                if (isNumeric(managerIdOrName)) {
+                    await handleManagerAssign(message, user, currentMine, userId, parseInt(managerIdOrName), area);
+                } else {
+                    await handleManagerAssign(message, user, currentMine, userId, managerIdOrName.toLowerCase(), area);
+                }
                 break;
             case 'remove':
-                await handleManagerRemove(message, user, currentMine, userId, parseInt(managerIdOrName), area);
+                if (isNumeric(managerIdOrName)) {
+                    await handleManagerRemove(message, user, currentMine, userId, parseInt(managerIdOrName), area);
+                } else {
+                    await handleManagerRemove(message, user, currentMine, userId, managerIdOrName.toLowerCase(), area);
+                }
                 break;
             case 'overview':
                 await handleManagerOverview(message, user, currentMine, area);
