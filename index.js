@@ -411,13 +411,8 @@ async function handleMissingData() {
                 mine.warehouse = mine.warehouse || [];
                 mine.managers = mine.managers || { shaft: [], elevator: [], warehouse: [] };
 
-                // Initialize barriers if not present
-                if (!mine.barriers) {
-                    mine.barriers = mineRegions.map((region, index) => ({
-                        ...region,
-                        unlocked: index === 0
-                    }));
-                }
+                // Ensure barriers are initialized
+                mine.barriers = ensureBarriers(mine.barriers);
             }
 
             await updateUser(userId, user);
@@ -425,6 +420,21 @@ async function handleMissingData() {
     } catch (error) {
         console.error('Error handling missing data for users:', error);
     }
+}
+
+// Ensure barriers are properly initialized
+function ensureBarriers(existingBarriers = []) {
+    // Ensure barriers array is consistent with the predefined regions
+    const updatedBarriers = mineRegions.map((region, index) => {
+        const existingBarrier = existingBarriers.find(b => b.Order === region.Order) || {};
+        return {
+            ...region,
+            unlocked: existingBarrier.unlocked || index === 0, // First barrier unlocked by default
+            unlockTime: existingBarrier.unlockTime || null,
+        };
+    });
+
+    return updatedBarriers;
 }
 
 // Function to handle barrier unlock time
@@ -436,12 +446,7 @@ async function handleBarrierUnlockTime() {
             const user = allUsers[userId];
 
             user.mines.forEach(mine => {
-				if (!mine.barriers) {
-					mine.barriers = mineRegions.map((region, index) => ({
-                        ...region,
-                        unlocked: index === 0
-                    }));
-				};
+                mine.barriers = ensureBarriers(mine.barriers);
                 mine.barriers.forEach(barrier => {
                     if (barrier.unlockTime && Date.now() >= barrier.unlockTime) {
                         barrier.unlocked = true;
