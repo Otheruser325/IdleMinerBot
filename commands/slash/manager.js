@@ -57,7 +57,7 @@ module.exports = {
             subcommand
                 .setName('remove')
                 .setDescription('Remove a manager from their work area.')
-                .addIntegerOption(option =>
+                .addStringOption(option =>
                     option.setName('managerid_or_name')
                         .setDescription('The ID or name of the manager to remove.')
                         .setRequired(true)
