@@ -8,6 +8,16 @@ const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, i
 const { updateBotStatus } = require('./utils/botStatus');
 const mineRegions = require('./config/mineRegions.json');
 const admin = require('firebase-admin');
+const EventEmitter = require('events').EventEmitter;
+EventEmitter.defaultMaxListeners = 20;
+
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: 'https://idleminerapi-default-rtdb.firebaseio.com/'
+    });
+}
+
 const db = admin.database();
 
 // Load environment variables from .env file
@@ -48,13 +58,6 @@ const slashCommandFiles = fs.readdirSync(path.join(__dirname, 'commands/slash'))
 for (const file of slashCommandFiles) {
     const command = require(path.join(__dirname, 'commands/slash', file));
     client.slashCommands.set(command.data.name, command);
-}
-
-// Load interaction handlers
-const interactionFiles = fs.readdirSync(path.join(__dirname, 'commands/interactions')).filter(file => file.endsWith('.js'));
-for (const file of interactionFiles) {
-    const interaction = require(`./commands/interactions/${file}`);
-    client.interactions.set(interaction.customId, interaction);
 }
 
 // Categorize guilds based on member count
@@ -433,6 +436,12 @@ async function handleBarrierUnlockTime() {
             const user = allUsers[userId];
 
             user.mines.forEach(mine => {
+				if (!mine.barriers) {
+					mine.barriers = mineRegions.map((region, index) => ({
+                        ...region,
+                        unlocked: index === 0
+                    }));
+				};
                 mine.barriers.forEach(barrier => {
                     if (barrier.unlockTime && Date.now() >= barrier.unlockTime) {
                         barrier.unlocked = true;
@@ -569,26 +578,56 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true });
             }
         }
-    } else if (interaction.isStringSelectMenu() || interaction.isButton()) {
-        const interactionHandler = client.interactions.get(interaction.customId);
-        if (!interactionHandler) {
-            console.error(`No interaction handler matching ${interaction.customId} was found.`);
-            return;
-        }
+    } 
+	
+	// Handle Select Menus
+    else if (interaction.isStringSelectMenu()) {
+        handleSelectMenuInteraction(interaction);
 
-        try {
-            await interactionHandler.execute(interaction);
-        } catch (error) {
-            console.error('Error executing interaction:', error);
-            if (!interaction.replied) {
-                await interaction.reply({ content: 'There was an error executing this interaction!', ephemeral: true });
-            } else {
-                await interaction.followUp({ content: 'There was an error executing this interaction!', ephemeral: true });
-            }
-        }
+    // Handle Buttons
+    } else if (interaction.isButton()) {
+        handleButtonInteraction(interaction);
+		
     } else {
         console.error('Received an unhandled interaction type.');
     }
 });
+
+// Centralized Error Handler
+function handleInteractionError(interaction, errorMessage) {
+    if (!interaction.replied) {
+        interaction.reply({ content: errorMessage, ephemeral: true });
+    } else {
+        interaction.followUp({ content: errorMessage, ephemeral: true });
+    }
+}
+
+// Handle Select Menu Interaction
+async function handleSelectMenuInteraction(interaction) {
+    const customId = interaction.customId;
+    const userId = interaction.user.id;
+    const user = await getUser(userId);
+
+    try {
+        // Add your select menu handling logic here
+    } catch (error) {
+        handleInteractionError(interaction, 'There was an error trying to process the selection menu!');
+        console.error('Error executing select menu interaction:', error);
+    }
+}
+
+// Handle Button Interaction
+async function handleButtonInteraction(interaction) {
+    const customId = interaction.customId;
+	const userId = interaction.user.id;
+    const user = await getUser(userId);
+
+    try {
+        // Add your button handling logic here
+    } catch (error) {
+        handleInteractionError(interaction, 'There was an error trying to process that button!');
+        console.error('Error executing button interaction:', error);
+    }
+}
 
 client.login(token);
