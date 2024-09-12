@@ -411,8 +411,20 @@ async function handleMissingData() {
                 mine.warehouse = mine.warehouse || [];
                 mine.managers = mine.managers || { shaft: [], elevator: [], warehouse: [] };
 
-                // Ensure barriers are initialized
-                mine.barriers = ensureBarriers(mine.barriers);
+                // Handle missing barriers
+                if (!mine.barriers || mine.barriers.length < mineRegions.length) {
+                    mine.barriers = mine.barriers || [];
+
+                    // Ensure all barriers are initialized or restored
+                    mineRegions.forEach((region, index) => {
+                        if (!mine.barriers[index]) {
+                            mine.barriers[index] = {
+                                ...region,
+                                unlocked: index === 0  // First barrier unlocked by default
+                            };
+                        }
+                    });
+                }
             }
 
             await updateUser(userId, user);
@@ -420,21 +432,6 @@ async function handleMissingData() {
     } catch (error) {
         console.error('Error handling missing data for users:', error);
     }
-}
-
-// Ensure barriers are properly initialized
-function ensureBarriers(existingBarriers = []) {
-    // Ensure barriers array is consistent with the predefined regions
-    const updatedBarriers = mineRegions.map((region, index) => {
-        const existingBarrier = existingBarriers.find(b => b.Order === region.Order) || {};
-        return {
-            ...region,
-            unlocked: existingBarrier.unlocked || index === 0, // First barrier unlocked by default
-            unlockTime: existingBarrier.unlockTime || null,
-        };
-    });
-
-    return updatedBarriers;
 }
 
 // Function to handle barrier unlock time
@@ -446,7 +443,22 @@ async function handleBarrierUnlockTime() {
             const user = allUsers[userId];
 
             user.mines.forEach(mine => {
-                mine.barriers = ensureBarriers(mine.barriers);
+                // Initialize or restore missing barriers
+                if (!mine.barriers || mine.barriers.length < mineRegions.length) {
+                    mine.barriers = mine.barriers || [];
+                    
+                    // Restore missing barriers
+                    mineRegions.forEach((region, index) => {
+                        if (!mine.barriers[index]) {
+                            mine.barriers[index] = {
+                                ...region,
+                                unlocked: index === 0  // First barrier unlocked by default
+                            };
+                        }
+                    });
+                }
+
+                // Handle unlock times for each barrier
                 mine.barriers.forEach(barrier => {
                     if (barrier.unlockTime && Date.now() >= barrier.unlockTime) {
                         barrier.unlocked = true;
