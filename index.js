@@ -324,7 +324,7 @@ async function handleManagerWork(user, userId) {
     };
 
     // Function to handle cash production
-    function produceCash(isIdle = false) {
+    async function produceCash(isIdle = false) {
         const productionRate = currentMine.Factor || 1; // Base production rate based on mine factor
         const shaftsCount = currentMine.mineshafts.length; // Number of mineshafts
 
@@ -369,7 +369,7 @@ async function handleManagerWork(user, userId) {
     const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
 
     // Produce cash
-    produceCash(isIdle);
+    await produceCash(isIdle);
 
     // Save user data
     try {
