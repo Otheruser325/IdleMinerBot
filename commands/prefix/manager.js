@@ -48,9 +48,9 @@ module.exports = {
                 break;
             case 'fire':
 			    if (isNumeric(managerIdOrName2)) {
-                    await handleManagerFire(message, user, currentMine, userId, parseInt(managerIdOrName));
+                    await handleManagerFire(message, user, currentMine, userId, parseInt(managerIdOrName2));
                 } else {
-                    await handleManagerFire(message, user, currentMine, userId, managerIdOrName.toLowerCase());
+                    await handleManagerFire(message, user, currentMine, userId, managerIdOrName2.toLowerCase());
                 }
                 break;
             case 'assign':
