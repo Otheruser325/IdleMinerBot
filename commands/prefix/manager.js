@@ -177,12 +177,22 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
         }
     });
 	
-	// Check in all areas
-    const allManagers = [
-        ...currentMine.managers.shaft,
-        ...currentMine.managers.elevator,
-        ...currentMine.managers.warehouse
-    ];
+	let manager;
+	
+	// First, try to find the manager by ID
+    const managerId = parseInt(managerIdOrName, 10);
+    if (!isNaN(managerId)) {
+        manager = currentMine.managers.shaft.find(m => m.ManagerID === managerId) ||
+                  currentMine.managers.elevator.find(m => m.ManagerID === managerId) ||
+                  currentMine.managers.warehouse.find(m => m.ManagerID === managerId);
+    }
+
+    // If not found by ID, try by name
+    if (!manager) {
+        manager = currentMine.managers.shaft.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
+                  currentMine.managers.elevator.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
+                  currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+    }
 
     const manager = allManagers.find(m => 
         m.ManagerID === parseInt(managerIdOrName, 10) || 
