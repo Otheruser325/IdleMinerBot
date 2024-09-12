@@ -184,8 +184,10 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
 	
 	let manager;
 	
+	const managerIdOrNameStr = managerIdOrName.toString();
+	
 	// First, try to find the manager by ID
-    const managerId = parseInt(managerIdOrName, 10);
+    const managerId = parseInt(managerIdOrNameStr, 10);
     if (!isNaN(managerId)) {
         manager = currentMine.managers.shaft.find(m => m.ManagerID === managerId) ||
                   currentMine.managers.elevator.find(m => m.ManagerID === managerId) ||
@@ -194,9 +196,9 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
 
     // If not found by ID, try by name
     if (!manager) {
-        manager = currentMine.managers.shaft.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
-                  currentMine.managers.elevator.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
-                  currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+        manager = currentMine.managers.shaft.find(m => m.Name.toLowerCase() === managerIdOrNameStr.toLowerCase()) ||
+                  currentMine.managers.elevator.find(m => m.Name.toLowerCase() === managerIdOrNameStr.toLowerCase()) ||
+                  currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrNameStr.toLowerCase());
     }
 
     if (!manager) {
@@ -249,19 +251,17 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
 	
 	let manager;
 	
-	// First, try to find the manager by ID
-    const managerId = parseInt(managerIdOrName, 10);
+	const managerIdOrNameStr = managerIdOrName.toString();
+
+    // Try to find the manager by ID first
+    const managerId = parseInt(managerIdOrNameStr, 10);
     if (!isNaN(managerId)) {
-        manager = currentMine.managers.shaft.find(m => m.ManagerID === managerId) ||
-                  currentMine.managers.elevator.find(m => m.ManagerID === managerId) ||
-                  currentMine.managers.warehouse.find(m => m.ManagerID === managerId);
+        manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
     }
 
     // If not found by ID, try by name
     if (!manager) {
-        manager = currentMine.managers.shaft.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
-                  currentMine.managers.elevator.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase()) ||
-                  currentMine.managers.warehouse.find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+        manager = currentMine.managers[area].find(m => m.Name.toLowerCase() === managerIdOrNameStr.toLowerCase());
     }
 
     if (!manager) {
@@ -329,16 +329,18 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     currentMine.managers[area] = currentMine.managers[area] || [];
 	
 	let manager;
+	
+	const managerIdOrNameStr = managerIdOrName.toString();
 
     // Try to find the manager by ID first
-    const managerId = parseInt(managerIdOrName, 10);
+    const managerId = parseInt(managerIdOrNameStr, 10);
     if (!isNaN(managerId)) {
         manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
     }
 
     // If not found by ID, try by name
     if (!manager) {
-        manager = currentMine.managers[area].find(m => m.Name.toLowerCase() === managerIdOrName.toLowerCase());
+        manager = currentMine.managers[area].find(m => m.Name.toLowerCase() === managerIdOrNameStr.toLowerCase());
     }
 
     if (!manager) {
