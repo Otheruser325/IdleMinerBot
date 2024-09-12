@@ -275,8 +275,8 @@ async function scheduleNextUpdate(client) {
         await handleBarrierUnlockTime(); // Run every second
     });
 	
-	// Schedule and check user cash production updates every 5 seconds
-    cron.schedule('*/5 * * * *', async () => {
+	// Set up an interval to call handleManagerWork for all users every 5 seconds
+    setInterval(async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
             
@@ -288,7 +288,7 @@ async function scheduleNextUpdate(client) {
         } catch (error) {
             console.error('Error handling manager work for users:', error);
         }
-    });
+    }, 5000); // Interval set to 5000 milliseconds (5 seconds)
 	
 	// Schedule dynamic updates for all guilds based on size category
 	await loadAssignedGuilds(client);
