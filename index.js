@@ -330,7 +330,7 @@ async function handleManagerWork(user, userId) {
 
         let totalGainPerSecond = 0;
         currentMine.mineshafts.forEach(shaft => {
-            totalGainPerSecond += shaft.gainPerSecondPerWorker * shaft.numberOfWorkers;
+            totalGainPerSecond += (shaft.gainPerSecondPerWorker * shaft.numberOfWorkers) || 0;
         });
 
         // Ensure managers are properly defined
@@ -338,10 +338,10 @@ async function handleManagerWork(user, userId) {
         currentMine.managers.elevator = currentMine.managers.elevator || [];
         currentMine.managers.warehouse = currentMine.managers.warehouse || [];
 
-        // Check if all managers are assigned
-        const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.assigned);
-        const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.assigned);
-        const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.assigned);
+        // Ensure all required managers are assigned before producing cash
+        const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.Assigned);
+        const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.Assigned);
+        const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.Assigned);
 
         // Ensure all required managers are assigned before producing cash
         if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
