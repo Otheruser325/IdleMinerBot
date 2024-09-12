@@ -28,7 +28,7 @@ module.exports = {
                 .setName('fire')
                 .setDescription('Fire a manager.')
                 .addStringOption(option =>
-                    option.setName('identifier')
+                    option.setName('managerid_or_name')
                         .setDescription('The ID or name of the manager to fire.')
                         .setRequired(true)
                 )
@@ -58,8 +58,8 @@ module.exports = {
                 .setName('remove')
                 .setDescription('Remove a manager from their work area.')
                 .addIntegerOption(option =>
-                    option.setName('managerid')
-                        .setDescription('The ID of the manager to remove.')
+                    option.setName('managerid_or_name')
+                        .setDescription('The ID or name of the manager to remove.')
                         .setRequired(true)
                 )
                 .addStringOption(option =>
@@ -213,7 +213,7 @@ async function handleManagerHire(interaction, user, currentMine, userId) {
 
 // Function to handle firing a manager
 async function handleManagerFire(interaction, user, currentMine, userId) {
-    const identifier = interaction.options.getString('identifier');
+    const managerIdOrName = interaction.options.getString('managerid_or_name');
 
     // Ensure managers are properly initialized
     currentMine.managers = currentMine.managers || {
@@ -237,8 +237,8 @@ async function handleManagerFire(interaction, user, currentMine, userId) {
     ];
 
     const manager = allManagers.find(m => 
-        m.ManagerID === parseInt(identifier) || 
-        m.Name.toLowerCase() === identifier.toLowerCase()
+        m.ManagerID === parseInt(managerIdOrName, 19) || 
+        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
     );
 
     if (!manager) {
@@ -347,10 +347,10 @@ async function handleManagerAssign(interaction, user, currentMine, userId) {
 
 // Function to handle removing a manager
 async function handleManagerRemove(interaction, user, currentMine, userId) {
-    const managerId = interaction.options.getInteger('managerid');
+    const managerIdOrName = interaction.options.getInteger('managerid_or_name');
     const area = interaction.options.getString('area').toLowerCase();
 
-    if (!managerId) {
+    if (!managerIdOrName) {
         return interaction.reply('Please specify the ID of the manager you want to remove from the area.');
     }
 
@@ -369,7 +369,11 @@ async function handleManagerRemove(interaction, user, currentMine, userId) {
     currentMine.managers[area] = currentMine.managers[area] || [];
 
     // Find the manager in the specified area
-    const manager = currentMine.managers[area].find(m => m.ManagerID === managerId);
+	const manager = currentMine.managers[area].find(m =>
+        m.ManagerID === parseInt(managerIdOrName, 10) ||
+        m.Name.toLowerCase() === managerIdOrName.toLowerCase()
+    );
+	
     if (!manager) {
         return interaction.reply('Manager not found in this area.');
     }
