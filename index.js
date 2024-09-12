@@ -373,7 +373,7 @@ async function handleManagerWork(user, userId) {
         await updateUser(userId, {
             cash: user.cash,
             idleCash: user.idleCash,
-            lastDaily: user.lastDaily,
+            lastIdle: user.lastIdle,
             mines: user.mines
         });
     } catch (error) {
@@ -538,7 +538,7 @@ client.on('messageCreate', async message => {
         const user = await getUser(userId);
         if (user) {
             const currentTime = Date.now();
-            const isIdle = currentTime - user.lastDaily > 10 * 60 * 1000;
+            const isIdle = currentTime - user.lastIdle > 10 * 60 * 1000;
 
             if (isIdle) {
                 const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
@@ -549,7 +549,7 @@ client.on('messageCreate', async message => {
                 await handleManagerWork(user, userId);
                 user.cash += user.idleCash;
                 user.idleCash = 0;
-                user.lastDaily = currentTime;
+                user.lastIdle = currentTime;
 
                 await updateUser(userId, user);
                 await message.reply(`You have collected ${user.cash} cash from your idle workers.`);
