@@ -35,6 +35,10 @@ module.exports = {
                     option.setName('tier')
                         .setDescription('The tier of the mineshaft to upgrade.')
                         .setRequired(true))
+                .addIntegerOption(option => 
+                    option.setName('upgrade_count')
+                        .setDescription('The number of levels to upgrade.')
+                        .setRequired(false))
         ),
     
     async execute(interaction) {
@@ -168,53 +172,75 @@ async function handleBuy(interaction, user, currentMine, tier, userId) {
     return interaction.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(shaftInfo.Cost)} Cash in the ${currentMine.MineName}.`);
 }
 
-// Function to handle the "upgrade" subcommand
+// Function to handle the "upgrade" subcommand for slash commands
 async function handleUpgrade(interaction, user, currentMine, tier, userId) {
-	if (isNaN(tier) || tier < 1 || tier > 40) {
+    const upgradeCount = interaction.options.getInteger('upgrade_count') || 1;
+
+    if (isNaN(tier) || tier < 1 || tier > 40) {
         return interaction.reply('Please provide a valid shaft tier number between 1 and 40.');
     }
-	
+
+    if (isNaN(upgradeCount) || upgradeCount < 1) {
+        return interaction.reply('Please provide a valid number of upgrades (positive integer).');
+    }
+
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
         return interaction.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.MineName}.`);
     }
 
-    const nextLevel = shaft.level + 1;
-	
-	if (nextLevel > 1000) {
-        return interaction.reply(`Your Mineshaft ${tier} is currently maxed out and cannot be upgraded any further!`);
+    let totalCost = 0;
+    let lastLevel = shaft.level;
+    const maxLevel = 1000;
+
+    // Calculate total cost and check for max level
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = lastLevel + 1;
+
+        if (nextLevel > maxLevel) {
+            return interaction.reply(`Your Mineshaft Tier ${tier} is currently maxed out and cannot be upgraded any further.`);
+        }
+
+        const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
+
+        if (!nextShaftInfo) {
+            return interaction.reply(`There is no upgrade available for Shaft Tier ${tier} at Level ${nextLevel}.`);
+        }
+
+        totalCost += nextShaftInfo.Cost;
+        lastLevel = nextLevel;
     }
-	
-    const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
 
-    if (!nextShaftInfo) {
-        return interaction.reply(`There is no upgrade available for Shaft Tier ${tier} at Level ${nextLevel}.`);
+    if (user.cash < totalCost) {
+        return interaction.reply(`You do not have enough Cash to upgrade this shaft ${upgradeCount} times. Total Cost: ${numberFormat(totalCost)}`);
     }
 
-    if (user.cash < nextShaftInfo.Cost) {
-        return interaction.reply(`You do not have enough Cash to upgrade this shaft. Cost: ${numberFormat(nextShaftInfo.Cost)}`);
-    }
+    // Apply upgrades
+    let currentLevel = shaft.level;
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = currentLevel + 1;
+        const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
 
-    user.cash -= nextShaftInfo.Cost;
+        if (nextShaftInfo) {
+            user.cash -= nextShaftInfo.Cost;
+            shaft.level = nextLevel;
+            shaft.numberOfWorkers = nextShaftInfo.NumberOfWorkers;
+            shaft.gainPerSecondPerWorker = nextShaftInfo.GainPerSecondPerWorker * getMineFactor(currentMine.MineName);
+            shaft.capacityPerWorker = nextShaftInfo.CapacityPerWorker * getMineFactor(currentMine.MineName);
+            shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
-    // Adjust shaft stats based on the mine's factor
-    const mineFactor = getMineFactor(currentMine.MineName);
-    const adjustedGain = nextShaftInfo.GainPerSecondPerWorker * mineFactor;
-    const adjustedCapacity = nextShaftInfo.CapacityPerWorker * mineFactor;
+            if (nextShaftInfo.BigUpdate === 1) {
+                user.superCash = (user.superCash || 0) + nextShaftInfo.SuperCashReward;
+            }
 
-    shaft.level = nextLevel;
-    shaft.numberOfWorkers = nextShaftInfo.NumberOfWorkers;
-    shaft.gainPerSecondPerWorker = adjustedGain;
-    shaft.capacityPerWorker = adjustedCapacity;
-    shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
-	
-	// Check for Big Update and adjust SuperCash
-    if (nextShaftInfo.BigUpdate === 1) {
-        user.superCash = (user.superCash || 0) + nextShaftInfo.SuperCashReward;
+            currentLevel = nextLevel;
+        } else {
+            break; // Stop upgrading if no further upgrades are available
+        }
     }
 
     await updateUser(userId, user);
 
-    return interaction.reply(`Successfully upgraded Shaft Tier ${tier} to Level ${nextLevel} for ${numberFormat(nextShaftInfo.Cost)} Cash in the ${currentMine.MineName}.`);
+    return interaction.reply(`Successfully upgraded Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}.`);
 }
