@@ -79,26 +79,51 @@ async function handleWarehouseOverview(message, warehouse, currentMine, userId) 
 
 // Function to handle the "upgrade" subcommand for warehouse
 async function handleWarehouseUpgrade(message, user, warehouse, currentMine, userId) {
+	const levelsToUpgrade = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for number of levels to upgrade
     const currentLevel = warehouse.level;
-    const nextLevelData = warehouseData.find(w => w.Level === currentLevel + 1);
+	let totalCost = 0;
+    let superCashEarned = 0;
+	let lastLevel = currentLevel;
+	
+	// Iterate over the number of levels to upgrade
+    for (let i = 0; i < levelsToUpgrade; i++) {
+        const nextLevelData = warehouseData.find(e => e.Level === lastLevel + 1);
 
-    if (!nextLevelData) {
-        return message.reply('Warehouse is already at the highest level.');
+        if (!nextLevelData) {
+            return message.reply(`Warehouse is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
+        }
+
+        totalCost += nextLevelData.UpgradeCost;
+
+        if (user.cash < totalCost) {
+            return message.reply(`You need ${numberFormat(totalCost)} cash to upgrade the Warehouse by ${levelsToUpgrade} levels.`);
+        }
+
+        // Track if it's a "Big Update" to award SuperCash
+        if (nextLevelData.BigUpdate === 1) {
+            superCashEarned += nextLevelData.SuperCashReward;
+        }
+
+        lastLevel++; // Increase the last level processed
     }
+	
+	// Deduct the total cost
+    user.cash -= totalCost;
 
+    // Apply the upgrade to the warehouse
     const mineFactor = getMineFactor(currentMine.MineName);
-    const upgradeCost = nextLevelData.Cost;
+    const finalLevelData = warehouseData.find(w => w.Level === lastLevel);
 
-    if (user.cash < upgradeCost) {
-        return message.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the warehouse.`);
+    warehouse.level = lastLevel;
+    warehouse.capacityPerWorker = finalLevelData.CapacityPerWorker * mineFactor;
+    warehouse.workerWalkingSpeedPerSecond = finalLevelData.WorkerWalkingSpeedPerSecond;
+    warehouse.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor;
+	
+	// Add Super Cash if earned
+    if (superCashEarned > 0) {
+        user.superCash = (user.superCash || 0) + superCashEarned;
     }
-
-    user.cash -= upgradeCost;
-    warehouse.level += 1;
-    warehouse.capacityPerWorker = nextLevelData.CapacityPerWorker * mineFactor;
-    warehouse.workerWalkingSpeedPerSecond = nextLevelData.WorkerWalkingSpeedPerSecond;
-    warehouse.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
     await updateUser(userId, user);
-    await message.reply(`Warehouse upgraded to Level ${warehouse.level}.`);
+    await message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

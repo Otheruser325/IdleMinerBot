@@ -79,26 +79,51 @@ async function handleElevatorOverview(message, elevator, currentMine, userId) {
 
 // Function to handle the "upgrade" subcommand for elevator
 async function handleElevatorUpgrade(message, user, elevator, currentMine, userId) {
+	const levelsToUpgrade = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for number of levels to upgrade
     const currentLevel = elevator.level;
-    const nextLevelData = elevatorData.find(e => e.Level === currentLevel + 1);
+    let totalCost = 0;
+    let superCashEarned = 0;
+    let lastLevel = currentLevel;
 
-    if (!nextLevelData) {
-        return message.reply('Elevator is already at the highest level.');
+    // Iterate over the number of levels to upgrade
+    for (let i = 0; i < levelsToUpgrade; i++) {
+        const nextLevelData = elevatorData.find(e => e.Level === lastLevel + 1);
+
+        if (!nextLevelData) {
+            return message.reply(`Elevator is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
+        }
+
+        totalCost += nextLevelData.UpgradeCost;
+
+        if (user.cash < totalCost) {
+            return message.reply(`You need ${numberFormat(totalCost)} cash to upgrade the elevator by ${levelsToUpgrade} levels.`);
+        }
+
+        // Track if it's a "Big Update" to award SuperCash
+        if (nextLevelData.BigUpdate === 1) {
+            superCashEarned += nextLevelData.SuperCashReward;
+        }
+
+        lastLevel++; // Increase the last level processed
     }
 
+    // Deduct the total cost
+    user.cash -= totalCost;
+
+    // Apply the upgrade to the elevator
     const mineFactor = getMineFactor(currentMine.MineName);
-    const upgradeCost = nextLevelData.UpgradeCost;
+    const finalLevelData = elevatorData.find(e => e.Level === lastLevel);
 
-    if (user.cash < upgradeCost) {
-        return message.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the elevator.`);
+    elevator.level = lastLevel;
+    elevator.speed = finalLevelData.Speed;
+    elevator.capacity = finalLevelData.Capacity * mineFactor;
+    elevator.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor;
+
+    // Add Super Cash if earned
+    if (superCashEarned > 0) {
+        user.superCash = (user.superCash || 0) + superCashEarned;
     }
-
-    user.cash -= upgradeCost;
-    elevator.level += 1;
-    elevator.speed = nextLevelData.Speed;
-    elevator.capacity = nextLevelData.Capacity * mineFactor;
-    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor;
 
     await updateUser(userId, user);
-    await message.reply(`Elevator upgraded to Level ${elevator.level}.`);
+    await message.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }
