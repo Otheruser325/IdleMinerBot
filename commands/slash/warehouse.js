@@ -58,7 +58,7 @@ module.exports = {
                 await handleWarehouseUpgrade(interaction, user, warehouse, currentMine, userId);
                 break;
             default:
-                return interaction.reply('Invalid subcommand. Use `overview` or `upgrade`.');
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **/warehouse overview** to view your warehouse's performance in your **__${currentMine.MineName}__** or **/warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **/warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
         }
     }
 };

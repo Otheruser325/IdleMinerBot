@@ -59,7 +59,7 @@ module.exports = {
                 await handleElevatorUpgrade(interaction, user, elevator, currentMine, userId);
                 break;
             default:
-                return interaction.reply('Invalid subcommand. Use `overview` or `upgrade`.');
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **/elevator overview** to view your elevator's performance in your **__${currentMine.MineName}__** or **/elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **/elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
         }
     }
 };
