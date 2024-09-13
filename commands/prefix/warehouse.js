@@ -126,5 +126,5 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
     }
 
     await updateUser(userId, user);
-    await message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    await message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

@@ -227,5 +227,5 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
 
     await updateUser(userId, user);
 
-    return message.reply(`Successfully upgraded Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}.`);
+    return message.reply(`Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

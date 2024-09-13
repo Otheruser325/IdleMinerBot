@@ -125,5 +125,5 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, args,
     }
 
     await updateUser(userId, user);
-    await message.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    await message.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }
