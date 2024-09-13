@@ -10,10 +10,6 @@ module.exports = {
     usage: '<subcommand>',
     exampleUsage: 'v warehouse overview | v warehouse upgrade',
     async execute(message, args) {
-        if (args.length < 1) {
-            return message.reply(`<@${userId}>, to operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **${currentMine.MineName}** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!)`);
-        }
-
         const subcommand = args[0].toLowerCase();
         const userId = message.author.id;
         const user = await getUser(userId);
@@ -25,6 +21,10 @@ module.exports = {
         const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
         if (!currentMine) {
             return message.reply('Current mine data not found.');
+        }
+		
+		if (args.length < 1) {
+            return message.reply(`<@${userId}>, to operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **${currentMine.MineName}** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!)`);
         }
 
         // Lazy initialization of warehouse

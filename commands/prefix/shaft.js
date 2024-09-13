@@ -10,10 +10,6 @@ module.exports = {
     usage: '<subcommand> [arguments]',
     exampleUsage: 'v shaft buy 1 | v shaft upgrade 1 | v shaft overview 1',
     async execute(message, args) {
-        if (args.length < 1) {
-            return message.reply('Please provide a subcommand: `overview`, `buy`, or `upgrade`.');
-        }
-
         const subcommand = args[0].toLowerCase();
         const userId = message.author.id;
         const user = await getUser(userId);
@@ -25,6 +21,10 @@ module.exports = {
         const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
         if (!currentMine) {
             return message.reply('Current mine data not found.');
+        }
+		
+		if (args.length < 1) {
+            return message.reply(`<@${userId}>, to operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **${currentMine.MineName}**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **${currentMine.MineName}** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
 
         // Lazy initialization of mineshafts
@@ -43,7 +43,7 @@ module.exports = {
                 await handleUpgrade(message, user, currentMine, args, userId);
                 break;
             default:
-                return message.reply('Invalid subcommand. Use `overview`, `buy`, or `upgrade`.');
+                return message.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **${currentMine.MineName}**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **${currentMine.MineName}** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
     }
 };

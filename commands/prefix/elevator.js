@@ -10,10 +10,6 @@ module.exports = {
     usage: '<subcommand>',
     exampleUsage: 'v elevator overview | v elevator upgrade',
     async execute(message, args) {
-        if (args.length < 1) {
-            return message.reply('Please provide a subcommand: `overview` or `upgrade`.');
-        }
-
         const subcommand = args[0].toLowerCase();
         const userId = message.author.id;
         const user = await getUser(userId);
@@ -25,6 +21,10 @@ module.exports = {
         const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
         if (!currentMine) {
             return message.reply('Current mine data not found.');
+        }
+		
+		if (args.length < 1) {
+            return message.reply(`<@${userId}>, to operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **${currentMine.MineName}** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
         }
 
         // Lazy initialization of elevator
@@ -46,7 +46,7 @@ module.exports = {
                 await handleElevatorUpgrade(message, user, elevator, currentMine, args, userId);
                 break;
             default:
-                return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
+                return message.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **${currentMine.MineName}** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
         }
     }
 };
