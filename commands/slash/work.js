@@ -126,26 +126,23 @@ async function handleShaftWork(interaction, user, currentMine, userId, tier) {
 
     // Initialize the elevator and warehouse if working in Mineshaft 1
     if (tier === 1 && (!currentMine.elevator || currentMine.elevator.length === 0)) {
-        const elevatorInfo = elevatorData.find(e => e.Level === 1);
-
         currentMine.elevator = [{
             level: 1,
-            lastWorkedOn: null,
-            speed: elevatorInfo.Speed || 0.5,
-            capacity: elevatorInfo.Capacity,
-            loadingPerSecond: elevatorInfo.LoadingPerSecond,
+            lastWorkedOn: 0,
+            speed: elevatorData[0].Speed || 0.5,
+            capacity: elevatorData[0].Capacity,
+            loadingPerSecond: elevatorData[0].LoadingPerSecond,
             totalDeposit: 0
         }];
 
         // Initialize warehouse
         currentMine.warehouse = [{
             level: 1,
-            numberOfWorkers: 1,
+			lastWorkedOn: 0,
+            numberOfWorkers: warehouseData[0].NumberOfWorkers,
             capacityPerWorker: warehouseData[0].CapacityPerWorker,
             workerWalkingSpeedPerSecond: warehouseData[0].WorkerWalkingSpeedPerSecond,
             loadingPerSecond: warehouseData[0].LoadingPerSecond,
-            bigUpdate: 0,
-            superCashReward: 0,
             totalDeposit: 0
         }];
 
