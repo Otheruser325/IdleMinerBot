@@ -37,7 +37,7 @@ module.exports = {
                 await handleMineManage(message, mineName, user, userId);
                 break;
             default:
-                return message.reply(`@${message.author.username}, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
+                return message.reply(`<@${userId}>, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
         }
     }
 };
