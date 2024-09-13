@@ -191,6 +191,7 @@ async function handleUpgrade(interaction, user, currentMine, tier, userId) {
     }
 
     let totalCost = 0;
+	let superCashEarned = 0;
     let lastLevel = shaft.level;
     const maxLevel = 1000;
 
@@ -231,13 +232,18 @@ async function handleUpgrade(interaction, user, currentMine, tier, userId) {
             shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
             if (nextShaftInfo.BigUpdate === 1) {
-                user.superCash = (user.superCash || 0) + nextShaftInfo.SuperCashReward;
+                superCashEarned += nextShaftInfo.SuperCashReward;
             }
 
             currentLevel = nextLevel;
         } else {
             break; // Stop upgrading if no further upgrades are available
         }
+    }
+	
+	// Add Super Cash if earned
+    if (superCashEarned > 0) {
+        user.superCash = (user.superCash || 0) + superCashEarned;
     }
 
     await updateUser(userId, user);
