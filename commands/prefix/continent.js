@@ -23,7 +23,7 @@ module.exports = {
                 await handleContinentManage(message, user);
                 break;
             default:
-                return message.reply(`@${message.author.username}, if you want to use the continent command for either: buying new continents or managing them, you'll need to use either \`buy\` or \`manage\` respectively.`);
+                return message.reply(`<@${userId}>, if you want to use the continent command for either: buying new continents or managing them, you'll need to use either \`buy\` or \`manage\` respectively.`);
         }
     }
 };
