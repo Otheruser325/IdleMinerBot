@@ -12,7 +12,7 @@ module.exports = {
     exampleUsage: 'v work shaft 1 | v work elevator | v work warehouse',
     async execute(message, args) {
         if (args.length < 1) {
-            return message.reply('Please provide a subcommand: `shaft`, `elevator`, or `warehouse`.');
+            return message.reply(`<@${userId}>, to start working your mine, you'll need to do: use either **shaft**, **elevator** or **warehouse** as the subcommand to operate them in your mine. For shafts, you'll need to use im!work shaft (shaftNum) to operate a specific mineshaft in a specified order of their tier you own (i.e. im!work shaft 1).`);
         }
 
         const subcommand = args[0].toLowerCase();
@@ -48,7 +48,7 @@ module.exports = {
                 await handleWarehouseWork(message, user, currentMine, userId);
                 break;
             default:
-			    return message.reply(`<@${userId}>, to start working your mine, you'll need to do: use either **shaft**, **elevator** or **warehouse** as the subcommand to operate them in your mine. For shafts, you'll need to use im!work shaft (shaftNum) to operate a specific mineshaft in a specified order of their tier you own (i.e. im!work shaft 1).`);
+			    return message.reply(`Invalid subcommand, <@${userId}>! To start working your mine, you'll need to do: use either **shaft**, **elevator** or **warehouse** as the subcommand to operate them in your mine. For shafts, you'll need to use im!work shaft (shaftNum) to operate a specific mineshaft in a specified order of their tier you own (i.e. im!work shaft 1).`);
         }
     }
 };

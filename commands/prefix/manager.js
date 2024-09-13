@@ -29,7 +29,7 @@ module.exports = {
         currentMine.warehouse = currentMine.warehouse || [];
 
         if (args.length < 1) {
-            return message.reply(`Please provide a subcommand: \`hire\`, \`fire\`, \`assign\`, \`remove\`, or \`overview\`.`);
+            return message.reply(`Invalid subcommand, <@${userId}>! To manage your managers, you'll need to do: **hire** for hiring a specific manager in your mine's workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your mine, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. im!manager assign warehouse 1 or im!manager assign warehouse Benjamin Booth), **remove** for removing an assigned manager in their workstation (i.e. im!manager remove warehouse 1 or im!manager remove warehouse Benjamin Booth) or **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your mine.`);
         }
 
         const subcommand = args[0];
@@ -72,7 +72,6 @@ module.exports = {
                 break;
             default:
 			    return message.reply(`<@${userId}>, to manage your managers, you'll need to do: **hire** for hiring a specific manager in your mine's workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your mine, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. im!manager assign warehouse 1 or im!manager assign warehouse Benjamin Booth), **remove** for removing an assigned manager in their workstation (i.e. im!manager remove warehouse 1 or im!manager remove warehouse Benjamin Booth) or **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your mine.`);
-                return message.reply('Invalid subcommand. Use `hire`, `fire`, `assign`, `remove`, or `overview`.');
         }
     }
 };

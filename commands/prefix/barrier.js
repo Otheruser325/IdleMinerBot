@@ -10,7 +10,7 @@ module.exports = {
     exampleUsage: 'v barrier unlock 1',
     async execute(message, args) {
         if (args.length < 1) {
-            return message.reply('Please provide a subcommand: `unlock`, `overview`, or `remove`.');
+            return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your mine using im!barrier unlock (index), view all current barriers in your mine using im!barrier overview or demolish a barrier that is finished using im!barrier remove (index).`);
         }
 
         const subcommand = args[0].toLowerCase();
@@ -37,7 +37,7 @@ module.exports = {
                 await handleRemove(message, user, currentMine, args, userId);
                 break;
             default:
-			    return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your mine using im!barrier unlock (index), view all current barriers in your mine using im!barrier overview or demolish a barrier that is finished using im!barrier remove (index).`);
+			    return message.reply(`Invalid subcommand, <@${userId}>! To manage your barriers, you'll need to do: unlock a new barrier from the order in your mine using im!barrier unlock (index), view all current barriers in your mine using im!barrier overview or demolish a barrier that is finished using im!barrier remove (index).`);
         }
     }
 };
