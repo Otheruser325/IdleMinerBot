@@ -40,10 +40,10 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleWarehouseOverview(message, warehouse, currentMine, userId);
+                await handleWarehouseOverview(message, user, warehouse, currentMine, args, userId);
                 break;
             case 'upgrade':
-                await handleWarehouseUpgrade(message, user, warehouse, currentMine, userId);
+                await handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -52,7 +52,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for warehouse
-async function handleWarehouseOverview(message, warehouse, currentMine, userId) {
+async function handleWarehouseOverview(message, user, warehouse, currentMine, args, userId) {
     const warehouseInfo = warehouseData.find(w => w.Level === warehouse.level);
 
     if (!warehouseInfo) {
@@ -78,7 +78,7 @@ async function handleWarehouseOverview(message, warehouse, currentMine, userId) 
 }
 
 // Function to handle the "upgrade" subcommand for warehouse
-async function handleWarehouseUpgrade(message, user, warehouse, currentMine, userId) {
+async function handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId) {
 	const levelsToUpgrade = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for number of levels to upgrade
     const currentLevel = warehouse.level;
 	let totalCost = 0;
@@ -93,7 +93,7 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, use
             return message.reply(`Warehouse is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
         }
 
-        totalCost += nextLevelData.UpgradeCost;
+        totalCost += nextLevelData.Cost;
 
         if (user.cash < totalCost) {
             return message.reply(`You need ${numberFormat(totalCost)} cash to upgrade the Warehouse by ${levelsToUpgrade} levels.`);

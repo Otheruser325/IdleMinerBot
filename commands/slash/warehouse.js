@@ -109,7 +109,7 @@ async function handleWarehouseUpgrade(interaction, user, warehouse, currentMine,
             return interaction.reply(`Warehouse is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
         }
 
-        totalCost += nextLevelData.UpgradeCost;
+        totalCost += nextLevelData.Cost;
 
         if (user.cash < totalCost) {
             return interaction.reply(`You need ${numberFormat(totalCost)} cash to upgrade the warehouse by ${levelsToUpgrade} levels.`);

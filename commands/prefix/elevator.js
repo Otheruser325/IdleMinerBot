@@ -40,10 +40,10 @@ module.exports = {
 
         switch (subcommand) {
             case 'overview':
-                await handleElevatorOverview(message, elevator, currentMine, userId);
+                await handleElevatorOverview(message, user, elevator, currentMine, args, userId);
                 break;
             case 'upgrade':
-                await handleElevatorUpgrade(message, user, elevator, currentMine, userId);
+                await handleElevatorUpgrade(message, user, elevator, currentMine, args, userId);
                 break;
             default:
                 return message.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -52,7 +52,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for elevator
-async function handleElevatorOverview(message, elevator, currentMine, userId) {
+async function handleElevatorOverview(message, user, elevator, currentMine, args, userId) {
     const elevatorInfo = elevatorData.find(e => e.Level === elevator.level);
 
     if (!elevatorInfo) {
@@ -78,7 +78,7 @@ async function handleElevatorOverview(message, elevator, currentMine, userId) {
 }
 
 // Function to handle the "upgrade" subcommand for elevator
-async function handleElevatorUpgrade(message, user, elevator, currentMine, userId) {
+async function handleElevatorUpgrade(message, user, elevator, currentMine, args, userId) {
 	const levelsToUpgrade = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for number of levels to upgrade
     const currentLevel = elevator.level;
     let totalCost = 0;
@@ -93,7 +93,7 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, userI
             return message.reply(`Elevator is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
         }
 
-        totalCost += nextLevelData.UpgradeCost;
+        totalCost += nextLevelData.Cost;
 
         if (user.cash < totalCost) {
             return message.reply(`You need ${numberFormat(totalCost)} cash to upgrade the elevator by ${levelsToUpgrade} levels.`);
