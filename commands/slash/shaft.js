@@ -73,7 +73,7 @@ module.exports = {
                 await handleUpgrade(interaction, user, currentMine, tier, userId);
                 break;
             default:
-                return interaction.reply('Invalid subcommand. Use `overview`, `buy`, or `upgrade`.');
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **/shaft overview** to view your shaft's performance in your **__${currentMine.MineName}__**, based on the tier you provide (i.e. **/shaft overview 1**), **/shaft buy** for purchasing a new shaft in your **__${currentMine.MineName}__** or **/shaft upgrade** to upgrade your shaft of your choice (i.e. **/shaft upgrade 1**, or you can also quick-upgrade using **/shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
     }
 };
