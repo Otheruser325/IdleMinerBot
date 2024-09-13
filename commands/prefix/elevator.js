@@ -10,7 +10,6 @@ module.exports = {
     usage: '<subcommand>',
     exampleUsage: 'v elevator overview | v elevator upgrade',
     async execute(message, args) {
-        const subcommand = args[0].toLowerCase();
         const userId = message.author.id;
         const user = await getUser(userId);
 
@@ -26,6 +25,8 @@ module.exports = {
 		if (args.length < 1) {
             return message.reply(`<@${userId}>, to operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **${currentMine.MineName}** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
         }
+		
+		const subcommand = args[0].toLowerCase();
 
         // Lazy initialization of elevator
         if (!currentMine.elevator) {
