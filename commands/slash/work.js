@@ -65,7 +65,7 @@ module.exports = {
                 await handleWarehouseWork(interaction, user, currentMine, userId);
                 break;
             default:
-                return interaction.reply('Invalid subcommand. Use `shaft`, `elevator`, or `warehouse`.');
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To start working your __${currentMine.MineName}__, you'll need to do: use either **shaft**, **elevator** or **warehouse** as the subcommand to operate them in your mine. For shafts, you'll need to use **/work shaft (shaftNum)** to operate a specific mineshaft in a specified order of their tier you own (i.e. **/work shaft 1**).`);
         }
     }
 };
