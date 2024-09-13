@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
+const numberFormat = require('./utils/numberFormat');
 const mineRegions = require('./config/mineRegions.json');
 const admin = require('firebase-admin');
 const EventEmitter = require('events').EventEmitter;
@@ -552,12 +553,12 @@ client.on('messageCreate', async message => {
                 }
 
                 await handleManagerWork(user, userId);
+				await message.reply(`You have collected ${numberFormat(user.cash)} cash from your idle workers.`);
                 user.cash += user.idleCash;
                 user.idleCash = 0;
                 user.lastIdle = currentTime;
 
                 await updateUser(userId, user);
-                await message.reply(`You have collected ${user.cash} cash from your idle workers.`);
             } else {
                 await message.reply('You are not idle long enough to collect idle cash or do not have the appropriate managers assigned.');
             }
