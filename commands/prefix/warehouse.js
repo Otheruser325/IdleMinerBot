@@ -115,6 +115,7 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
     const finalLevelData = warehouseData.find(w => w.Level === lastLevel);
 
     warehouse.level = lastLevel;
+	warehouse.numberOfWorkers = finalLevelData.NumberOfWorkers;
     warehouse.capacityPerWorker = finalLevelData.CapacityPerWorker * mineFactor;
     warehouse.workerWalkingSpeedPerSecond = finalLevelData.WorkerWalkingSpeedPerSecond;
     warehouse.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor;

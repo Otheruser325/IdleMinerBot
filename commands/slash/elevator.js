@@ -141,5 +141,5 @@ async function handleElevatorUpgrade(interaction, user, elevator, currentMine, u
     }
 
     await updateUser(userId, user);
-    await interaction.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} SuperCash for hitting major upgrades!` : ''}`);
+    await interaction.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

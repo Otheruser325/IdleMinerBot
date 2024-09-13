@@ -131,6 +131,7 @@ async function handleWarehouseUpgrade(interaction, user, warehouse, currentMine,
     const finalLevelData = warehouseData.find(w => w.Level === lastLevel);
 
     warehouse.level = lastLevel;
+	warehouse.numberOfWorkers = finalLevelData.NumberOfWorkers;
     warehouse.capacityPerWorker = finalLevelData.CapacityPerWorker * mineFactor; // Apply mine factor
     warehouse.workerWalkingSpeedPerSecond = finalLevelData.WorkerWalkingSpeedPerSecond;
     warehouse.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
@@ -141,5 +142,5 @@ async function handleWarehouseUpgrade(interaction, user, warehouse, currentMine,
     }
 
     await updateUser(userId, user);
-    await interaction.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} SuperCash for hitting major upgrades!` : ''}`);
+    await interaction.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }
