@@ -62,7 +62,7 @@ module.exports = {
 async function handleUnlock(interaction, user, currentMine, userId) {
     const barrierOrder = interaction.options.getInteger('order');
 
-    if (barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
+    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
         return interaction.reply('Please provide a valid barrier order number.');
     }
 
@@ -117,7 +117,7 @@ async function handleOverview(interaction, currentMine) {
 async function handleRemove(interaction, user, currentMine, userId) {
     const barrierOrder = interaction.options.getInteger('order');
 
-    if (barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
+    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
         return interaction.reply('Please provide a valid barrier order number.');
     }
 
