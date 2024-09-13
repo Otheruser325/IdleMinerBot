@@ -126,7 +126,7 @@ async function handleShaftWork(message, user, currentMine, userId, tier) {
         currentMine.warehouse = [{
             level: 1,
 			lastWorkedOn: 0,
-            numberOfWorkers: warehouseData[0].NumberOfWorkers,
+            numberOfWorkers: warehouseData[0].NumberOfWorkers || 1,
             capacityPerWorker: warehouseData[0].CapacityPerWorker,
             workerWalkingSpeedPerSecond: warehouseData[0].WorkerWalkingSpeedPerSecond,
             loadingPerSecond: warehouseData[0].LoadingPerSecond,
