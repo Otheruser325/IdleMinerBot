@@ -23,7 +23,7 @@ module.exports = {
         }
 		
 		if (args.length < 1) {
-            return message.reply(`<@${userId}>, to operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **${currentMine.MineName}**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **${currentMine.MineName}** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
+            return message.reply(`<@${userId}>, to operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **__${currentMine.MineName}__**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **__${currentMine.MineName}__** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
 		
 		const subcommand = args[0].toLowerCase();
@@ -44,7 +44,7 @@ module.exports = {
                 await handleUpgrade(message, user, currentMine, args, userId);
                 break;
             default:
-                return message.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **${currentMine.MineName}**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **${currentMine.MineName}** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
+                return message.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **__${currentMine.MineName}__**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **__${currentMine.MineName}__** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
     }
 };
