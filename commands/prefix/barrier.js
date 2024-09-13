@@ -37,7 +37,7 @@ module.exports = {
                 await handleRemove(message, user, currentMine, args, userId);
                 break;
             default:
-                return message.reply('Invalid subcommand. Use `unlock`, `overview`, or `remove`.');
+			    return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your mine using im!barrier unlock (index), view all current barriers in your mine using im!barrier overview or demolish a barrier that is finished using im!barrier remove (index).`);
         }
     }
 };
