@@ -18,6 +18,12 @@ module.exports = {
             subcommand
                 .setName('upgrade')
                 .setDescription('Upgrade your elevator.')
+                .addIntegerOption(option =>
+                    option
+                        .setName('upgrade_count')
+                        .setDescription('The number of levels to upgrade.')
+                        .setRequired(false)
+                )
         ),
 
     async execute(interaction) {
@@ -42,13 +48,15 @@ module.exports = {
         if (currentMine.elevator.length === 0) {
             return interaction.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
         }
+		
+		const elevator = currentMine.elevator[0]; // Access the first elevator object
 
         switch (subcommand) {
             case 'overview':
-                await handleElevatorOverview(interaction, user, currentMine, userId);
+                await handleElevatorOverview(interaction, user, elevator, currentMine, userId);
                 break;
             case 'upgrade':
-                await handleElevatorUpgrade(interaction, user, currentMine, userId);
+                await handleElevatorUpgrade(interaction, user, elevator, currentMine, userId);
                 break;
             default:
                 return interaction.reply('Invalid subcommand. Use `overview` or `upgrade`.');
@@ -57,9 +65,7 @@ module.exports = {
 };
 
 // Function to handle the "overview" subcommand for elevator
-async function handleElevatorOverview(interaction, user, currentMine, userId) {
-    const elevator = currentMine.elevator[0]; // Access the first elevator object
-
+async function handleElevatorOverview(interaction, user, elevator, currentMine, userId) {
     if (!elevator) {
         return interaction.reply('Elevator is not initialized.');
     }
@@ -88,33 +94,52 @@ async function handleElevatorOverview(interaction, user, currentMine, userId) {
 }
 
 // Function to handle the "upgrade" subcommand for elevator
-async function handleElevatorUpgrade(interaction, user, currentMine, userId) {
-    const elevator = currentMine.elevator[0]; // Access the first elevator object
-
-    if (!elevator) {
-        return interaction.reply('Elevator is not initialized.');
-    }
-
+async function handleElevatorUpgrade(interaction, user, elevator, currentMine, userId) {
+	const levelsToUpgrade = interaction.options.getInteger('upgrade_count') || 1;
     const currentLevel = elevator.level;
-    const nextLevelData = elevatorData.find(e => e.Level === currentLevel + 1);
+    let totalCost = 0;
+    let superCashEarned = 0;
+    let lastLevel = currentLevel;
 
-    if (!nextLevelData) {
-        return interaction.reply('Elevator is already at the highest level.');
+    // Iterate over the number of levels to upgrade
+    for (let i = 0; i < levelsToUpgrade; i++) {
+        const nextLevelData = elevatorData.find(e => e.Level === lastLevel + 1);
+
+        if (!nextLevelData) {
+            return interaction.reply(`Elevator is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
+        }
+
+        totalCost += nextLevelData.UpgradeCost;
+
+        if (user.cash < totalCost) {
+            return interaction.reply(`You need ${numberFormat(totalCost)} cash to upgrade the elevator by ${levelsToUpgrade} levels.`);
+        }
+
+        // Track if it's a "Big Update" to award SuperCash
+        if (nextLevelData.BigUpdate === 1) {
+            superCashEarned += nextLevelData.SuperCashReward;
+        }
+
+        lastLevel++; // Increment the last level processed
     }
 
+    // Deduct the total cost
+    user.cash -= totalCost;
+
+    // Apply the final upgrade to the elevator
     const mineFactor = getMineFactor(currentMine.MineName);
-    const upgradeCost = nextLevelData.UpgradeCost;
+    const finalLevelData = elevatorData.find(e => e.Level === lastLevel);
 
-    if (user.cash < upgradeCost) {
-        return interaction.reply(`You need ${numberFormat(upgradeCost)} cash to upgrade the elevator.`);
+    elevator.level = lastLevel;
+    elevator.speed = finalLevelData.Speed;
+    elevator.capacity = finalLevelData.Capacity * mineFactor; // Apply mine factor
+    elevator.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
+
+    // Add SuperCash if earned
+    if (superCashEarned > 0) {
+        user.superCash = (user.superCash || 0) + superCashEarned;
     }
-
-    user.cash -= upgradeCost;
-    elevator.level += 1;
-    elevator.speed = nextLevelData.Speed;
-    elevator.capacity = nextLevelData.Capacity * mineFactor; // Apply mine factor
-    elevator.loadingPerSecond = nextLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
 
     await updateUser(userId, user);
-    await interaction.reply(`Elevator upgraded to Level ${elevator.level}.`);
+    await interaction.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash. ${superCashEarned > 0 ? `You earned ${superCashEarned} SuperCash for hitting major upgrades!` : ''}`);
 }
