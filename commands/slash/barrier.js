@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const mineRegions = require('../../config/mineRegions.json');
+const mineRegions = require('../../config/mineRegions.json').regions;
 
 module.exports = {
     data: new SlashCommandBuilder()

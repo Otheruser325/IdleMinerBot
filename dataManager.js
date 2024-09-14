@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 const serviceAccount = require('./config/serviceAccountKey.json');
-const mineRegions = require('./config/mineRegions.json');
-const continentData = require('./config/continentData.json');
+const mineRegions = require('./config/mineRegions.json').regions;
+const continentData = require('./config/continentData.json').continents;
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -30,7 +30,7 @@ async function initializeUser(userId, username) {
             streak: 0,
             lastDaily: 0,
 			lastIdle: 0,
-			continents: [continentData.continents[0]],
+			continents: [continentData[0]],
             mines: [
                 {
                     PrestigeCount: 0,

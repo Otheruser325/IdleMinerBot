@@ -7,8 +7,8 @@ const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
 const numberFormat = require('./utils/numberFormat');
-const mineRegions = require('./config/mineRegions.json');
-const continentData = require('./config/continentData.json');
+const mineRegions = require('./config/mineRegions.json').regions;
+const continentData = require('./config/continentData.json').continents;
 const admin = require('firebase-admin');
 const EventEmitter = require('events').EventEmitter;
 EventEmitter.defaultMaxListeners = 20;
@@ -402,7 +402,7 @@ async function handleMissingData() {
 
             user.username = user.username || 'Unknown',
             user.userId = user.userId || userId,
-			user.continents = user.continents || [continentData.continents[0]];
+			user.continents = user.continents || [continentData[0]];
             user.mines = user.mines || [];
             user.cash = user.cash || 0;
 			user.iceCash = user.iceCash || 0;
