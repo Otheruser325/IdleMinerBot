@@ -1,0 +1,22 @@
+{
+  "continents": [
+    {
+      "ContinentName": "Start Continent",
+      "Cost": 0,
+      "CashType": 1,
+      "MineTypes": ["Coal Mine", "Gold Mine", "Ruby Mine", "Diamond Mine", "Emerald Mine"]
+    },
+    {
+      "ContinentName": "Ice Continent",
+      "Cost": 2.4499999999999999e+36,
+      "CashType": 2,
+      "MineTypes": ["Amethyst Mine", "Moonstone Mine", "Sapphire Mine", "Crystal Mine", "Jade Mine"]
+    },
+    {
+      "ContinentName": "Fire Continent",
+      "Cost": 2.2099999999999998e+37,
+      "CashType": 3,
+      "MineTypes": ["Amber Mine", "Sunstone Mine", "Topaz Mine", "Platinum Mine", "Obsidian Mine"]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, i
 const { updateBotStatus } = require('./utils/botStatus');
 const numberFormat = require('./utils/numberFormat');
 const mineRegions = require('./config/mineRegions.json');
+const continentData = require('./config/continentData.json');
 const admin = require('firebase-admin');
 const EventEmitter = require('events').EventEmitter;
 EventEmitter.defaultMaxListeners = 20;
@@ -401,6 +402,7 @@ async function handleMissingData() {
 
             user.username = user.username || 'Unknown',
             user.userId = user.userId || userId,
+			user.continents = user.continents || [continentData.continents[0]];
             user.mines = user.mines || [];
             user.cash = user.cash || 0;
 			user.iceCash = user.iceCash || 0;
@@ -412,6 +414,7 @@ async function handleMissingData() {
 			user.streak = user.streak || 0,
             user.lastDaily = user.lastDaily || Date.now();
 			user.lastIdle = user.lastIdle || Date.now();
+			user.currentContinent = user.currentContinent || 'Start Continent';
             user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
 
             for (const mine of user.mines) {
