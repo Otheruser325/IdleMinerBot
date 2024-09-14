@@ -1,6 +1,8 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
+const continentsData = require('../../config/continents.json').continents;
+const mineFactors = require('../../config/mineFactors.json').mines;
 
 module.exports = {
     name: 'continent',
@@ -23,7 +25,7 @@ module.exports = {
                 await handleContinentManage(message, user);
                 break;
             default:
-                return message.reply(`<@${userId}>, if you want to use the continent command for either: buying new continents or managing them, you'll need to use either \`buy\` or \`manage\` respectively.`);
+                return message.reply(`<@${userId}>, to use the continent command for buying or managing continents, please use either \`buy\` or \`manage\` respectively.`);
         }
     }
 };
@@ -33,13 +35,7 @@ async function handleContinentBuy(message, continentName, user) {
         return message.reply('Please specify the name of the continent you want to buy.');
     }
 
-    const continents = {
-        'Ice Continent': { cost: 1000000000000000000000000000, requires: 'All Starter Mines Unlocked' },
-        'Fire Continent': { cost: 1000000000000000000000000000000, requires: 'Ice Continent Unlocked' }
-    };
-
-    const continent = continents[continentName];
-
+    const continent = continentsData.find(c => c.ContinentName === continentName);
     if (!continent) {
         return message.reply('Invalid continent name. Please specify a valid continent to buy.');
     }
@@ -48,37 +44,52 @@ async function handleContinentBuy(message, continentName, user) {
         return message.reply('You have already unlocked this continent.');
     }
 
-    if (continent.requires === 'All Starter Mines Unlocked' && !areAllStarterMinesUnlocked(user)) {
+    // Check if user meets the requirements for each continent
+    if (continentName === 'Ice Continent' && !areAllStarterMinesUnlocked(user)) {
         return message.reply('You need to unlock all starter mines before unlocking the Ice Continent.');
     }
-
-    if (continent.requires === 'Ice Continent Unlocked' && !user.continents.includes('Ice Continent')) {
+    if (continentName === 'Fire Continent' && !user.continents.includes('Ice Continent')) {
         return message.reply('You need to unlock the Ice Continent before unlocking the Fire Continent.');
     }
 
-    if (user.cash < continent.cost) {
-        return message.reply(`You don't have enough Cash to buy the ${continentName}. It costs ${numberFormat(continent.cost)} Cash.`);
+    // Check if the user has enough cash depending on the cash type
+    const userCash = getUserCashByType(user, continent.CashType);
+    if (userCash < continent.Cost) {
+        const cashName = getCashNameByType(continent.CashType);
+        return message.reply(`You don't have enough ${cashName} to buy the ${continentName}. It costs ${numberFormat(continent.Cost)} ${cashName}.`);
     }
 
-    user.cash -= continent.cost;
+    // Deduct the cost and unlock the continent
+    deductUserCashByType(user, continent.CashType, continent.Cost);
     user.continents = user.continents || [];
     user.continents.push(continentName);
 
-    await updateUser(user.id, { cash: user.cash, continents: user.continents });
-    return message.reply(`Congratulations! You have purchased the ${continentName}.`);
+    // Unlock the first mine on the continent
+    const firstMine = continent.MineTypes[0];
+    user.mines = user.mines || [];
+    user.mines.push({ mineName: firstMine, unlocked: true });
+
+    await updateUser(user.id, { 
+        cash: user.cash, 
+        iceCash: user.iceCash, 
+        fireCash: user.fireCash,
+        continents: user.continents, 
+        mines: user.mines 
+    });
+
+    return message.reply(`Congratulations! You have purchased the ${continentName} and unlocked the ${firstMine}.`);
 }
 
 async function handleContinentManage(message, user) {
-    const continents = [
-        { name: 'Starter Continent', status: 'Unlocked' },
-        { name: 'Ice Continent', status: user.continents && user.continents.includes('Ice Continent') ? 'Unlocked' : 'Locked' },
-        { name: 'Fire Continent', status: user.continents && user.continents.includes('Fire Continent') ? 'Unlocked' : 'Locked' }
-    ];
+    const continentsStatus = continentsData.map(continent => ({
+        name: continent.ContinentName,
+        status: user.continents && user.continents.includes(continent.ContinentName) ? 'Unlocked' : 'Locked'
+    }));
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle('Continent Management')
-        .setDescription(continents.map(c => `${c.name}: ${c.status}`).join('\n'))
+        .setDescription(continentsStatus.map(c => `${c.name}: ${c.status}`).join('\n'))
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });
@@ -86,5 +97,31 @@ async function handleContinentManage(message, user) {
 
 function areAllStarterMinesUnlocked(user) {
     const starterMines = ['Coal Mine', 'Gold Mine', 'Ruby Mine', 'Diamond Mine', 'Emerald Mine'];
-    return starterMines.every(mine => user.mines.some(m => m.mineName === mine));
+    return starterMines.every(mine => user.mines.some(m => m.mineName === mine && mine.unlocked));
+}
+
+function getUserCashByType(user, cashType) {
+    switch (cashType) {
+        case 1: return user.cash;
+        case 2: return user.iceCash;
+        case 3: return user.fireCash;
+        default: return 0;
+    }
+}
+
+function deductUserCashByType(user, cashType, amount) {
+    switch (cashType) {
+        case 1: user.cash -= amount; break;
+        case 2: user.iceCash -= amount; break;
+        case 3: user.fireCash -= amount; break;
+    }
+}
+
+function getCashNameByType(cashType) {
+    switch (cashType) {
+        case 1: return 'Cash';
+        case 2: return 'Ice Cash';
+        case 3: return 'Fire Cash';
+        default: return 'Unknown Cash Type';
+    }
 }
