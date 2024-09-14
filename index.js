@@ -323,6 +323,11 @@ async function handleManagerWork(user, userId) {
         elevator: [],
         warehouse: []
     };
+	
+	// Ensure workstations are properly initialized
+    currentMine.mineshafts = currentMine.mineshafts || [];
+	currentMine.elevator = currentMine.elevator|| [];
+	currentMine.warehouse = currentMine.warehouse || [];
 
     // Function to handle cash production
     async function produceCash(isIdle = false) {
