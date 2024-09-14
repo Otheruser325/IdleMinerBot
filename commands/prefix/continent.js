@@ -1,7 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const continentData = require('../../config/continents.json').continents;
+const continentData = require('../../config/continentData.json').continents;
 const mineFactors = require('../../config/mineFactors.json').mines;
 
 module.exports = {
