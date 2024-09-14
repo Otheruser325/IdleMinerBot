@@ -1,7 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const continentsData = require('../../config/continents.json').continents;
+const continentData = require('../../config/continents.json').continents;
 const mineFactors = require('../../config/mineFactors.json').mines;
 
 module.exports = {
@@ -35,7 +35,7 @@ async function handleContinentBuy(message, continentName, user) {
         return message.reply('Please specify the name of the continent you want to buy.');
     }
 
-    const continent = continentsData.find(c => c.ContinentName === continentName);
+    const continent = continentData.find(c => c.ContinentName === continentName);
     if (!continent) {
         return message.reply('Invalid continent name. Please specify a valid continent to buy.');
     }
@@ -81,7 +81,7 @@ async function handleContinentBuy(message, continentName, user) {
 }
 
 async function handleContinentManage(message, user) {
-    const continentsStatus = continentsData.map(continent => ({
+    const continentsStatus = continentData.map(continent => ({
         name: continent.ContinentName,
         status: user.continents && user.continents.includes(continent.ContinentName) ? 'Unlocked' : 'Locked'
     }));

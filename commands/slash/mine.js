@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const mineFactors = require('../../config/mineFactors.json');
+const mineFactors = require('../../config/mineFactors.json').mines;
 const mineRegions = require('../../config/mineRegions.json');
 
 module.exports = {
@@ -65,8 +65,7 @@ async function handleMineBuy(interaction, mineName, user, userId) {
         return interaction.reply('Please specify the name of the mine you want to buy.');
     }
 
-    // Find the mine in mineFactors
-    const mine = mineFactors.mines.find(m => m.MineName.toLowerCase() === mineName);
+    const mine = mineFactors.find(m => m.MineName.toLowerCase() === mineName);
 
     if (!mine) {
         return interaction.reply('Invalid mine name. Please specify a valid mine to buy.');
