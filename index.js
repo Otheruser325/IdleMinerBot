@@ -561,7 +561,7 @@ client.on('messageCreate', async message => {
                 }
 
                 await handleManagerWork(user, userId);
-				await message.reply(`You have collected ${numberFormat(user.cash)} cash from your idle workers.`);
+				await message.reply(`You have collected ${numberFormat(user.idleCash)} cash from your idle workers.`);
                 user.cash += user.idleCash;
                 user.idleCash = 0;
                 user.lastIdle = currentTime;
