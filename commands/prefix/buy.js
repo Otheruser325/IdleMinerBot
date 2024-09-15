@@ -21,27 +21,37 @@ module.exports = {
     }
 
     if (user.superCash < item.SuperCashCost) {
-      return message.reply('You do not have enough SuperCash to purchase this item.');
+      return message.reply('You do not have enough Super Cash to purchase this item.');
     }
-
-    // Determine the category based on `InstantCashTime` property
-    const category = item.InstantCashTime > 0 ? 'instants' : 'boosters';
 
     // Initialize user's inventory if it doesn't exist
     const updatedInventory = user.inventory || {};
 
-    // Check if the category exists in the inventory, if not, initialize it
+    // Determine the category based on `InstantCashTime` property
+    const category = item.Category || (item.InstantCashTime > 0 ? 'instants' : 'boosters');
+
+    // Initialize the category in the inventory if it doesn't exist
     if (!updatedInventory[category]) {
       updatedInventory[category] = [];
     }
 
-    // Add the purchased item to the appropriate category in the inventory
-    updatedInventory[category].push({
-      itemId: item.id,
-      itemName: item.ItemName, // Ensure this is present in the item data
-      activeTime: item.ActiveTimeSeconds,
-      incomeFactor: item.CompleteIncomeIncreaseFactor
-    });
+    // Check if the item already exists in the inventory
+    const existingItem = updatedInventory[category].find(i => i.itemId === item.id);
+
+    if (existingItem) {
+      // If the item exists, just increment the stock
+      existingItem.stock = (existingItem.stock || 0) + 1;
+    } else {
+      // Add the new item to the inventory with stock
+      updatedInventory[category].push({
+        itemId: item.id,
+        itemName: item.ItemName,
+        activeTime: item.ActiveTimeSeconds,
+        incomeFactor: item.CompleteIncomeIncreaseFactor,
+        instantCash: item.InstantCashTime > 0 ? item.InstantCashTime : null,
+        stock: 1
+      });
+    }
 
     // Deduct Super Cash and update the user's inventory
     try {
@@ -51,6 +61,7 @@ module.exports = {
       });
       return message.reply(`You have successfully purchased ${item.ItemName} for ${numberFormat(item.SuperCashCost)} Super Cash!`);
     } catch (error) {
+      console.error(`Error updating user: ${error.message}`);
       return message.reply('An error occurred while processing your purchase.');
     }
   }

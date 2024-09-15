@@ -28,23 +28,39 @@ module.exports = {
     }
 
     if (user.superCash < item.SuperCashCost) {
-      return interaction.reply('You do not have enough SuperCash to purchase this item.');
+      return interaction.reply('You do not have enough Super Cash to purchase this item.');
     }
 
-    const category = item.InstantCashTime > 0 ? 'instants' : 'boosters';
+    // Initialize user's inventory if it doesn't exist
     const updatedInventory = user.inventory || {};
 
+    // Determine the category based on `InstantCashTime` property
+    const category = item.Category || (item.InstantCashTime > 0 ? 'instants' : 'boosters');
+
+    // Initialize the category in the inventory if it doesn't exist
     if (!updatedInventory[category]) {
       updatedInventory[category] = [];
     }
 
-    updatedInventory[category].push({
-      itemId: item.id,
-      itemName: item.ItemName,
-      activeTime: item.ActiveTimeSeconds,
-      incomeFactor: item.CompleteIncomeIncreaseFactor
-    });
+    // Check if the item already exists in the inventory
+    const existingItem = updatedInventory[category].find(i => i.itemId === item.id);
 
+    if (existingItem) {
+      // If the item exists, just increment the stock
+      existingItem.stock = (existingItem.stock || 0) + 1;
+    } else {
+      // Add the new item to the inventory with stock
+      updatedInventory[category].push({
+        itemId: item.id,
+        itemName: item.ItemName,
+        activeTime: item.ActiveTimeSeconds,
+        incomeFactor: item.CompleteIncomeIncreaseFactor,
+        instantCash: item.InstantCashTime > 0 ? item.InstantCashTime : null,
+        stock: 1
+      });
+    }
+
+    // Deduct Super Cash and update the user's inventory
     try {
       await updateUser(userId, {
         superCash: user.superCash - item.SuperCashCost,
