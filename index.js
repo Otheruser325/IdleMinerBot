@@ -501,7 +501,12 @@ async function handleBoostTimers() {
 
         for (const userId in allUsers) {
             const user = allUsers[userId];
-
+			
+			// Initialize active boosts if they don't exist
+			if (!user.activeBoosts) {
+		        user.activeBoosts = [];
+			}
+			
             // Filter out expired boosters
             user.activeBoosts = user.activeBoosts.filter(boost => boost.endTime > Date.now());
 
