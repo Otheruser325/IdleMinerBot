@@ -277,6 +277,11 @@ async function scheduleNextUpdate(client) {
         await handleBarrierUnlockTime(); // Run every second
     });
 	
+	// Schedule boost timer updates every second
+    cron.schedule('* * * * * *', async () => {
+        await handleBoostTimers(); // Run every second
+    });
+	
 	// Set up an interval to call handleManagerWork for all users every 5 seconds
     setInterval(async () => {
         try {
@@ -486,6 +491,25 @@ async function handleBarrierUnlockTime() {
         }
     } catch (error) {
         console.error('Error handling barrier unlock time:', error);
+    }
+}
+
+// Function to handle boost timers
+async function handleBoostTimers() {
+    try {
+        const allUsers = await getAllUsers();
+
+        for (const userId in allUsers) {
+            const user = allUsers[userId];
+
+            // Filter out expired boosters
+            user.activeBoosts = user.activeBoosts.filter(boost => boost.endTime > Date.now());
+
+            // Update the user data
+            await updateUser(userId, user);
+        }
+    } catch (error) {
+        console.error('Error handling boost timers:', error);
     }
 }
 
