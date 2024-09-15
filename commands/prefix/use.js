@@ -38,6 +38,11 @@ module.exports = {
             incomeFactor: booster.incomeFactor,
             endTime: Date.now() + (booster.activeTime * 1000)
         };
+		
+		// Initialize active boosts if they don't exist
+		if (!user.activeBoosts) {
+		    user.activeBoosts = [];
+		}
 
         // Add or update the booster in activeBoosts
         const existingBoostIndex = user.activeBoosts.findIndex(b => b.incomeFactor === activeBoost.incomeFactor);
