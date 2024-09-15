@@ -1,32 +1,33 @@
 module.exports = function numberFormat(num) {
     const suffixes = ['K', 'M', 'B', 'T']; // Base suffixes for thousands to trillions
-    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-    const base = 1000;
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz'; // Alphabet for suffix generation
 
     // Handle numbers less than 1,000
-    if (num < base) return num.toFixed(3);
+    if (num < 1000) return num.toFixed(3);
 
     // Determine the tier index based on the magnitude of the number
     let tier = Math.floor(Math.log10(num) / 3) - 1;
 
-    // Handle tiers beyond 'T' by generating alphabetical suffixes
+    // Function to generate the alphabetic suffix after T
     const generateAlphabetSuffix = (tier) => {
-        tier -= 4; // Adjust for the base suffixes already handled (K, M, B, T)
+        tier -= 4; // Start from where 'T' ends
 
-        // Generate suffixes starting from 'aa', 'ab', ..., 'zz'
-        let suffix = '';
-        for (let i = 0; i <= Math.floor(tier / alphabet.length); i++) {
-            suffix += alphabet[tier % alphabet.length];
-            tier = Math.floor(tier / alphabet.length) - 1;
-        }
+        // Determine the prefix (e.g., 'a', 'b', 'c', etc.)
+        let prefixIndex = Math.floor(tier / alphabet.length); // 'a', 'b', 'c'
+        let secondLetterIndex = tier % alphabet.length; // 'aa', 'ab', 'ac', etc.
+
+        // Construct the suffix
+        const prefix = alphabet[prefixIndex]; // 'a', 'b', 'c', etc.
+        const suffix = prefix + alphabet[secondLetterIndex]; // 'aa', 'ab', 'ac', etc.
+
         return suffix;
     };
 
-    // Handle numbers greater than trillions
+    // Handle tiers beyond 'T'
     if (tier >= suffixes.length) {
         const suffix = generateAlphabetSuffix(tier);
 
-        // Calculate the correct scale and return formatted number with custom suffix
+        // Calculate the correct scale for large numbers
         const scale = Math.pow(10, (tier + 1) * 3);
         const scaled = num / scale;
 
