@@ -51,10 +51,7 @@ module.exports = {
       });
       return message.reply(`You have successfully purchased ${item.ItemName} for ${numberFormat(item.SuperCashCost)} Super Cash!`);
     } catch (error) {
-      if (error.code === 10008) {
-        return message.channel.send('An error occurred, please try again.');
-      }
-      throw error;
+      return message.reply('An error occurred while processing your purchase.');
     }
   }
 };
