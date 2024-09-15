@@ -78,6 +78,75 @@ async function handleWarehouseOverview(message, user, warehouse, currentMine, ar
     await message.reply({ embeds: [embed] });
 }
 
+// Function to handle the "upgrade" subcommand for the warehouse
+async function handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId) {
+    const upgradeCount = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for upgrade count
+
+    if (isNaN(upgradeCount) || upgradeCount < 1) {
+        return message.reply('Please provide a valid number of upgrades (positive integer).');
+    }
+
+    let totalCost = 0;
+    let superCashEarned = 0;
+    let lastLevel = warehouse.level;
+    const maxLevel = 4000;
+
+    // Calculate total cost and check for max level
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = lastLevel + 1;
+
+        if (nextLevel > maxLevel) {
+            return message.reply(`Your Warehouse is currently maxed out and cannot be upgraded any further.`);
+        }
+
+        const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
+
+        if (!nextWarehouseInfo) {
+            return message.reply(`There is no upgrade available for the warehouse at Level ${nextLevel}.`);
+        }
+
+        totalCost += nextWarehouseInfo.Cost;
+        lastLevel = nextLevel;
+    }
+
+    if (user.cash < totalCost) {
+        return message.reply(`You do not have enough Cash to upgrade the warehouse ${upgradeCount} times. Total Cost: ${numberFormat(totalCost)}`);
+    }
+
+    // Apply upgrades
+    let currentLevel = warehouse.level;
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = currentLevel + 1;
+        const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
+
+        if (nextWarehouseInfo) {
+			user.cash -= nextWarehouseInfo.Cost;
+			warehouse.level = lastLevel;
+	        warehouse.numberOfWorkers = nextWarehouseInfo.NumberOfWorkers;
+            warehouse.capacityPerWorker = nextWarehouseInfo.CapacityPerWorker * getMineFactor(currentMine.MineName);
+            warehouse.workerWalkingSpeedPerSecond = nextWarehouseInfo.WorkerWalkingSpeedPerSecond;
+            warehouse.loadingPerSecond = nextWarehouseInfo.LoadingPerSecond * getMineFactor(currentMine.MineName);
+            
+            if (nextWarehouseInfo.BigUpdate === 1) {
+                superCashEarned += nextWarehouseInfo.SuperCashReward;
+            }
+
+            currentLevel = nextLevel;
+        } else {
+            break; // Stop upgrading if no further upgrades are available
+        }
+    }
+
+    // Add Super Cash if earned
+    if (superCashEarned > 0) {
+        user.superCash = (user.superCash || 0) + superCashEarned;
+    }
+
+    await updateUser(userId, user);
+
+    return message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+}
+
 // Function to handle the "upgrade" subcommand for warehouse
 async function handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId) {
 	const levelsToUpgrade = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for number of levels to upgrade
