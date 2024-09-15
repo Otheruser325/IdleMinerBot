@@ -1,5 +1,5 @@
 const { getUser, updateUser } = require('../../dataManager');
-const shopData = require('../../data/shopData.json').items;
+const shopData = require('../../config/shopData.json').items;
 const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
