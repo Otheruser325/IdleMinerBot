@@ -152,7 +152,7 @@ async function handleWarehouseUpgrade(interaction, user, warehouse, currentMine,
         }
     }
 
-    // Add SuperCash if earned
+    // Add Super Cash if earned
     if (superCashEarned > 0) {
         user.superCash = (user.superCash || 0) + superCashEarned;
     }

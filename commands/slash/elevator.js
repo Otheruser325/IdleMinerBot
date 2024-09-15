@@ -151,7 +151,7 @@ async function handleElevatorUpgrade(interaction, user, elevator, currentMine, u
         }
     }
 
-    // Add SuperCash if earned
+    // Add Super Cash if earned
     if (superCashEarned > 0) {
         user.superCash = (user.superCash || 0) + superCashEarned;
     }
