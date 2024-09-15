@@ -95,46 +95,62 @@ async function handleWarehouseOverview(interaction, user, warehouse, currentMine
 
 // Function to handle the "upgrade" subcommand for warehouse
 async function handleWarehouseUpgrade(interaction, user, warehouse, currentMine, userId) {
-	const levelsToUpgrade = interaction.options.getInteger('upgrade_count') || 1;
-    const currentLevel = warehouse.level;
+	const upgradeCount = interaction.options.getInteger('upgrade_count') || 1;
+	
+	if (isNaN(upgradeCount) || upgradeCount < 1) {
+        return interaction.reply('Please provide a valid number of upgrades (positive integer).');
+    }
+	
     let totalCost = 0;
-    let superCashEarned = 0;
-    let lastLevel = currentLevel;
+	let superCashEarned = 0;
+    let lastLevel = warehouse.level;
+    const maxLevel = 4000;
 
-    // Iterate over the number of levels to upgrade
-    for (let i = 0; i < levelsToUpgrade; i++) {
-        const nextLevelData = warehouseData.find(w => w.Level === lastLevel + 1);
+    // Calculate total cost and check for max level
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = lastLevel + 1;
 
-        if (!nextLevelData) {
-            return interaction.reply(`Warehouse is already at the highest level, or no data is available for Level ${lastLevel + 1}.`);
+        if (nextLevel > maxLevel) {
+            return interaction.reply(`Your Warehouse is currently maxed out and cannot be upgraded any further.`);
         }
 
-        totalCost += nextLevelData.Cost;
+        const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
 
-        if (user.cash < totalCost) {
-            return interaction.reply(`You need ${numberFormat(totalCost)} cash to upgrade the warehouse by ${levelsToUpgrade} levels.`);
+        if (!nextWarehouseInfo) {
+            return interaction.reply(`There is no upgrade available for the warehouse at Level ${nextLevel}.`);
         }
 
-        // Track if it's a "Big Update" to award SuperCash
-        if (nextLevelData.BigUpdate === 1) {
-            superCashEarned += nextLevelData.SuperCashReward;
-        }
-
-        lastLevel++; // Increment the last level processed
+        totalCost += nextWarehouseInfo.Cost;
+        lastLevel = nextLevel;
     }
 
-    // Deduct the total cost
-    user.cash -= totalCost;
+    if (user.cash < totalCost) {
+        return interaction.reply(`You do not have enough Cash to upgrade the warehouse ${upgradeCount} times. Total Cost: ${numberFormat(totalCost)}`);
+    }
 
-    // Apply the final upgrade to the warehouse
-    const mineFactor = getMineFactor(currentMine.MineName);
-    const finalLevelData = warehouseData.find(w => w.Level === lastLevel);
+    // Apply upgrades
+    let currentLevel = warehouse.level;
+    for (let i = 0; i < upgradeCount; i++) {
+        const nextLevel = currentLevel + 1;
+        const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
 
-    warehouse.level = lastLevel;
-	warehouse.numberOfWorkers = finalLevelData.NumberOfWorkers;
-    warehouse.capacityPerWorker = finalLevelData.CapacityPerWorker * mineFactor; // Apply mine factor
-    warehouse.workerWalkingSpeedPerSecond = finalLevelData.WorkerWalkingSpeedPerSecond;
-    warehouse.loadingPerSecond = finalLevelData.LoadingPerSecond * mineFactor; // Apply mine factor
+        if (nextWarehouseInfo) {
+			user.cash -= nextWarehouseInfo.Cost;
+			warehouse.level = lastLevel;
+	        warehouse.numberOfWorkers = nextWarehouseInfo.NumberOfWorkers;
+            warehouse.capacityPerWorker = nextWarehouseInfo.CapacityPerWorker * getMineFactor(currentMine.MineName);
+            warehouse.workerWalkingSpeedPerSecond = nextWarehouseInfo.WorkerWalkingSpeedPerSecond;
+            warehouse.loadingPerSecond = nextWarehouseInfo.LoadingPerSecond * getMineFactor(currentMine.MineName);
+            
+            if (nextWarehouseInfo.BigUpdate === 1) {
+                superCashEarned += nextWarehouseInfo.SuperCashReward;
+            }
+
+            currentLevel = nextLevel;
+        } else {
+            break; // Stop upgrading if no further upgrades are available
+        }
+    }
 
     // Add SuperCash if earned
     if (superCashEarned > 0) {
