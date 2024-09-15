@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "ItemName": "x2 Boost",
+      "SuperCashCost": 70,
+      "ActiveTimeSeconds": 3600,
+      "CompleteIncomeIncreaseFactor": 2,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+    {
+      "id": 2,
+      "ItemName": "Long x2 Boost",
+      "SuperCashCost": 400,
+      "ActiveTimeSeconds": 43200,
+      "CompleteIncomeIncreaseFactor": 2,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+    {
+      "id": 3,
+      "ItemName": "x10 Boost",
+      "SuperCashCost": 300,
+      "ActiveTimeSeconds": 3600,
+      "CompleteIncomeIncreaseFactor": 10,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+    {
+      "id": 4,
+      "ItemName": "Long x10 Boost",
+      "SuperCashCost": 1800,
+      "ActiveTimeSeconds": 43200,
+      "CompleteIncomeIncreaseFactor": 10,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    }
+  ]
+}
