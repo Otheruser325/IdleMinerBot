@@ -1,4 +1,4 @@
-const { getUser, updateUser } = require('../../dataManager');
+const { getUser } = require('../../dataManager');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const shopData = require('../../config/shopData.json').items;
 const numberFormat = require('../../utils/numberFormat');
@@ -15,8 +15,24 @@ module.exports = {
     }
 
     let page = 0;
-    const itemsPerPage = 2; // Set how many items to show per page
+    const itemsPerPage = 4; // Increased items per page to 4
     const maxPage = Math.ceil(shopData.length / itemsPerPage) - 1;
+
+    const formatTime = (seconds) => {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (days > 0) {
+        return `${days} day${days > 1 ? 's' : ''}`;
+      } else if (hours > 0) {
+        return `${hours} hour${hours > 1 ? 's' : ''}`;
+      } else if (minutes > 0) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+      } else {
+        return `${seconds} second${seconds > 1 ? 's' : ''}`;
+      }
+    };
 
     const generateEmbed = (page) => {
       const start = page * itemsPerPage;
@@ -30,49 +46,65 @@ module.exports = {
 
       shopItems.forEach(item => {
         embed.addFields({
-          name: `Item ID: ${item.id}`,
-          value: `Cost: ${numberFormat(item.SuperCashCost)} SuperCash\nIncome Boost: ${item.CompleteIncomeIncreaseFactor}x\nActive Time: ${item.ActiveTimeSeconds / 3600} hours`,
+          name: `${item.ItemName} (ID: ${item.id})`,
+          value: `Cost: ${numberFormat(item.SuperCashCost)} SuperCash\nIncome Boost: ${item.CompleteIncomeIncreaseFactor}x\nActive Time: ${formatTime(item.ActiveTimeSeconds)}`,
         });
       });
 
       return embed;
     };
 
-    const buttons = (page) => {
+    const buttons = (page, userId) => {
       return new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
-            .setCustomId('prev')
+            .setCustomId(`shop_prev_${userId}`)
             .setLabel('Previous')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(page === 0),
           new ButtonBuilder()
-            .setCustomId('next')
+            .setCustomId(`shop_next_${userId}`)
             .setLabel('Next')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(page === maxPage)
         );
     };
 
-    const embedMessage = await message.channel.send({
-      embeds: [generateEmbed(page)],
-      components: [buttons(page)]
-    });
-
-    const filter = i => i.user.id === message.author.id;
-    const collector = embedMessage.createMessageComponentCollector({ filter, time: 60000 });
-
-    collector.on('collect', async interaction => {
-      if (interaction.customId === 'prev' && page > 0) {
-        page--;
-      } else if (interaction.customId === 'next' && page < maxPage) {
-        page++;
-      }
-
-      await interaction.update({
+    try {
+      const embedMessage = await message.channel.send({
         embeds: [generateEmbed(page)],
-        components: [buttons(page)]
+        components: [buttons(page, userId)]
       });
-    });
+
+      const filter = i => i.user.id === message.author.id;
+      const collector = embedMessage.createMessageComponentCollector({ filter, time: 60000 });
+
+      collector.on('collect', async interaction => {
+        if (interaction.customId === `shop_prev_${userId}` && page > 0) {
+          page--;
+        } else if (interaction.customId === `shop_next_${userId}` && page < maxPage) {
+          page++;
+        }
+
+        try {
+          await interaction.update({
+            embeds: [generateEmbed(page)],
+            components: [buttons(page, userId)]
+          });
+        } catch (error) {
+          if (error.code === 10008) {
+            return;
+          } else {
+            console.error(`Unexpected error: ${error.message}`);
+          }
+        }
+      });
+    } catch (error) {
+      if (error.code === 10008) {
+        return;
+      } else {
+        console.error(`Error in shop command: ${error.message}`);
+      }
+    }
   }
 };
