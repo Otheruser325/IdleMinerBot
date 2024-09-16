@@ -95,13 +95,13 @@ async function loadAssignedGuilds(client) {
 
 // Function to schedule guild updates for different size categories
 function scheduleGuildUpdates(client, categorizedGuilds) {
-    // Schedule updates for tiny guilds every 10 seconds
+    // Schedule updates for tiny guilds every 15 seconds
     setTimeout(async function updateTinyGuilds() {
         await processGuildBatch(client, categorizedGuilds.tiny, 500); // Tiny guilds with 500ms delay between each
         setTimeout(updateTinyGuilds, 15000); // Repeat every 15 seconds
     }, 15000);
 
-    // Schedule updates for small guilds every 15 seconds
+    // Schedule updates for small guilds every 20 seconds
     setTimeout(async function updateSmallGuilds() {
         await processGuildBatch(client, categorizedGuilds.small, 1000); // Small guilds with 1000ms delay
         setTimeout(updateSmallGuilds, 20000); // Repeat every 20 seconds
@@ -113,10 +113,10 @@ function scheduleGuildUpdates(client, categorizedGuilds) {
         setTimeout(updateMediumGuilds, 30000); // Repeat every 30 seconds
     }, 30000);
 	
-	// Schedule updates for small guilds every 15 seconds
+	// Schedule updates for big guilds every 60 seconds
     setTimeout(async function updateBigGuilds() {
         await processGuildBatch(client, categorizedGuilds.big, 5000); // Big guilds with 5000ms delay
-        setTimeout(updateSmallGuilds, 60000); // Repeat every 60 seconds
+        setTimeout(updateBigGuilds, 60000); // Repeat every 60 seconds
     }, 60000);
 
     // Schedule updates for large guilds every 60 seconds
