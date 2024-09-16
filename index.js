@@ -70,6 +70,7 @@ async function loadAssignedGuilds(client) {
             tiny: [],
             small: [],
             medium: [],
+			big: [],
             large: [],
             huge: []
         };
@@ -79,6 +80,7 @@ async function loadAssignedGuilds(client) {
             const memberCount = guild.memberCount;
             if (memberCount <= 50) categorizedGuilds.tiny.push(guild);
             else if (memberCount <= 250) categorizedGuilds.small.push(guild);
+			else if (memberCount <= 500) categorizedGuilds.big.push(guild);
             else if (memberCount <= 1000) categorizedGuilds.medium.push(guild);
             else if (memberCount <= 5000) categorizedGuilds.large.push(guild);
             else categorizedGuilds.huge.push(guild);
@@ -96,32 +98,38 @@ function scheduleGuildUpdates(client, categorizedGuilds) {
     // Schedule updates for tiny guilds every 10 seconds
     setTimeout(async function updateTinyGuilds() {
         await processGuildBatch(client, categorizedGuilds.tiny, 500); // Tiny guilds with 500ms delay between each
-        setTimeout(updateTinyGuilds, 10000); // Repeat every 10 seconds
-    }, 10000);
+        setTimeout(updateTinyGuilds, 15000); // Repeat every 15 seconds
+    }, 15000);
 
     // Schedule updates for small guilds every 15 seconds
     setTimeout(async function updateSmallGuilds() {
         await processGuildBatch(client, categorizedGuilds.small, 1000); // Small guilds with 1000ms delay
-        setTimeout(updateSmallGuilds, 15000); // Repeat every 15 seconds
-    }, 15000);
+        setTimeout(updateSmallGuilds, 20000); // Repeat every 20 seconds
+    }, 20000);
 
     // Schedule updates for medium guilds every 30 seconds
     setTimeout(async function updateMediumGuilds() {
         await processGuildBatch(client, categorizedGuilds.medium, 3000); // Medium guilds with 3000ms delay
         setTimeout(updateMediumGuilds, 30000); // Repeat every 30 seconds
     }, 30000);
+	
+	// Schedule updates for small guilds every 15 seconds
+    setTimeout(async function updateBigGuilds() {
+        await processGuildBatch(client, categorizedGuilds.big, 5000); // Big guilds with 5000ms delay
+        setTimeout(updateSmallGuilds, 60000); // Repeat every 60 seconds
+    }, 60000);
 
     // Schedule updates for large guilds every 60 seconds
     setTimeout(async function updateLargeGuilds() {
-        await processGuildBatch(client, categorizedGuilds.large, 5000); // Large guilds with 5000ms delay
-        setTimeout(updateLargeGuilds, 60000); // Repeat every 60 seconds
-    }, 60000);
+        await processGuildBatch(client, categorizedGuilds.large, 10000); // Large guilds with 10000ms delay
+        setTimeout(updateLargeGuilds, 120000); // Repeat every 120 seconds
+    }, 120000);
 
     // Schedule updates for huge guilds every 120 seconds
     setTimeout(async function updateHugeGuilds() {
-        await processGuildBatch(client, categorizedGuilds.huge, 10000); // Huge guilds with 10000ms delay
-        setTimeout(updateHugeGuilds, 120000); // Repeat every 120 seconds
-    }, 120000);
+        await processGuildBatch(client, categorizedGuilds.huge, 15000); // Huge guilds with 15000ms delay
+        setTimeout(updateHugeGuilds, 180000); // Repeat every 180 seconds
+    }, 180000);
 }
 
 // Batch process guilds with retries and delays
