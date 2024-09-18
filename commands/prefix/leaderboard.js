@@ -9,10 +9,9 @@ module.exports = {
     async execute(message) {
         try {
             const guildId = message.guild.id;
-
+            
             // Fetch all members, this ensures we have the latest member data
             const guildMembers = await message.guild.members.fetch();
-
             const allUsers = await getAllUsers(); // Fetch all users from the database
 
             if (!allUsers || Object.keys(allUsers).length === 0) {
@@ -21,13 +20,21 @@ module.exports = {
 
             const minCashThreshold = 1000; // Minimum cash for cash, iceCash, and fireCash
 
+            // Mapping for proper cash type labels
+            const cashTypeLabels = {
+                cash: 'Cash',
+                iceCash: 'Ice Cash',
+                fireCash: 'Fire Cash',
+                superCash: 'Super Cash'
+            };
+
             // Function to get the top 15 users for a specific cash type
             const getTopUsers = (cashType) => {
                 return Object.values(allUsers)
                     .filter(user => 
                         guildMembers.has(user.userId) && // Check if the user exists in the guild
                         (
-                            cashType === 'superCash' || // No restriction for superCash
+                            (cashType === 'superCash' && user[cashType] > 0) || // Filter out users with zero superCash
                             (user[cashType] && user[cashType] >= minCashThreshold) // Apply minimum cash for other types
                         )
                     )
@@ -38,7 +45,7 @@ module.exports = {
             // Function to display the leaderboard
             const displayLeaderboard = async (cashType, interaction) => {
                 const topUsers = getTopUsers(cashType);
-                const cashTypeLabel = cashType.charAt(0).toUpperCase() + cashType.slice(1);
+                const cashTypeLabel = cashTypeLabels[cashType]; // Use mapped label for display
 
                 const embed = new EmbedBuilder()
                     .setColor('#00ff00')
