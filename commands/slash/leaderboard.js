@@ -67,17 +67,16 @@ module.exports = {
                         new ButtonBuilder().setCustomId('superCash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
                     );
 
-                await interaction.reply({ embeds: [embed], components: [row] });
+                await interaction.update({ embeds: [embed], components: [row] });
             };
 
-            // Initially display the leaderboard for cash type 'cash'
-            await displayLeaderboard('cash', interaction);
+            const msg = await displayLeaderboard('cash');
 
             // Interaction filter for button clicks
             const filter = (i) => ['cash', 'iceCash', 'fireCash', 'superCash'].includes(i.customId) && i.user.id === interaction.user.id;
 
             // Create a message component collector for the buttons
-            const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+            const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
             // Handle button interactions
             collector.on('collect', async (i) => {
@@ -90,11 +89,10 @@ module.exports = {
             // Clean up after collector ends
             collector.on('end', async () => {
                 try {
-                    const replyMessage = await interaction.fetchReply();
-                    await replyMessage.edit({ components: [] });
+                    await msg.edit({ components: [] });
                 } catch (error) {
                     if (error.code === 10008) {
-                        return interaction.followUp('The leaderboard embed was deleted and unable to be fetched, please try again later.');
+                        return interaction.reply('The leaderboard embed was deleted and unable to be fetched, please try again later.');
                     }
                 }
             });
