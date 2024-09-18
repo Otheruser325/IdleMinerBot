@@ -8,18 +8,17 @@ module.exports = {
     aliases: ['lb'],
     async execute(message) {
         try {
-            const guildMembers = message.guild.members.cache; // Cache of the guild's members
-            const allUsers = await getAllUsers(); // Fetch all users from the database
+            const guildId = message.guild.id;
+            const guildMembers = message.guild.members.cache;
+            const allUsers = await getAllUsers(); // Fetch all users
 
-            // Filter users who exist in both the guild and the users database
-            const relevantUsers = Object.values(allUsers).filter(user => guildMembers.has(user.userId));
-
-            if (relevantUsers.length === 0) {
-                return message.reply('No users found in this guild.');
+            if (!allUsers || Object.keys(allUsers).length === 0) {
+                return message.reply('No users found.');
             }
 
             const getTopUsers = (cashType) => {
-                return relevantUsers
+                return Object.values(allUsers)
+                    .filter(user => guildMembers.has(user.userId)) // Check if the user exists in the guild
                     .sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0))
                     .slice(0, 15);
             };
@@ -60,10 +59,10 @@ module.exports = {
             const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
             collector.on('collect', async (interaction) => {
-                if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
-                if (interaction.customId === 'iceCash') await displayLeaderboard('iceCash', interaction);
-                if (interaction.customId === 'fireCash') await displayLeaderboard('fireCash', interaction);
-                if (interaction.customId === 'superCash') await displayLeaderboard('superCash', interaction);
+                if (interaction.customId === 'cash') await displayLeaderboard('Cash', interaction);
+                if (interaction.customId === 'iceCash') await displayLeaderboard('Ice Cash', interaction);
+                if (interaction.customId === 'fireCash') await displayLeaderboard('Fire Cash', interaction);
+                if (interaction.customId === 'superCash') await displayLeaderboard('Super Cash', interaction);
             });
 
             collector.on('end', async () => {
