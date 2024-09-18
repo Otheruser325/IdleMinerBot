@@ -9,14 +9,19 @@ module.exports = {
     async execute(message) {
         try {
             const guildId = message.guild.id;
-            const guildMembers = message.guild.members.cache;
-            const allUsers = await getAllUsers(); // Fetch all users
+
+            // Fetch all members, this ensures we have the latest member data
+            const guildMembers = await message.guild.members.fetch();
+
+            const allUsers = await getAllUsers(); // Fetch all users from the database
 
             if (!allUsers || Object.keys(allUsers).length === 0) {
                 return message.reply('No users found.');
             }
 
             const minCashThreshold = 1000; // Minimum cash for cash, iceCash, and fireCash
+
+            // Function to get the top 15 users for a specific cash type
             const getTopUsers = (cashType) => {
                 return Object.values(allUsers)
                     .filter(user => 
@@ -27,9 +32,10 @@ module.exports = {
                         )
                     )
                     .sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0))
-                    .slice(0, 15); // Top 15 users
+                    .slice(0, 15); // Return top 15 users
             };
 
+            // Function to display the leaderboard
             const displayLeaderboard = async (cashType, interaction) => {
                 const topUsers = getTopUsers(cashType);
                 const cashTypeLabel = cashType.charAt(0).toUpperCase() + cashType.slice(1);
@@ -61,10 +67,13 @@ module.exports = {
 
             const msg = await displayLeaderboard('cash');
 
+            // Interaction filter for button clicks
             const filter = (interaction) => ['cash', 'iceCash', 'fireCash', 'superCash'].includes(interaction.customId) && interaction.user.id === message.author.id;
 
+            // Create a message component collector for the buttons
             const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
+            // Handle button interactions
             collector.on('collect', async (interaction) => {
                 if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
                 if (interaction.customId === 'iceCash') await displayLeaderboard('iceCash', interaction);
@@ -72,6 +81,7 @@ module.exports = {
                 if (interaction.customId === 'superCash') await displayLeaderboard('superCash', interaction);
             });
 
+            // Clean up after collector ends
             collector.on('end', async () => {
                 try {
                     await msg.edit({ components: [] });
