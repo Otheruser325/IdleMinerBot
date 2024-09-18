@@ -1,0 +1,106 @@
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const numberFormat = require('../../utils/numberFormat');
+const { getAllUsers } = require('../../dataManager');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('leaderboard')
+        .setDescription('Displays the top 15 users in the guild by cash.'),
+
+    async execute(interaction) {
+        if (!interaction.guild) {
+            return interaction.reply('You must be in an active guild to view leaderboards.');
+        }
+
+        try {
+            const guildMembers = await interaction.guild.members.fetch(); // Fetch all guild members
+            const allUsers = await getAllUsers(); // Fetch all users from the database
+
+            if (!allUsers || Object.keys(allUsers).length === 0) {
+                return interaction.reply('No users found.');
+            }
+
+            const minCashThreshold = 1000; // Minimum cash for cash, iceCash, and fireCash
+
+            // Mapping for proper cash type labels
+            const cashTypeLabels = {
+                cash: 'Cash',
+                iceCash: 'Ice Cash',
+                fireCash: 'Fire Cash',
+                superCash: 'Super Cash'
+            };
+
+            // Function to get the top 15 users for a specific cash type
+            const getTopUsers = (cashType) => {
+                return Object.values(allUsers)
+                    .filter(user =>
+                        guildMembers.has(user.userId) && // Check if the user exists in the guild
+                        (
+                            (cashType === 'superCash' && user[cashType] > 0) || // Filter out users with zero superCash
+                            (user[cashType] && user[cashType] >= minCashThreshold) // Apply minimum cash for other types
+                        )
+                    )
+                    .sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0))
+                    .slice(0, 15); // Return top 15 users
+            };
+
+            // Function to display the leaderboard
+            const displayLeaderboard = async (cashType, interaction) => {
+                const topUsers = getTopUsers(cashType);
+                const cashTypeLabel = cashTypeLabels[cashType]; // Use mapped label for display
+
+                const embed = new EmbedBuilder()
+                    .setColor('#00ff00')
+                    .setTitle(`${cashTypeLabel} Leaderboard - Top 15`)
+                    .setDescription(
+                        topUsers.length
+                            ? topUsers.map((user, index) => `${index + 1}. ${guildMembers.get(user.userId)?.user.username || 'Unknown'} - ${numberFormat(user[cashType])} ${cashTypeLabel}`).join('\n')
+                            : 'No users found'
+                    )
+                    .setTimestamp();
+
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder().setCustomId('cash').setLabel('Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('iceCash').setLabel('Ice Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('fireCash').setLabel('Fire Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('superCash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
+                    );
+
+                await interaction.reply({ embeds: [embed], components: [row] });
+            };
+
+            // Initially display the leaderboard for cash type 'cash'
+            await displayLeaderboard('cash', interaction);
+
+            // Interaction filter for button clicks
+            const filter = (i) => ['cash', 'iceCash', 'fireCash', 'superCash'].includes(i.customId) && i.user.id === interaction.user.id;
+
+            // Create a message component collector for the buttons
+            const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+
+            // Handle button interactions
+            collector.on('collect', async (i) => {
+                if (i.customId === 'cash') await displayLeaderboard('cash', i);
+                if (i.customId === 'iceCash') await displayLeaderboard('iceCash', i);
+                if (i.customId === 'fireCash') await displayLeaderboard('fireCash', i);
+                if (i.customId === 'superCash') await displayLeaderboard('superCash', i);
+            });
+
+            // Clean up after collector ends
+            collector.on('end', async () => {
+                try {
+                    const replyMessage = await interaction.fetchReply();
+                    await replyMessage.edit({ components: [] });
+                } catch (error) {
+                    if (error.code === 10008) {
+                        return interaction.followUp('The leaderboard embed was deleted and unable to be fetched, please try again later.');
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error in leaderboard command:', error);
+            return interaction.reply('There was an error executing the leaderboard command.');
+        }
+    }
+};
