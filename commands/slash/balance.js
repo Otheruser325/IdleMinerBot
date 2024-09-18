@@ -4,11 +4,17 @@ const { getUser } = require('../../dataManager');
 const numberFormat = require('../../utils/numberFormat');
 
 const wealthDescriptions = [
-    { minCash: 100000000000000000, description: 'Quadrillionaire!' },
-    { minCash: 1000000000000000, description: 'Multitrillionaire!' },
-    { minCash: 100000000000000, description: 'Trillionaire!' },
-    { minCash: 1000000000000, description: 'Multibillionaire!' },
-    { minCash: 100000000000, description: 'Billionaire!' },
+    { minCash: 1e33, description: 'Decillionaire!' },
+	{ minCash: 1e30, description: 'Nonillionaire!' },
+    { minCash: 1e27, description: 'Octillionaire!' },
+	{ minCash: 1e24, description: 'Septillionaire!' },
+    { minCash: 1e21, description: 'Sextillionaire!' },
+    { minCash: 1000000000000000000000, description: 'Quintillionaire!' },
+    { minCash: 1000000000000000000, description: 'Quadrillionaire!' },
+    { minCash: 10000000000000000, description: 'Multitrillionaire!' },
+    { minCash: 1000000000000000, description: 'Trillionaire!' },
+    { minCash: 10000000000000, description: 'Multibillionaire!' },
+    { minCash: 1000000000000, description: 'Billionaire!' },
     { minCash: 10000000000, description: 'Multimillionaire!' },
     { minCash: 1000000000, description: 'Millionaire!' },
     { minCash: 100000000, description: 'Rich!' },

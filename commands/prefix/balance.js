@@ -1,20 +1,26 @@
 const { EmbedBuilder } = require('discord.js');
 const numberFormat = require('../../utils/numberFormat');
-const { getUser, getUserInGuild, addUserToGuild } = require('../../dataManager');
+const { getUser } = require('../../dataManager');
 
 const wealthDescriptions = [
-    { minCash: 1_000_000_000_000_000_000, description: 'Quadrillionaire!' },
-    { minCash: 10_000_000_000_000_000, description: 'Multitrillionaire!' },
-    { minCash: 1_000_000_000_000_000, description: 'Trillionaire!' },
-    { minCash: 10_000_000_000_000, description: 'Multibillionaire!' },
-    { minCash: 1_000_000_000_000, description: 'Billionaire!' },
-    { minCash: 10_000_000_000, description: 'Multimillionaire!' },
-    { minCash: 1_000_000_000, description: 'Millionaire!' },
-    { minCash: 100_000_000, description: 'Rich!' },
-    { minCash: 10_000_000, description: 'Wealthy!' },
-    { minCash: 1_000_000, description: 'Well-off!' },
-    { minCash: 100_000, description: 'Comfortable!' },
-    { minCash: 10_000, description: 'Stable!' },
+    { minCash: 1e33, description: 'Decillionaire!' },
+	{ minCash: 1e30, description: 'Nonillionaire!' },
+    { minCash: 1e27, description: 'Octillionaire!' },
+	{ minCash: 1e24, description: 'Septillionaire!' },
+    { minCash: 1e21, description: 'Sextillionaire!' },
+    { minCash: 1000000000000000000000, description: 'Quintillionaire!' },
+    { minCash: 1000000000000000000, description: 'Quadrillionaire!' },
+    { minCash: 10000000000000000, description: 'Multitrillionaire!' },
+    { minCash: 1000000000000000, description: 'Trillionaire!' },
+    { minCash: 10000000000000, description: 'Multibillionaire!' },
+    { minCash: 1000000000000, description: 'Billionaire!' },
+    { minCash: 10000000000, description: 'Multimillionaire!' },
+    { minCash: 1000000000, description: 'Millionaire!' },
+    { minCash: 100000000, description: 'Rich!' },
+    { minCash: 10000000, description: 'Wealthy!' },
+    { minCash: 1000000, description: 'Well-off!' },
+    { minCash: 100000, description: 'Comfortable!' },
+    { minCash: 10000, description: 'Stable!' },
     { minCash: 0, description: 'Average' }
 ];
 
@@ -28,61 +34,44 @@ module.exports = {
         try {
             let userId = message.author.id;
             let targetUsername = message.author.username;
-            const guild = message.guild;
 
-            // Determine if the command is executed in a guild context
-            const isGuildContext = Boolean(guild);
-
-            // Parse arguments for target user if provided
+            // Check if a user mention or ID is provided
             if (args.length > 0) {
                 const userMention = args[0];
 
+                // Check if argument is a mention or ID
                 if (userMention.startsWith('<@') && userMention.endsWith('>')) {
                     userId = userMention.replace(/[<@!>]/g, '');
                 } else if (/^\d+$/.test(userMention)) {
                     userId = userMention;
                 } else {
                     const username = userMention.toLowerCase();
-
-                    if (isGuildContext) {
-                        const member = guild.members.cache.find(m => m.user.username.toLowerCase() === username);
-                        if (member) {
-                            userId = member.id;
-                        } else {
-                            return message.reply(`No user found with the username "${userMention}" in this guild.`);
-                        }
+                    const member = message.guild ? message.guild.members.cache.find(m => m.user.username.toLowerCase() === username) : null;
+                    if (member) {
+                        userId = member.id;
                     } else {
-                        return message.reply(`No user found with the username "${userMention}".`);
+                        return message.reply(`No user found with the username "${userMention}" in this guild.`);
                     }
                 }
 
-                targetUsername = isGuildContext
-                    ? guild.members.cache.get(userId)?.user.username || userMention
+                targetUsername = message.guild
+                    ? message.guild.members.cache.get(userId)?.user.username || userMention
                     : userMention;
             }
 
-            // Fetch user data from the guild
-            const user = isGuildContext ? await getUserInGuild(guild.id, userId) : await getUser(userId);
+            // Fetch user data directly using userId
+            const user = await getUser(userId);
 
-            // Check if user exists
+            // Check if the user exists
             if (!user) {
-                // Try to add the user to the guild if they exist in the users collection but not in the guild
-                const globalUser = await getUser(userId);
-                if (globalUser) {
-                    await addUserToGuild(guild.id, userId);
-                } else {
-                    return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
-                }
+                return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
             }
 
-            // Fetch updated user data after adding to the guild
-            const updatedUser = await getUserInGuild(guild.id, userId);
-
             // Extract and format user's balance data
-            const cash = updatedUser.cash || 0;
-            const iceCash = updatedUser.iceCash || 0;
-            const fireCash = updatedUser.fireCash || 0;
-            const superCash = updatedUser.superCash || 0;
+            const cash = user.cash || 0;
+            const iceCash = user.iceCash || 0;
+            const fireCash = user.fireCash || 0;
+            const superCash = user.superCash || 0;
 
             // Determine user's wealth status
             let description = 'Average';
@@ -94,8 +83,8 @@ module.exports = {
             }
 
             // Fetch user's avatar
-            const userAvatar = isGuildContext
-                ? guild.members.cache.get(userId)?.user.displayAvatarURL() || message.author.displayAvatarURL()
+            const userAvatar = message.guild
+                ? message.guild.members.cache.get(userId)?.user.displayAvatarURL() || message.author.displayAvatarURL()
                 : message.client.users.cache.get(userId)?.displayAvatarURL() || message.author.displayAvatarURL();
 
             // Build and send the balance embed message
