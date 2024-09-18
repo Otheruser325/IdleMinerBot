@@ -44,8 +44,8 @@ module.exports = {
                     .slice(0, 15); // Return top 15 users
             };
 
-            // Function to display the leaderboard
-            const displayLeaderboard = async (cashType, interaction) => {
+            // Function to create the embed and buttons
+            const createLeaderboardEmbed = (cashType) => {
                 const topUsers = getTopUsers(cashType);
                 const cashTypeLabel = cashTypeLabels[cashType]; // Use mapped label for display
 
@@ -67,35 +67,38 @@ module.exports = {
                         new ButtonBuilder().setCustomId('superCash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
                     );
 
-                await interaction.update({ embeds: [embed], components: [row] });
+                return { embeds: [embed], components: [row] };
             };
 
-            const msg = await displayLeaderboard('cash');
+            // Send the initial reply with the leaderboard
+            await interaction.reply(createLeaderboardEmbed('cash'));
 
             // Interaction filter for button clicks
             const filter = (i) => ['cash', 'iceCash', 'fireCash', 'superCash'].includes(i.customId) && i.user.id === interaction.user.id;
 
             // Create a message component collector for the buttons
-            const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
+            const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
 
             // Handle button interactions
             collector.on('collect', async (i) => {
-                if (i.customId === 'cash') await displayLeaderboard('cash', i);
-                if (i.customId === 'iceCash') await displayLeaderboard('iceCash', i);
-                if (i.customId === 'fireCash') await displayLeaderboard('fireCash', i);
-                if (i.customId === 'superCash') await displayLeaderboard('superCash', i);
+                if (i.customId === 'cash') await i.update(createLeaderboardEmbed('cash'));
+                if (i.customId === 'iceCash') await i.update(createLeaderboardEmbed('iceCash'));
+                if (i.customId === 'fireCash') await i.update(createLeaderboardEmbed('fireCash'));
+                if (i.customId === 'superCash') await i.update(createLeaderboardEmbed('superCash'));
             });
 
             // Clean up after collector ends
             collector.on('end', async () => {
                 try {
-                    await msg.edit({ components: [] });
+                    // Disable buttons after the collector ends
+                    await interaction.editReply({ components: [] });
                 } catch (error) {
                     if (error.code === 10008) {
-                        return interaction.reply('The leaderboard embed was deleted and unable to be fetched, please try again later.');
+                        return interaction.followUp('The leaderboard embed was deleted and unable to be fetched, please try again later.');
                     }
                 }
             });
+
         } catch (error) {
             console.error('Error in leaderboard command:', error);
             return interaction.reply('There was an error executing the leaderboard command.');
