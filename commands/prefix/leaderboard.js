@@ -16,11 +16,18 @@ module.exports = {
                 return message.reply('No users found.');
             }
 
+            const minCashThreshold = 1000; // Minimum cash for cash, iceCash, and fireCash
             const getTopUsers = (cashType) => {
                 return Object.values(allUsers)
-                    .filter(user => guildMembers.has(user.userId)) // Check if the user exists in the guild
+                    .filter(user => 
+                        guildMembers.has(user.userId) && // Check if the user exists in the guild
+                        (
+                            cashType === 'superCash' || // No restriction for superCash
+                            (user[cashType] && user[cashType] >= minCashThreshold) // Apply minimum cash for other types
+                        )
+                    )
                     .sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0))
-                    .slice(0, 15);
+                    .slice(0, 15); // Top 15 users
             };
 
             const displayLeaderboard = async (cashType, interaction) => {
@@ -59,10 +66,10 @@ module.exports = {
             const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
             collector.on('collect', async (interaction) => {
-                if (interaction.customId === 'cash') await displayLeaderboard('Cash', interaction);
-                if (interaction.customId === 'iceCash') await displayLeaderboard('Ice Cash', interaction);
-                if (interaction.customId === 'fireCash') await displayLeaderboard('Fire Cash', interaction);
-                if (interaction.customId === 'superCash') await displayLeaderboard('Super Cash', interaction);
+                if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
+                if (interaction.customId === 'iceCash') await displayLeaderboard('iceCash', interaction);
+                if (interaction.customId === 'fireCash') await displayLeaderboard('fireCash', interaction);
+                if (interaction.customId === 'superCash') await displayLeaderboard('superCash', interaction);
             });
 
             collector.on('end', async () => {
