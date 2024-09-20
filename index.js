@@ -7,6 +7,7 @@ const { deployCommands } = require('./deploy-commands');
 const { users, saveUserData, getUser, getAllUsers, updateUser, initializeUser, initializeGuild, saveGuildData, getGuild, updateGuild, getUsersInGuild, addUserToGuild } = require('./dataManager');
 const { updateBotStatus } = require('./utils/botStatus');
 const numberFormat = require('./utils/numberFormat');
+const guildDM = require('./utils/guildDM');
 const mineRegions = require('./config/mineRegions.json').regions;
 const continentData = require('./config/continentData.json').continents;
 const admin = require('firebase-admin');
@@ -358,6 +359,18 @@ client.once('ready', async () => {
 
     // Check if the bot is online and proceed with task initialization
     await initializeBotTasks(client);
+});
+
+client.on('guildCreate', async (guild) => {
+    // Get the user who added the bot to the guild
+    const owner = await guild.fetchOwner();
+
+    try {
+        // Send a DM to the owner
+        await guildDM(owner.user, `Thank you for adding me to ${guild.name}! I'm here to help you manage your mining experience for your entire guild. Use im!help to see what I can do!`);
+    } catch (error) {
+        console.error(`Could not send DM to ${owner.user.tag}:`, error);
+    }
 });
 
 client.on('messageCreate', async message => {
