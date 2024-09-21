@@ -1,24 +1,20 @@
-const admin = require('firebase-admin');
-const serviceAccount = require('../config/serviceAccountKey.json');
-
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-}
-
-const db = admin.database();
+const supabase = require('./supabaseClient');
 const { ActivityType } = require('discord.js');
 
 async function updateBotStatus(client) {
     try {
-        // Fetch all users
-        const usersSnapshot = await db.ref('users').once('value');
-        const users = usersSnapshot.val() || {};
+        // Fetch all users from Supabase
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('*');
+
+        if (error) {
+            throw new Error(`Error fetching users: ${error.message}`);
+        }
 
         // Get the count of users
-        const userCount = Object.keys(users).length;
-        
+        const userCount = users.length;
+
         // Determine the correct term for user(s)
         const userTerm = userCount === 1 ? 'user' : 'users';
 
