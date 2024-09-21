@@ -74,16 +74,19 @@ async function scheduleNextUpdate(client) {
     setInterval(async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
-            
-            // Loop through all users and process their cash production
             for (const userId in allUsers) {
-                const user = allUsers[userId];
-                await handleManagerWork(user, userId);
+                try {
+                    const user = allUsers[userId];
+                    await handleManagerWork(user, userId);
+                } catch (userError) {
+                    console.warn(`Manager work for user ${userId} failed.`);
+                    continue;
+                }
             }
         } catch (error) {
-            console.error('Error handling manager work for users:', error);
+            console.error('Error fetching or handling users:', error);
         }
-    }, 5000); // Interval set to 5000 milliseconds (5 seconds)
+    }, 5000);
 }
 
 // Function to start manager work
@@ -119,6 +122,11 @@ async function handleManagerWork(user, userId) {
     currentMine.mineshafts = currentMine.mineshafts || [];
 	currentMine.elevator = currentMine.elevator || [];
 	currentMine.warehouse = currentMine.warehouse || [];
+	
+	// Ensure there are workers in the mineshafts
+    if (currentMine.mineshafts.length === 0) {
+        return;
+    }
 
     // Function to handle cash production
     async function produceCash(isIdle = false) {
@@ -142,8 +150,13 @@ async function handleManagerWork(user, userId) {
                 // Calculate cash based on efficiency (10% when idle)
                 const efficiency = isIdle ? 0.1 : 1.0;
                 const cashProduced = totalGainPerSecond * productionRate * efficiency;
+				
+				// Calculate the total income factor from active boosts
+				const totalIncomeFactor = (user.active_boosts && user.active_boosts.length > 0)
+                    ? user.active_boosts.reduce((total, boost) => total + boost.income_factor, 1)
+                    : 1;
 				const multiplier = 5;
-				const adjustedCashProduced = cashProduced * multiplier;
+				const adjustedCashProduced = cashProduced * totalIncomeFactor * multiplier;
 
                 // Add to either active cash or idle cash
                 if (isIdle) {
