@@ -134,9 +134,9 @@ async function handleManagerWork(user, userId) {
             });
 
             // Ensure all required managers are assigned before producing cash
-            const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.assigned);
-            const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.assigned);
-            const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.assigned);
+            const shaftManagerAssigned = currentMine.managers?.shaft?.some(m => m.assigned);
+            const elevatorManagerAssigned = currentMine.managers?.elevator?.some(m => m.assigned);
+            const warehouseManagerAssigned = currentMine.managers?.warehouse?.some(m => m.assigned);
 
             if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
                 // Calculate cash based on efficiency (10% when idle)
