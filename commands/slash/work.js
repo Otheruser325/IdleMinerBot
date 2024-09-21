@@ -168,50 +168,72 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
         return interaction.reply('Elevator data not found.');
     }
 
-    const LOADING_TIME = elevator.capacity / elevatorInfo.LoadingPerSecond * 1000;
-    const TRAVEL_TIME = elevator.speed * currentMine.mineshafts.length * 1000; // Travel time to all shafts and back
-
-    if (elevator.last_worked_on && (now - elevator.last_worked_on < LOADING_TIME + TRAVEL_TIME)) {
-        const remainingTime = LOADING_TIME + TRAVEL_TIME - (now - elevator.last_worked_on);
+    const LOADING_PER_SECOND = elevatorInfo.LoadingPerSecond;
+	const elevatorCapacity = elevator.capacity;
+    const elevatorSpeed = elevator.speed;
+    const SHAFT_TRAVEL_TIME = 2000 / elevatorSpeed; // Travel time between shafts
+	
+	if (elevator.last_worked_on && (now - elevator.last_worked_on < SHAFT_TRAVEL_TIME)) {
+        const remainingTime = SHAFT_TRAVEL_TIME - (now - elevator.last_worked_on);
         const secondsRemaining = Math.ceil(remainingTime / 1000);
-        return interaction.reply(`Please wait ${secondsRemaining} seconds for the elevator to finish its tasks.`);
+        return message.reply(`Please wait ${secondsRemaining} seconds for the elevator to finish its tasks.`);
     }
 
     elevator.last_worked_on = now;
-    const initialMessage = await interaction.reply('Travelling to the shafts...');
+    let totalDeposit = 0; // Track total minerals collected
+    const initialMessage = await message.reply('Travelling to the shafts...');
 
-    setTimeout(async () => {
-        await interaction.editReply('Extracting minerals from all shafts...');
-        setTimeout(async () => {
-            let totalDeposit = 0;
+    // Process each shaft
+    for (const shaft of currentMine.mineshafts) {
+        const shaftDeposit = shaft.total_deposit || 0;
 
-            for (const shaft of currentMine.mineshafts) {
-                const shaftDeposit = shaft.total_deposit || 0;
-                if (elevator.total_deposit + shaftDeposit > elevator.capacity) {
-                    // If adding this shaft’s deposit exceeds capacity, take only the remaining space
-                    const remainingCapacity = elevator.capacity - elevator.total_deposit;
-                    elevator.total_deposit += remainingCapacity;
-                    totalDeposit += remainingCapacity;
-                    shaft.total_deposit = shaftDeposit - remainingCapacity; // Reduce the remaining deposit
-                    break;
-                } else {
-                    elevator.total_deposit += shaftDeposit;
-                    totalDeposit += shaftDeposit;
-                    shaft.total_deposit = 0; // Empty the shaft deposit
-                }
+        // Skip shafts that don't have any minerals
+        if (shaftDeposit === 0) continue;
+
+        await interaction.editReply(`Arriving at Shaft Tier ${shaft.tier}...`);
+
+        // Travel time to reach this shaft
+        await new Promise(resolve => setTimeout(resolve, SHAFT_TRAVEL_TIME));
+
+        // Determine how much the elevator can load from this shaft
+        const remainingCapacity = elevatorCapacity - elevator.total_deposit;
+        const amountToExtract = Math.min(shaftDeposit, remainingCapacity);
+
+        if (amountToExtract > 0) {
+            const extractionTime = (amountToExtract / LOADING_PER_SECOND) * 1000;
+            await interaction.editReply(`Extracting ${numberFormat(amountToExtract)} minerals from Shaft Tier ${shaft.tier}...`);
+
+            // Simulate the time it takes to extract minerals
+            await new Promise(resolve => setTimeout(resolve, extractionTime));
+
+            // Update deposits
+            shaft.total_deposit -= amountToExtract;
+            elevator.total_deposit += amountToExtract;
+            totalDeposit += amountToExtract;
+
+            // Check if the elevator has reached its full capacity
+            if (elevator.total_deposit >= elevatorCapacity) {
+                await interaction.editReply('Elevator is full. Returning to base...');
+                break;
             }
+        }
+    }
 
-            await updateUser(userId, user);
-            await interaction.editReply('Travelling back to extraction base...');
-            setTimeout(async () => {
-                await interaction.editReply('Importing minerals into the deposit tank...');
-                setTimeout(async () => {
-                    await updateUser(userId, user);
-                    await interaction.editReply(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
-                }, LOADING_TIME);
-            }, TRAVEL_TIME);
-        }, TRAVEL_TIME);
-    }, elevator.speed * currentMine.mineshafts.length * 1000);
+    if (totalDeposit === 0) {
+        return interaction.reply('No minerals were extracted, as there were none available in the shafts.');
+    }
+	
+	// Travel back to base
+    await interaction.editReply('Travelling back to extraction base...');
+    await new Promise(resolve => setTimeout(resolve, SHAFT_TRAVEL_TIME * currentMine.mineshafts.length));
+
+    // Simulate depositing the minerals into the deposit tank
+    await interaction.editReply('Importing minerals into the deposit tank...');
+    await new Promise(resolve => setTimeout(resolve, (totalDeposit / LOADING_PER_SECOND) * 1000));
+
+    // Update the user data with the new elevator deposit
+    await updateUser(userId, user);
+    await interaction.editReply(`Successfully imported ${numberFormat(totalDeposit)} minerals into the deposit tank.`);
 }
 
 // Function to handle working with the warehouse
@@ -224,7 +246,7 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
     }
 	
 	if (!elevator || elevator.total_deposit === 0) {
-        return message.reply('The elevator\'s deposit tank is empty.');
+        return interaction.reply('The elevator\'s deposit tank is empty.');
     }
 
     const now = Date.now();
