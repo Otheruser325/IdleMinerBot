@@ -107,7 +107,7 @@ async function handleMineBuy(interaction, mineName, user, userId) {
         current_mine: user.current_mine
     });
 
-    return interaction.reply(`Congratulations! You have purchased the ${mine.MineName} and are now working there.`);
+    return interaction.reply(`Congratulations! You have purchased the ${mine.mine_name} and are now working there.`);
 }
 
 async function handleMineVisit(interaction, mineName, user, userId) {
@@ -119,14 +119,14 @@ async function handleMineVisit(interaction, mineName, user, userId) {
         return interaction.reply(`You are already in the ${mineName}.`);
     }
 
-    const mine = user.mines.find(m => m.MineName.toLowerCase() === mineName);
+    const mine = user.mines.find(m => m.mine_name.toLowerCase() === mineName);
 
     if (!mine) {
         return interaction.reply('You do not own this mine.');
     }
 
     await updateUser(userId, { current_mine: mineName });
-    return interaction.reply(`You have successfully moved to the ${mine.MineName}.`);
+    return interaction.reply(`You have successfully moved to the ${mine.mine_name}.`);
 }
 
 async function handleMineManage(interaction, mineName, user, userId) {
@@ -134,14 +134,14 @@ async function handleMineManage(interaction, mineName, user, userId) {
         return interaction.reply('Please specify the name of the mine you want to manage.');
     }
 
-    const mine = user.mines.find(m => m.MineName.toLowerCase() === mineName);
+    const mine = user.mines.find(m => m.mine_name.toLowerCase() === mineName);
     if (!mine) {
         return interaction.reply('You do not own this mine.');
     }
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`${mine.MineName} Management`)
+        .setTitle(`${mine.mine_name} Management`)
         .setDescription(`Factor: ${mine.Factor}\nNumber of Shafts: ${mine.mineshafts.length}\nProduction: ${numberFormat(mine.production || 0)}`)
         .setTimestamp();
 
