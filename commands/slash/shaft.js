@@ -87,8 +87,8 @@ async function handleOverview(interaction, user, currentMine, tier, userId) {
     }
 
     // Lazy initialization of totalDeposit
-    if (shaft.totalDeposit === undefined) {
-        shaft.totalDeposit = 0; // Initialize to 0 if not set
+    if (shaft.total_deposit === undefined) {
+        shaft.total_deposit = 0; // Initialize to 0 if not set
     }
 
     const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === shaft.level);

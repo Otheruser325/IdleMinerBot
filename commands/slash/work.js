@@ -255,9 +255,20 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
     if (!warehouseInfo) {
         return interaction.reply('Warehouse data not found.');
     }
+	
+	const { LoadingPerSecond, CapacityPerWorker, NumberOfWorkers } = warehouseInfo;
+    
+    // Calculate total capacity of all workers
+    const totalWorkerCapacity = CapacityPerWorker * NumberOfWorkers;
+    
+    // Ensure the warehouse doesn't extract more than what the workers can handle
+    const extractableAmount = Math.min(elevator.total_deposit, totalWorkerCapacity);
 
-    const LOADING_TIME = warehouse.total_deposit / warehouseInfo.LoadingPerSecond * 1000;
-    const WALKING_TIME = warehouseInfo.CapacityPerWorker / warehouseInfo.NumberOfWorkers / warehouseInfo.LoadingPerSecond * 1000;
+    // Time required to extract minerals based on loading speed
+    const LOADING_TIME = extractableAmount / LoadingPerSecond * 1000;
+    
+    // Walking time to extract (simulating workers walking to the elevator)
+    const WALKING_TIME = extractableAmount / NumberOfWorkers / LoadingPerSecond * 1000;
 
     if (warehouse.last_worked_on && (now - warehouse.last_worked_on < LOADING_TIME + WALKING_TIME)) {
         const remainingTime = LOADING_TIME + WALKING_TIME - (now - warehouse.last_worked_on);
@@ -266,27 +277,38 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
     }
 
     warehouse.last_worked_on = now;
-    const initialMessage = await interaction.reply('Walking into the deposit base...');
-
-    setTimeout(async () => {
-        await interaction.editReply('Extracting minerals from the deposit base...');
+    const initialMessage = await interaction.reply(`Walking into the deposit base with ${NumberOfWorkers} workers...`);
+	
+	setTimeout(async () => {
+        await interaction.editReply('Extracting minerals from the deposit tank...');
+        
+        // Simulate each worker extracting in parallel with a slight delay
+        for (let i = 0; i < NumberOfWorkers; i++) {
+            setTimeout(async () => {
+                // Worker extracts their portion based on capacity
+                const workerExtracted = Math.min(CapacityPerWorker, extractableAmount - (CapacityPerWorker * i));
+                
+                if (workerExtracted > 0) {
+                    warehouse.total_deposit += workerExtracted;
+                    elevator.total_deposit -= workerExtracted;
+                }
+            }, i * 500); // 500ms delay between workers
+        }
+        
         setTimeout(async () => {
-            const totalDeposit = warehouse.total_deposit || 0;
-			warehouse.total_deposit += totalDeposit;
-            elevator.total_deposit = 0;
-			await updateUser(userId, user);
-			
-			await interaction.editReply('Returning to the warehouse with extracted goods...');
+            await updateUser(userId, user); // Update the user data after extraction
+            await interaction.editReply('Returning to the warehouse with extracted minerals...');
+            
             setTimeout(async () => {
                 await interaction.editReply('Selling minerals...');
                 setTimeout(async () => {
-					const cashReward = warehouse.total_deposit;
+                    const cashReward = warehouse.total_deposit;
                     warehouse.total_deposit = 0;
-                    user.cash += cashReward;
-                    await updateUser(userId, user);
+                    user.cash += cashReward; // Add the minerals value to user's cash
+                    await updateUser(userId, user); // Update the user data
                     await interaction.editReply(`Successfully sold minerals worth ${numberFormat(cashReward)}.`);
-                }, WALKING_TIME);
-            }, WALKING_TIME);
-        }, WALKING_TIME);
-    }, WALKING_TIME);
+                }, WALKING_TIME); // Selling minerals also takes time
+            }, WALKING_TIME); // Simulate the time workers take to walk back
+        }, LOADING_TIME); // Time for loading the minerals
+    }, WALKING_TIME); // Simulate the time it takes to walk to the deposit
 }
