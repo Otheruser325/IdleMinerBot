@@ -7,11 +7,21 @@ const continentData = require('./config/continentData.json').continents;
 
 // Initialize a new user in Supabase
 async function initializeUser(userId, username) {
+    if (typeof userId !== 'string') {
+        console.error('Invalid user ID format:', userId);
+        return;
+    }
+	
     const { data: user, error } = await supabase
         .from('users')
         .select('*')
-        .eq('user_id', userId)  // Make sure to use snake_case to match your table
+        .eq('user_id', userId)
         .single();
+		
+	if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user:', error);
+        return;
+    }
 
     if (!user) {
         const { error: insertError } = await supabase
@@ -57,6 +67,8 @@ async function initializeUser(userId, username) {
         if (insertError) {
             console.error('Error initializing user:', insertError);
         }
+    } else {
+        console.log('User already exists:', userId);
     }
 }
 
