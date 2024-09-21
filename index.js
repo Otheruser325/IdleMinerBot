@@ -88,6 +88,8 @@ async function scheduleNextUpdate(client) {
 
 // Function to start manager work
 async function handleManagerWork(user, userId) {
+	console.log('Processing user:', userId); // Log user ID
+    console.log('User data:', user); // Log user data
     // Check if user data is valid
     if (!user) {
         console.error('User data is undefined or invalid.');
@@ -137,6 +139,10 @@ async function handleManagerWork(user, userId) {
             const shaftManagerAssigned = currentMine.managers?.shaft?.some(m => m.assigned);
             const elevatorManagerAssigned = currentMine.managers?.elevator?.some(m => m.assigned);
             const warehouseManagerAssigned = currentMine.managers?.warehouse?.some(m => m.assigned);
+			
+			console.log('Shaft Manager Assigned:', shaftManagerAssigned);
+            console.log('Elevator Manager Assigned:', elevatorManagerAssigned);
+            console.log('Warehouse Manager Assigned:', warehouseManagerAssigned);
 
             if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
                 // Calculate cash based on efficiency (10% when idle)
