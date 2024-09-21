@@ -206,12 +206,6 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
             setTimeout(async () => {
                 await interaction.editReply('Importing minerals into the deposit tank...');
                 setTimeout(async () => {
-                    if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
-                        return interaction.reply('Warehouse is not initialized.');
-                    }
-
-                    currentMine.warehouse[0].total_deposit += elevator.total_deposit;
-                    elevator.total_deposit = 0; // Reset elevator deposit
                     await updateUser(userId, user);
                     await interaction.editReply(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
                 }, LOADING_TIME);
@@ -223,9 +217,14 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
 // Function to handle working with the warehouse
 async function handleWarehouseWork(interaction, user, currentMine, userId) {
     const warehouse = currentMine.warehouse[0];
+	const elevator = currentMine.elevator[0];
 
     if (!warehouse) {
         return interaction.reply('Warehouse is not initialized.');
+    }
+	
+	if (!elevator || elevator.total_deposit === 0) {
+        return message.reply('The elevator\'s deposit tank is empty.');
     }
 
     const now = Date.now();
@@ -251,13 +250,16 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
         await interaction.editReply('Extracting minerals from the deposit base...');
         setTimeout(async () => {
             const totalDeposit = warehouse.total_deposit || 0;
-            const cashReward = totalDeposit;
-            warehouse.total_deposit = 0;
-            await updateUser(userId, user);
-            await interaction.editReply('Returning to the warehouse with extracted goods...');
+			warehouse.total_deposit += totalDeposit;
+            elevator.total_deposit = 0;
+			await updateUser(userId, user);
+			
+			await interaction.editReply('Returning to the warehouse with extracted goods...');
             setTimeout(async () => {
                 await interaction.editReply('Selling minerals...');
                 setTimeout(async () => {
+					const cashReward = warehouse.total_deposit;
+                    warehouse.total_deposit = 0;
                     user.cash += cashReward;
                     await updateUser(userId, user);
                     await interaction.editReply(`Successfully sold minerals worth ${numberFormat(cashReward)}.`);

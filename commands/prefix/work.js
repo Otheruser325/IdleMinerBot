@@ -194,12 +194,6 @@ async function handleElevatorWork(message, user, currentMine, userId) {
             setTimeout(async () => {
                 await initialMessage.edit('Importing minerals into the deposit tank...');
                 setTimeout(async () => {
-                    if (!currentMine.warehouse || currentMine.warehouse.length === 0) {
-                        return message.reply('Warehouse is not initialized.');
-                    }
-
-                    currentMine.warehouse[0].total_deposit += elevator.total_deposit;
-                    elevator.total_deposit = 0; // Reset elevator deposit
                     await updateUser(userId, user);
                     await initialMessage.edit(`Successfully imported minerals worth ${numberFormat(totalDeposit)} into the deposit tank.`);
                 }, LOADING_TIME);
@@ -211,9 +205,14 @@ async function handleElevatorWork(message, user, currentMine, userId) {
 // Function to handle working with the warehouse
 async function handleWarehouseWork(message, user, currentMine, userId) {
     const warehouse = currentMine.warehouse[0];
+    const elevator = currentMine.elevator[0];
 
     if (!warehouse) {
         return message.reply('Warehouse is not initialized.');
+    }
+
+    if (!elevator || elevator.total_deposit === 0) {
+        return message.reply('The elevator\'s deposit tank is empty.');
     }
 
     const now = Date.now();
@@ -223,7 +222,7 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
         return message.reply('Warehouse data not found.');
     }
 
-    const LOADING_TIME = warehouse.total_deposit / warehouseInfo.LoadingPerSecond * 1000;
+    const LOADING_TIME = elevator.total_deposit / warehouseInfo.LoadingPerSecond * 1000;
     const WALKING_TIME = warehouseInfo.CapacityPerWorker / warehouseInfo.NumberOfWorkers / warehouseInfo.LoadingPerSecond * 1000;
 
     if (warehouse.last_worked_on && (now - warehouse.last_worked_on < LOADING_TIME + WALKING_TIME)) {
@@ -236,21 +235,24 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
     const initialMessage = await message.reply('Walking into the deposit base...');
 
     setTimeout(async () => {
-        await initialMessage.edit('Extracting minerals from the deposit base...');
+        await initialMessage.edit('Extracting minerals from the deposit tank...');
         setTimeout(async () => {
-            const totalDeposit = warehouse.total_deposit || 0;
-            const cashReward = totalDeposit;
-            warehouse.total_deposit = 0;
+            const totalDeposit = elevator.total_deposit;
+            warehouse.total_deposit += totalDeposit;
+            elevator.total_deposit = 0;
             await updateUser(userId, user);
+
             await initialMessage.edit('Returning to the warehouse with extracted goods...');
             setTimeout(async () => {
                 await initialMessage.edit('Selling minerals...');
                 setTimeout(async () => {
+                    const cashReward = warehouse.total_deposit;
+                    warehouse.total_deposit = 0;
                     user.cash += cashReward;
                     await updateUser(userId, user);
                     await initialMessage.edit(`Successfully sold minerals worth ${numberFormat(cashReward)}.`);
                 }, WALKING_TIME);
             }, WALKING_TIME);
-        }, WALKING_TIME);
+        }, LOADING_TIME);
     }, WALKING_TIME);
 }
