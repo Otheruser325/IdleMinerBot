@@ -69,9 +69,9 @@ module.exports = {
 
             // Extract and format user's balance data
             const cash = user.cash || 0;
-            const iceCash = user.iceCash || 0;
-            const fireCash = user.fireCash || 0;
-            const superCash = user.superCash || 0;
+            const iceCash = user.ice_cash || 0;
+            const fireCash = user.fire_cash || 0;
+            const superCash = user.super_cash || 0;
 
             // Determine user's wealth status
             let description = 'Average';

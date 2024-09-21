@@ -19,7 +19,7 @@ module.exports = {
         }
 
         // Find the booster in the inventory
-        const booster = user.inventory.boosters.find(b => b.itemId === itemId);
+        const booster = user.inventory.boosters.find(b => b.item_id === itemId);
 
         if (!booster) {
             return interaction.reply('You do not have that booster in your inventory.');
@@ -33,40 +33,40 @@ module.exports = {
         booster.stock -= 1;
 
         // Determine the category based on `InstantCashTime` property
-        const isInstant = booster.activeTime === 0;
+        const isInstant = booster.active_time === 0;
 
-        // Update activeBoosts
+        // Update active_boosts
         const activeBoost = {
-            itemId: booster.itemId,
-            itemName: booster.itemName,
-            activeTime: booster.activeTime,
-            incomeFactor: booster.incomeFactor,
-            endTime: Date.now() + (booster.activeTime * 1000)
+            item_id: booster.item_id,
+            item_name: booster.item_name,
+            active_time: booster.active_time,
+            income_factor: booster.income_factor,
+            end_time: Date.now() + (booster.active_time * 1000)
         };
 		
 		// Initialize active boosts if they don't exist
-		if (!user.activeBoosts) {
-		    user.activeBoosts = [];
+		if (!user.active_boosts) {
+		    user.active_boosts = [];
 		}
 
-        // Add or update the booster in activeBoosts
-        const existingBoostIndex = user.activeBoosts.findIndex(b => b.incomeFactor === activeBoost.incomeFactor);
+        // Add or update the booster in active_boosts
+        const existingBoostIndex = user.active_boosts.findIndex(b => b.income_factor === activeBoost.income_factor);
 
         if (existingBoostIndex > -1) {
-            const existingBoost = user.activeBoosts[existingBoostIndex];
-            if (existingBoost.endTime < activeBoost.endTime) {
-                existingBoost.endTime = activeBoost.endTime;
+            const existingBoost = user.active_boosts[existingBoostIndex];
+            if (existingBoost.end_time < activeBoost.end_time) {
+                existingBoost.end_time = activeBoost.end_time;
             }
         } else {
-            user.activeBoosts.push(activeBoost);
+            user.active_boosts.push(activeBoost);
         }
 
         // Update the user data
         try {
             await updateUser(userId, user);
-            return interaction.reply(`You have successfully used the ${booster.itemName}!`);
+            return interaction.reply(`You have successfully used the ${booster.item_name}!`);
         } catch (error) {
-            console.error('Error updating user data:', error);
+            console.error('Error using boosts:', error);
             return interaction.reply('An error occurred while using the booster.');
         }
     }

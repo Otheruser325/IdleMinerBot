@@ -23,9 +23,9 @@ module.exports = {
             // Mapping for proper cash type labels
             const cashTypeLabels = {
                 cash: 'Cash',
-                iceCash: 'Ice Cash',
-                fireCash: 'Fire Cash',
-                superCash: 'Super Cash'
+                ice_cash: 'Ice Cash',
+                fire_cash: 'Fire Cash',
+                super_cash: 'Super Cash'
             };
 
             // Function to get the top 15 users for a specific cash type
@@ -34,7 +34,7 @@ module.exports = {
                     .filter(user => 
                         guildMembers.has(user.userId) && // Check if the user exists in the guild
                         (
-                            (cashType === 'superCash' && user[cashType] > 0) || // Filter out users with zero superCash
+                            (cashType === 'super_cash' && user[cashType] > 0) || // Filter out users with zero superCash
                             (user[cashType] && user[cashType] >= minCashThreshold) // Apply minimum cash for other types
                         )
                     )
@@ -60,9 +60,9 @@ module.exports = {
                 const row = new ActionRowBuilder()
                     .addComponents(
                         new ButtonBuilder().setCustomId('cash').setLabel('Cash').setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder().setCustomId('iceCash').setLabel('Ice Cash').setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder().setCustomId('fireCash').setLabel('Fire Cash').setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder().setCustomId('superCash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
+                        new ButtonBuilder().setCustomId('ice_cash').setLabel('Ice Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('fire_cash').setLabel('Fire Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('super_cash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
                     );
 
                 if (interaction) {
@@ -75,7 +75,7 @@ module.exports = {
             const msg = await displayLeaderboard('cash');
 
             // Interaction filter for button clicks
-            const filter = (interaction) => ['cash', 'iceCash', 'fireCash', 'superCash'].includes(interaction.customId) && interaction.user.id === message.author.id;
+            const filter = (interaction) => ['cash', 'ice_cash', 'fire_cash', 'super_cash'].includes(interaction.customId) && interaction.user.id === message.author.id;
 
             // Create a message component collector for the buttons
             const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
@@ -83,9 +83,9 @@ module.exports = {
             // Handle button interactions
             collector.on('collect', async (interaction) => {
                 if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
-                if (interaction.customId === 'iceCash') await displayLeaderboard('iceCash', interaction);
-                if (interaction.customId === 'fireCash') await displayLeaderboard('fireCash', interaction);
-                if (interaction.customId === 'superCash') await displayLeaderboard('superCash', interaction);
+                if (interaction.customId === 'ice_cash') await displayLeaderboard('ice_cash', interaction);
+                if (interaction.customId === 'fire_cash') await displayLeaderboard('fire_cash', interaction);
+                if (interaction.customId === 'super_cash') await displayLeaderboard('super_cash', interaction);
             });
 
             // Clean up after collector ends

@@ -27,7 +27,7 @@ module.exports = {
       return interaction.reply('That item does not exist in the shop.');
     }
 
-    if (user.superCash < item.SuperCashCost) {
+    if (user.super_cash < item.SuperCashCost) {
       return interaction.reply('You do not have enough Super Cash to purchase this item.');
     }
 
@@ -43,7 +43,7 @@ module.exports = {
     }
 
     // Check if the item already exists in the inventory
-    const existingItem = updatedInventory[category].find(i => i.itemId === item.id);
+    const existingItem = updatedInventory[category].find(i => i.item_id === item.id);
 
     if (existingItem) {
       // If the item exists, just increment the stock
@@ -51,19 +51,19 @@ module.exports = {
     } else {
       // Add the new item to the inventory with stock
       updatedInventory[category].push({
-        itemId: item.id,
-        itemName: item.ItemName,
-        activeTime: item.ActiveTimeSeconds,
-        incomeFactor: item.CompleteIncomeIncreaseFactor,
-        instantCash: item.InstantCashTime > 0 ? item.InstantCashTime : null,
-        stock: 1
+         item_id: item.id,
+         item_name: item.ItemName,
+         active_time: item.ActiveTimeSeconds,
+         income_factor: item.CompleteIncomeIncreaseFactor,
+         instant_cash: item.InstantCashTime > 0 ? item.InstantCashTime : null,
+         stock: 1
       });
     }
 
     // Deduct Super Cash and update the user's inventory
     try {
       await updateUser(userId, {
-        superCash: user.superCash - item.SuperCashCost,
+        super_cash: user.super_cash - item.SuperCashCost,
         inventory: updatedInventory
       });
       return interaction.reply(`You have successfully purchased ${item.ItemName} for ${numberFormat(item.SuperCashCost)} Super Cash!`);

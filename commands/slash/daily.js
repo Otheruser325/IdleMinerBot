@@ -16,18 +16,18 @@ module.exports = {
         }
 
         const currentTime = Date.now();
-        const cooldown = 24 * 60 * 60 * 1000; // 24-hour cooldown in milliseconds
+        const cooldown = 24 * 60 * 60 * 1000;
 
-        if (currentTime - (user.lastDaily || 0) < cooldown) {
-            const remainingTime = formatTime((user.lastDaily || 0) + cooldown - currentTime);
+        if (currentTime - (user.last_daily || 0) < cooldown) {
+            const remainingTime = formatTime((user.last_daily || 0) + cooldown - currentTime);
             return interaction.reply(`You can claim your daily again in ${remainingTime}.`);
         }
 
         const cash = calculateDailyReward(user);
         await updateUser(userId, {
-            lastDaily: currentTime,
+            last_daily: currentTime,
             streak: (user.streak || 0) + 1,
-            superCash: (user.superCash || 0) + cash
+            super_cash: (user.super_cash || 0) + cash
         });
 
         const response = `You claimed ${numberFormat(cash)} Super Cash! Current streak: ${(user.streak || 0) + 1}.`;

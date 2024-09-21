@@ -50,7 +50,7 @@ module.exports = {
             return interaction.reply('You need to start the game first by using `im!start`.');
         }
 
-        const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
         if (!currentMine) {
             return interaction.reply('Current mine data not found.');
         }
@@ -73,7 +73,7 @@ module.exports = {
                 await handleUpgrade(interaction, user, currentMine, tier, userId);
                 break;
             default:
-                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **/shaft overview** to view your shaft's performance in your **__${currentMine.MineName}__**, based on the tier you provide (i.e. **/shaft overview 1**), **/shaft buy** for purchasing a new shaft in your **__${currentMine.MineName}__** or **/shaft upgrade** to upgrade your shaft of your choice (i.e. **/shaft upgrade 1**, or you can also quick-upgrade using **/shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **/shaft overview** to view your shaft's performance in your **__${currentMine.mine_name}__**, based on the tier you provide (i.e. **/shaft overview 1**), **/shaft buy** for purchasing a new shaft in your **__${currentMine.mine_name}__** or **/shaft upgrade** to upgrade your shaft of your choice (i.e. **/shaft upgrade 1**, or you can also quick-upgrade using **/shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
         }
     }
 };
@@ -83,7 +83,7 @@ async function handleOverview(interaction, user, currentMine, tier, userId) {
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
-        return interaction.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.MineName}.`);
+        return interaction.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.mine_name}.`);
     }
 
     // Lazy initialization of totalDeposit
@@ -97,13 +97,13 @@ async function handleOverview(interaction, user, currentMine, tier, userId) {
     }
 
     // Adjust shaft stats based on the mine's factor
-    const mineFactor = getMineFactor(currentMine.MineName);
+    const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
     const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Mineshaft Tier ${tier} Overview in ${currentMine.MineName}`)
+        .setTitle(`Mineshaft Tier ${tier} Overview in ${currentMine.mine_name}`)
         .addFields(
             { name: 'Level', value: `${shaft.level}`, inline: true },
             { name: 'Workers', value: `${shaft.numberOfWorkers}`, inline: true },
@@ -130,15 +130,15 @@ async function handleBuy(interaction, user, currentMine, tier, userId) {
     }
 	
 	// Check if there is a locked barrier preventing further shaft unlocks
-    const barrierBlocking = currentMine.barriers.find(barrier => !barrier.unlocked && tier > barrier.FromTier && tier <= barrier.ToTier);
+    const barrierBlocking = currentMine.barriers.find(barrier => !barrier.unlocked && tier > barrier.from_tier && tier <= barrier.to_tier);
     if (barrierBlocking) {
-        return interaction.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.FromTier} to Tier ${barrierBlocking.ToTier} first.`);
+        return interaction.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.from_tier} to Tier ${barrierBlocking.to_tier} first.`);
     }
     
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
-        return interaction.reply(`You already own a shaft of Tier ${tier} in the ${currentMine.MineName}.`);
+        return interaction.reply(`You already own a shaft of Tier ${tier} in the ${currentMine.mine_name}.`);
     }
 
     const shaftInfo = shaftData.find(s => s.Tier === tier && s.Level === 1);
@@ -153,23 +153,23 @@ async function handleBuy(interaction, user, currentMine, tier, userId) {
     user.cash -= shaftInfo.Cost;
 
     // Adjust shaft stats based on the mine's factor
-    const mineFactor = getMineFactor(currentMine.MineName);
+    const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
     const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
 
     currentMine.mineshafts.push({
         tier,
         level: 1,
-        numberOfWorkers: shaftInfo.NumberOfWorkers,
-        gainPerSecondPerWorker: adjustedGain,
-        capacityPerWorker: adjustedCapacity,
-        workerWalkingSpeedPerSecond: shaftInfo.WorkerWalkingSpeedPerSecond,
-        totalDeposit: 0 // Initialize totalDeposit for new shaft
+        number_of_workers: shaftInfo.NumberOfWorkers,
+        gain_per_second_per_worker: adjustedGain,
+        capacity_per_worker: adjustedCapacity,
+        worker_walking_speed_per_second: shaftInfo.WorkerWalkingSpeedPerSecond,
+        total_deposit: 0
     });
 
     await updateUser(userId, user);
 
-    return interaction.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(shaftInfo.Cost)} Cash in the ${currentMine.MineName}.`);
+    return interaction.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(shaftInfo.Cost)} Cash in the ${currentMine.mine_name}.`);
 }
 
 // Function to handle the "upgrade" subcommand for slash commands
@@ -187,7 +187,7 @@ async function handleUpgrade(interaction, user, currentMine, tier, userId) {
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (!shaft) {
-        return interaction.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.MineName}.`);
+        return interaction.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.mine_name}.`);
     }
 
     let totalCost = 0;
@@ -226,10 +226,10 @@ async function handleUpgrade(interaction, user, currentMine, tier, userId) {
         if (nextShaftInfo) {
             user.cash -= nextShaftInfo.Cost;
             shaft.level = nextLevel;
-            shaft.numberOfWorkers = nextShaftInfo.NumberOfWorkers;
-            shaft.gainPerSecondPerWorker = nextShaftInfo.GainPerSecondPerWorker * getMineFactor(currentMine.MineName);
-            shaft.capacityPerWorker = nextShaftInfo.CapacityPerWorker * getMineFactor(currentMine.MineName);
-            shaft.workerWalkingSpeedPerSecond = nextShaftInfo.WorkerWalkingSpeedPerSecond;
+            shaft.number_of_workers = nextShaftInfo.NumberOfWorkers;
+            shaft.gain_per_second_per_worker = nextShaftInfo.GainPerSecondPerWorker * getMineFactor(currentMine.mine_name);
+            shaft.capacity_per_worker = nextShaftInfo.CapacityPerWorker * getMineFactor(currentMine.mine_name);
+            shaft.worker_walking_speed_per_second = nextShaftInfo.WorkerWalkingSpeedPerSecond;
 
             if (nextShaftInfo.BigUpdate === 1) {
                 superCashEarned += nextShaftInfo.SuperCashReward;
@@ -243,10 +243,10 @@ async function handleUpgrade(interaction, user, currentMine, tier, userId) {
 	
 	// Add Super Cash if earned
     if (superCashEarned > 0) {
-        user.superCash = (user.superCash || 0) + superCashEarned;
+        user.super_cash = (user.super_cash || 0) + superCashEarned;
     }
 
     await updateUser(userId, user);
 
-    return interaction.reply(`Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    return interaction.reply(`Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

@@ -20,7 +20,7 @@ module.exports = {
         }
 
         const subcommand = args[0];
-        const mineName = args.slice(1).join(' ').toLowerCase(); // Safeguard against empty string
+        const mineName = args.slice(1).join(' ').toLowerCase();
 
         if (!mineName && (subcommand === 'buy' || subcommand === 'visit' || subcommand === 'manage')) {
             return message.reply(`Please specify the name of the mine to \`${subcommand}\`.`);
@@ -53,21 +53,21 @@ async function handleMineBuy(message, mineName, user, userId) {
         return message.reply('Invalid mine name. Please specify a valid mine to buy.');
     }
 
-    const mineExists = user.mines.find(m => m.MineName.toLowerCase() === mineName);
+    const mineExists = user.mines.find(m => m.mine_name.toLowerCase() === mineName);
 
     if (mineExists) {
         return message.reply('You already own this mine.');
     }
 
     if (user.cash < mine.Cost) {
-        return message.reply(`You don't have enough Cash to buy the ${mine.MineName}. It costs ${numberFormat(mine.Cost)} Cash.`);
+        return message.reply(`You don't have enough cash to buy the ${mine.MineName}. It costs ${numberFormat(mine.Cost)} cash.`);
     }
 
     user.cash -= mine.Cost;
     user.mines.push({
-        MineName: mine.MineName,
-        MineNumber: mine.MineNumber,
-        Factor: mine.Factor,
+        mine_name: mine.MineName,
+        mine_number: mine.MineNumber,
+        factor: mine.Factor,
         mineshafts: [],
         elevator: [],
         warehouse: [],
@@ -81,12 +81,12 @@ async function handleMineBuy(message, mineName, user, userId) {
             unlocked: index === 0
         }))
     });
-    user.currentMine = mine.MineName;
+    user.current_mine = mine.MineName;
 
     await updateUser(userId, {
         cash: user.cash,
         mines: user.mines,
-        currentMine: user.currentMine
+        current_mine: user.current_mine
     });
 
     return message.reply(`Congratulations! You have purchased the ${mine.MineName} and are now working there.`);
@@ -97,7 +97,7 @@ async function handleMineVisit(message, mineName, user, userId) {
         return message.reply('Please specify the name of the mine you want to visit.');
     }
 
-    if (user.currentMine.toLowerCase() === mineName) {
+    if (user.current_mine.toLowerCase() === mineName) {
         return message.reply(`You are already in the ${mineName}.`);
     }
 
@@ -107,7 +107,7 @@ async function handleMineVisit(message, mineName, user, userId) {
         return message.reply('You do not own this mine.');
     }
 
-    await updateUser(userId, { currentMine: mineName });
+    await updateUser(userId, { current_mine: mineName });
     return message.reply(`You have successfully moved to the ${mine.MineName}.`);
 }
 

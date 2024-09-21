@@ -35,7 +35,7 @@ module.exports = {
             return interaction.reply('You need to start the game first by using `im!start`.');
         }
 
-        const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
         if (!currentMine) {
             return interaction.reply('Current mine data not found.');
         }
@@ -59,30 +59,26 @@ module.exports = {
                 await handleElevatorUpgrade(interaction, user, elevator, currentMine, userId);
                 break;
             default:
-                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **/elevator overview** to view your elevator's performance in your **__${currentMine.MineName}__** or **/elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **/elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
+                return interaction.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **/elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **/elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **/elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
         }
     }
 };
 
 // Function to handle the "overview" subcommand for elevator
 async function handleElevatorOverview(interaction, user, elevator, currentMine, userId) {
-    if (!elevator) {
-        return interaction.reply('Elevator is not initialized.');
-    }
-
     const elevatorInfo = elevatorData.find(e => e.Level === elevator.level);
 
     if (!elevatorInfo) {
         return interaction.reply('Elevator data not found.');
     }
 
-    const mineFactor = getMineFactor(currentMine.MineName);
+    const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedCapacity = elevatorInfo.Capacity * mineFactor;
     const adjustedLoadingRate = elevatorInfo.LoadingPerSecond * mineFactor;
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Elevator Overview in ${currentMine.MineName} (Level ${elevator.level})`)
+        .setTitle(`Elevator Overview in ${currentMine.mine_name} (Level ${elevator.level})`)
         .addFields(
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
             { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
@@ -138,8 +134,8 @@ async function handleElevatorUpgrade(interaction, user, elevator, currentMine, u
             user.cash -= nextElevatorInfo.Cost;
             elevator.level = nextLevel;
 			elevator.speed = nextElevatorInfo.Speed;
-            elevator.capacity = nextElevatorInfo.Capacity * getMineFactor(currentMine.MineName);
-			elevator.loadingPerSecond = nextElevatorInfo.LoadingPerSecond * getMineFactor(currentMine.MineName);
+            elevator.capacity = nextElevatorInfo.Capacity * getMineFactor(currentMine.mine_name);
+			elevator.loading_per_second = nextElevatorInfo.LoadingPerSecond * getMineFactor(currentMine.mine_name);
             
             if (nextElevatorInfo.BigUpdate === 1) {
                 superCashEarned += nextElevatorInfo.SuperCashReward;
@@ -153,9 +149,9 @@ async function handleElevatorUpgrade(interaction, user, elevator, currentMine, u
 
     // Add Super Cash if earned
     if (superCashEarned > 0) {
-        user.superCash = (user.superCash || 0) + superCashEarned;
+        user.super_cash = (user.super_cash || 0) + superCashEarned;
     }
 
     await updateUser(userId, user);
-    await interaction.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    await interaction.reply(`Elevator upgraded to Level ${elevator.level} for ${numberFormat(totalCost)} cash in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

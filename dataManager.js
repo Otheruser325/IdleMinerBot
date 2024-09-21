@@ -1,42 +1,38 @@
-const admin = require('firebase-admin');
-const serviceAccount = require('./config/serviceAccountKey.json');
+const supabase = require('./utils/supabaseClient');
+
 const mineRegions = require('./config/mineRegions.json').regions;
 const continentData = require('./config/continentData.json').continents;
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://idleminerapi-default-rtdb.firebaseio.com/'
-});
-
-const db = admin.database(); // Use .database() for Realtime Database
-
 // User-related functions
 
-// Initialize a new user in Realtime Database
+// Initialize a new user in Supabase
 async function initializeUser(userId, username) {
-    const userRef = db.ref(`users/${userId}`);
-    const snapshot = await userRef.once('value');
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)  // Make sure to use snake_case to match your table
+        .single();
 
-    if (!snapshot.exists()) {
-        await userRef.set({
-            username: username || '',
-			userId: userId || '',
-            cash: 10,
-            iceCash: 10,
-            fireCash: 10,
-            superCash: 0,
-			currentContinent: 'Start Continent',
-            currentMine: 'Coal Mine',
-            streak: 0,
-            lastDaily: 0,
-			lastIdle: 0,
-			continents: [continentData[0]],
-            mines: [
-                {
-                    PrestigeCount: 0,
-                    MineNumber: 1,
-                    MineName: "Coal Mine",
-                    Factor: 1,
+    if (!user) {
+        const { error: insertError } = await supabase
+            .from('users')
+            .insert([{
+                user_id: userId,
+                username: username || '',
+                continents: [continentData[0]],
+				current_continent: "Start Continent",
+				current_mine: "Coal Mine",
+				cash: 10,
+				ice_cash: 10,
+				fire_cash: 10,
+				idle_cash: 0,
+                idle_ice_cash: 0,
+                idle_fire_cash: 0,
+                mines: [{
+                    prestige_count: 0,
+                    mine_number: 1,
+                    mine_name: "Coal Mine",
+                    factor: 1,
                     mineshafts: [],
                     elevator: [],
                     warehouse: [],
@@ -49,67 +45,93 @@ async function initializeUser(userId, username) {
                         ...region,
                         unlocked: index === 0
                     }))
-                }
-            ],
-            activeBoosts: [],
-            idleCash: 0,
-            idleIceCash: 0,
-            idleFireCash: 0,
-            inventory: {}
-        });
+                }],
+				super_cash: 0,
+                streak: 0,
+                last_daily: 0,
+                last_idle: 0,
+                active_boosts: [],
+                inventory: {}
+            }]);
+
+        if (insertError) {
+            console.error('Error initializing user:', insertError);
+        }
     }
 }
 
-// Get user by ID from Realtime Database
+// Get user by ID from Supabase
 async function getUser(userId) {
-    const userRef = db.ref(`users/${userId}`);
-    const snapshot = await userRef.once('value');
-    return snapshot.exists() ? snapshot.val() : null;
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+    return error ? null : user;
 }
 
-// Update user data in Realtime Database
+// Update user data in Supabase
 async function updateUser(userId, updates) {
-    const userRef = db.ref(`users/${userId}`);
-    await userRef.update(updates);
+    const { error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error('Error updating user:', error);
+    }
 }
 
-// Get all users from Realtime Database
+// Get all users from Supabase
 async function getAllUsers() {
-    const usersRef = db.ref('users');
-    const snapshot = await usersRef.once('value');
-    return snapshot.exists() ? snapshot.val() : {};
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('*');
+
+    return error ? [] : users;
 }
 
 // Guild-related functions
 
-// Initialize a new guild in Realtime Database
+// Initialize a new guild in Supabase
 async function initializeGuild(guildId, guildName, ownerId) {
-    const guildRef = db.ref(`guilds/${guildId}`);
-    const snapshot = await guildRef.once('value');
+    const { data: guild, error } = await supabase
+        .from('guilds')
+        .select('*')
+        .eq('guild_id', guildId)
+        .single();
 
-    if (!snapshot.exists()) {
-        await guildRef.set({
-            name: guildName || '',
-            ownerId: ownerId || '',
-            members: [] // Ensure members is initialized as an empty array
-        });
+    if (!guild) {
+        const { error: insertError } = await supabase
+            .from('guilds')
+            .insert([{
+                guildId,
+                name: guildName || '',
+                ownerId: ownerId || '',
+                members: JSON.stringify([])  // Initialize as an empty array
+            }]);
+
+        if (insertError) {
+            console.error('Error initializing guild:', insertError);
+        }
     }
 }
 
-// Get guild by ID from Realtime Database
+// Get guild by ID from Supabase
 async function getGuild(guildId) {
     const guildRef = db.ref(`guilds/${guildId}`);
     const snapshot = await guildRef.once('value');
     return snapshot.exists() ? snapshot.val() : null;
 }
 
-// Update guild data in Realtime Database
+// Update guild data in Supabase
 async function updateGuild(guildId, updates) {
     const guildRef = db.ref(`guilds/${guildId}`);
     await guildRef.update(updates);
 }
 
-// Get all guilds from Realtime Database
+// Get all guilds from Supabase
 async function getAllGuilds() {
     const guildsRef = db.ref('guilds');
     const snapshot = await guildsRef.once('value');
@@ -118,16 +140,24 @@ async function getAllGuilds() {
 
 // Guild-user related functions
 
-// Add or update a user in a specific guild in Realtime Database
+// Add or update a user in a specific guild in Supabase
 async function addUserToGuild(guildId, userId) {
-    const guildRef = db.ref(`guilds/${guildId}`);
-    const snapshot = await guildRef.once('value');
+    const { data: guild, error } = await supabase
+        .from('guilds')
+        .select('members')
+        .eq('guild_id', guildId)
+        .single();
 
-    if (snapshot.exists()) {
-        const guildData = snapshot.val();
-        if (!guildData.members.includes(userId)) {
-            guildData.members.push(userId);
-            await guildRef.update({ members: guildData.members });
+    if (guild && !guild.members.includes(userId)) {
+        const updatedMembers = [...guild.members, userId];
+
+        const { error: updateError } = await supabase
+            .from('guilds')
+            .update({ members: updatedMembers })
+            .eq('guild_id', guildId);
+
+        if (updateError) {
+            console.error('Error adding user to guild:', updateError);
         }
     }
 }

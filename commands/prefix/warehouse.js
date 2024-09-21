@@ -17,7 +17,7 @@ module.exports = {
             return message.reply('You need to start the game first by using `im!start`.');
         }
 
-        const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
         if (!currentMine) {
             return message.reply('Current mine data not found.');
         }
@@ -47,7 +47,7 @@ module.exports = {
                 await handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId);
                 break;
             default:
-			    return message.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.MineName}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
+			    return message.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
         }
     }
 };
@@ -60,13 +60,13 @@ async function handleWarehouseOverview(message, user, warehouse, currentMine, ar
         return message.reply('Warehouse data not found.');
     }
 
-    const mineFactor = getMineFactor(currentMine.MineName);
+    const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedCapacityPerWorker = warehouseInfo.CapacityPerWorker * mineFactor;
     const adjustedLoadingRate = warehouseInfo.LoadingPerSecond * mineFactor;
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Warehouse Overview in ${currentMine.MineName} (Level ${warehouse.level})`)
+        .setTitle(`Warehouse Overview in ${currentMine.mine_name} (Level ${warehouse.level})`)
         .addFields(
             { name: 'Number of Workers', value: `${warehouseInfo.NumberOfWorkers}`, inline: true },
             { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
@@ -122,10 +122,10 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
         if (nextWarehouseInfo) {
 			user.cash -= nextWarehouseInfo.Cost;
 			warehouse.level = lastLevel;
-	        warehouse.numberOfWorkers = nextWarehouseInfo.NumberOfWorkers;
-            warehouse.capacityPerWorker = nextWarehouseInfo.CapacityPerWorker * getMineFactor(currentMine.MineName);
-            warehouse.workerWalkingSpeedPerSecond = nextWarehouseInfo.WorkerWalkingSpeedPerSecond;
-            warehouse.loadingPerSecond = nextWarehouseInfo.LoadingPerSecond * getMineFactor(currentMine.MineName);
+	        warehouse.number_of_workers = nextWarehouseInfo.NumberOfWorkers;
+            warehouse.capacity_per_worker = nextWarehouseInfo.CapacityPerWorker * getMineFactor(currentMine.mine_name);
+            warehouse.worker_walking_speed_per_second = nextWarehouseInfo.WorkerWalkingSpeedPerSecond;
+            warehouse.loading_per_second = nextWarehouseInfo.LoadingPerSecond * getMineFactor(currentMine.mine_name);
             
             if (nextWarehouseInfo.BigUpdate === 1) {
                 superCashEarned += nextWarehouseInfo.SuperCashReward;
@@ -139,10 +139,10 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
 
     // Add Super Cash if earned
     if (superCashEarned > 0) {
-        user.superCash = (user.superCash || 0) + superCashEarned;
+        user.super_cash = (user.super_cash || 0) + superCashEarned;
     }
 
     await updateUser(userId, user);
 
-    return message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.MineName}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    return message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

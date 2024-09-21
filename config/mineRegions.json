@@ -1,58 +1,58 @@
 {
   "regions": [
     {
-        "Order": 0,
-        "FromTier": 0,
-        "ToTier": 5,
-        "Cost": 0,
-        "BuildTimeInSeconds": 0,
-        "SecondsReducedPerVideoWatched": 0,
-        "MaxNumberOfVideosPerHour": 0
+        "order": 0,
+        "from_tier": 0,
+        "to_tier": 5,
+        "cost": 0,
+        "build_time_in_seconds": 0,
+        "seconds_reduced_per_video_watched": 0,
+        "max_number_of_videos_per_hour": 0
     },
     {
-        "Order": 1,
-        "FromTier": 5,
-        "ToTier": 10,
-        "Cost": 240000000,
-        "BuildTimeInSeconds": 3600,
-        "SecondsReducedPerVideoWatched": 1800,
-        "MaxNumberOfVideosPerHour": 2
+        "order": 1,
+        "from_tier": 5,
+        "to_tier": 10,
+        "cost": 240000000,
+        "build_time_in_seconds": 3600,
+        "seconds_reduced_per_video_watched": 1800,
+        "max_number_of_videos_per_hour": 2
     },
     {
-        "Order": 2,
-        "FromTier": 10,
-        "ToTier": 15,
-        "Cost": 15300000000000000,
-        "BuildTimeInSeconds": 21600,
-        "SecondsReducedPerVideoWatched": 1800,
-        "MaxNumberOfVideosPerHour": 2
+        "order": 2,
+        "from_tier": 10,
+        "to_tier": 15,
+        "cost": 15300000000000000,
+        "build_time_in_seconds": 21600,
+        "seconds_reduced_per_video_watched": 1800,
+        "max_number_of_videos_per_hour": 2
     },
 	{
-        "Order": 3,
-        "FromTier": 15,
-        "ToTier": 20,
-        "Cost": 3.6799999999999999e+25,
-        "BuildTimeInSeconds": 86400,
-        "SecondsReducedPerVideoWatched": 1800,
-        "MaxNumberOfVideosPerHour": 2
+        "order": 3,
+        "from_tier": 15,
+        "to_tier": 20,
+        "cost": 3.6799999999999999e+25,
+        "build_time_in_seconds": 86400,
+        "seconds_reduced_per_video_watched": 1800,
+        "max_number_of_videos_per_hour": 2
     },
 	{
-        "Order": 4,
-        "FromTier": 20,
-        "ToTier": 25,
-        "Cost": 1.76e+37,
-        "BuildTimeInSeconds": 259200,
-        "SecondsReducedPerVideoWatched": 1800,
-        "MaxNumberOfVideosPerHour": 2
+        "order": 4,
+        "from_tier": 20,
+        "to_tier": 25,
+        "cost": 1.76e+37,
+        "build_time_in_seconds": 259200,
+        "seconds_reduced_per_video_watched": 1800,
+        "max_number_of_videos_per_hour": 2
     },
 	{
-        "Order": 5,
-        "FromTier": 25,
-        "ToTier": 30,
-        "Cost": 1.4700000000000001e+53,
-        "BuildTimeInSeconds": 432000,
-        "SecondsReducedPerVideoWatched": 1800,
-        "MaxNumberOfVideosPerHour": 2
+        "order": 5,
+        "from_tier": 25,
+        "to_tier": 30,
+        "cost": 1.4700000000000001e+53,
+        "build_time_in_seconds": 432000,
+        "seconds_reduced_per_video_watched": 1800,
+        "max_number_of_videos_per_hour": 2
     }
   ]
 }

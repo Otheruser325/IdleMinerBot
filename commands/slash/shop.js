@@ -44,7 +44,7 @@ module.exports = {
       shopItems.forEach(item => {
         embed.addFields({
           name: `${item.ItemName} (ID: ${item.id})`,
-          value: `Cost: ${numberFormat(item.SuperCashCost)} SuperCash\nIncome Boost: ${item.CompleteIncomeIncreaseFactor}x\nActive Time: ${formatTime(item.ActiveTimeSeconds)}`,
+          value: `Cost: ${numberFormat(item.SuperCashCost)} Super Cash\nIncome Boost: ${item.CompleteIncomeIncreaseFactor}x\nActive Time: ${formatTime(item.ActiveTimeSeconds)}`,
         });
       });
 

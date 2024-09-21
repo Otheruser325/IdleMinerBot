@@ -10,18 +10,9 @@ const numberFormat = require('./utils/numberFormat');
 const guildDM = require('./utils/guildDM');
 const mineRegions = require('./config/mineRegions.json').regions;
 const continentData = require('./config/continentData.json').continents;
-const admin = require('firebase-admin');
+const supabase = require('./utils/supabaseClient');
 const EventEmitter = require('events').EventEmitter;
 EventEmitter.defaultMaxListeners = 20;
-
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        databaseURL: 'https://idleminerapi-default-rtdb.firebaseio.com/'
-    });
-}
-
-const db = admin.database();
 
 // Load environment variables from .env file
 dotenv.config();
@@ -106,11 +97,11 @@ async function handleManagerWork(user, userId) {
     // Ensure user properties are defined
     user.mines = user.mines || [];
     user.cash = user.cash || 0;
-    user.idleCash = user.idleCash || 0;
-    user.lastIdle = user.lastIdle || Date.now();
-    user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
+    user.idle_cash = user.idle_cash || 0;
+    user.last_idle = user.last_idle || Date.now();
+    user.current_mine = user.current_mine || (user.mines.length > 0 ? user.mines[0].mine_name : null);
 
-    const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+    const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
 
     if (!currentMine) {
         console.error(`Current mine data for user ${userId} not found.`);
@@ -132,20 +123,20 @@ async function handleManagerWork(user, userId) {
     // Function to handle cash production
     async function produceCash(isIdle = false) {
         try {
-            const productionRate = currentMine.Factor || 1;
+            const productionRate = currentMine.factor || 1;
             const shaftsCount = currentMine.mineshafts.length;
 
             let totalGainPerSecond = 0;
             currentMine.mineshafts.forEach(shaft => {
-                if (shaft.gainPerSecondPerWorker && shaft.numberOfWorkers) {
-                    totalGainPerSecond += (shaft.gainPerSecondPerWorker * shaft.numberOfWorkers);
+                if (shaft.gain_per_second_per_worker && shaft.number_of_workers) {
+                    totalGainPerSecond += (shaft.gain_per_second_per_worker * shaft.number_of_workers);
                 }
             });
 
             // Ensure all required managers are assigned before producing cash
-            const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.Assigned);
-            const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.Assigned);
-            const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.Assigned);
+            const shaftManagerAssigned = currentMine.managers.shaft.some(m => m.assigned);
+            const elevatorManagerAssigned = currentMine.managers.elevator.some(m => m.assigned);
+            const warehouseManagerAssigned = currentMine.managers.warehouse.some(m => m.assigned);
 
             if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
                 // Calculate cash based on efficiency (10% when idle)
@@ -156,7 +147,7 @@ async function handleManagerWork(user, userId) {
 
                 // Add to either active cash or idle cash
                 if (isIdle) {
-                    user.idleCash += adjustedCashProduced;
+                    user.idle_cash += adjustedCashProduced;
                 } else {
                     user.cash += adjustedCashProduced;
                 }
@@ -168,7 +159,7 @@ async function handleManagerWork(user, userId) {
 
     // Determine if the user is idle
     const currentTime = Date.now();
-    const lastActivityTime = user.lastIdle;
+    const lastActivityTime = user.last_idle;
 
     // Check if the user is idle (inactive for over 10 minutes)
     const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
@@ -176,15 +167,12 @@ async function handleManagerWork(user, userId) {
     // Produce cash
     await produceCash(isIdle);
 
-    // Adjusting cooldown and balancing factor
-    const cooldownDelay = 5000; // 5 seconds delay
-
     // Save user data with adjusted balance
     try {
         await updateUser(userId, {
             cash: user.cash,
-            idleCash: user.idleCash,
-            lastIdle: user.lastIdle,
+            idle_cash: user.idle_cash,
+            last_idle: user.last_idle,
             mines: user.mines
         });
     } catch (error) {
@@ -199,27 +187,27 @@ async function handleMissingData() {
         for (const userId in allUsers) {
             const user = allUsers[userId];
 
-            user.username = user.username || 'Unknown',
-            user.userId = user.userId || userId,
-			user.continents = user.continents || [continentData[0]];
+            user.username = user.username || 'Unknown';
+            user.user_id = user.user_id || userId;
+            user.continents = user.continents || [continentData[0]];
             user.mines = user.mines || [];
             user.cash = user.cash || 0;
-			user.iceCash = user.iceCash || 0;
-			user.fireCash = user.fireCash || 0;
-            user.idleCash = user.idleCash || 0;
-			user.idleIceCash = user.idleIceCash || 0;
-			user.idleFireCash = user.idleFireCash || 0;
-			user.superCash = user.superCash || 0;
-			user.streak = user.streak || 0,
-            user.lastDaily = user.lastDaily || Date.now();
-			user.lastIdle = user.lastIdle || Date.now();
-			user.currentContinent = user.currentContinent || 'Start Continent';
-            user.currentMine = user.currentMine || (user.mines.length > 0 ? user.mines[0].MineName : null);
+            user.ice_cash = user.ice_cash || 0;
+            user.fire_cash = user.fire_cash || 0;
+            user.idle_cash = user.idle_cash || 0;
+            user.idle_ice_cash = user.idle_ice_cash || 0;
+            user.idle_fire_cash = user.idle_fire_cash || 0;
+            user.super_cash = user.super_cash || 0;
+            user.streak = user.streak || 0;
+            user.last_daily = user.last_daily || Date.now();
+            user.last_idle = user.last_idle || Date.now();
+            user.current_continent = user.current_continent || 'Start Continent';
+            user.current_mine = user.current_mine || (user.mines.length > 0 ? user.mines[0].mine_name : null);
 
             for (const mine of user.mines) {
-                mine.PrestigeCount = mine.PrestigeCount || 0;
-                mine.MineNumber = mine.MineNumber || 1;
-                mine.Factor = mine.Factor || 1;
+                mine.prestige_count = mine.prestige_count || 0;
+                mine.mine_number = mine.mine_number || 1;
+                mine.factor = mine.factor || 1;
                 mine.mineshafts = mine.mineshafts || [];
                 mine.elevator = mine.elevator || [];
                 mine.warehouse = mine.warehouse || [];
@@ -274,9 +262,9 @@ async function handleBarrierUnlockTime() {
 
                 // Handle unlock times for each barrier
                 mine.barriers.forEach(barrier => {
-                    if (barrier.unlockTime && Date.now() >= barrier.unlockTime) {
+                    if (barrier.unlock_time && Date.now() >= barrier.unlock_time) {
                         barrier.unlocked = true;
-                        barrier.unlockTime = null;
+                        barrier.unlock_time = null;
                     }
                 });
             });
@@ -295,14 +283,14 @@ async function handleBoostTimers() {
 
         for (const userId in allUsers) {
             const user = allUsers[userId];
-			
-			// Initialize active boosts if they don't exist
-			if (!user.activeBoosts) {
-		        user.activeBoosts = [];
-			}
-			
+            
+            // Initialize active boosts if they don't exist
+            if (!user.active_boosts) {
+                user.active_boosts = [];
+            }
+            
             // Filter out expired boosters
-            user.activeBoosts = user.activeBoosts.filter(boost => boost.endTime > Date.now());
+            user.active_boosts = user.active_boosts.filter(boost => boost.end_time > Date.now());
 
             // Update the user data
             await updateUser(userId, user);

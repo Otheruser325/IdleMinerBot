@@ -67,12 +67,12 @@ async function handleContinentBuy(message, continentName, user) {
     // Unlock the first mine on the continent
     const firstMine = continent.MineTypes[0];
     user.mines = user.mines || [];
-    user.mines.push({ mineName: firstMine, unlocked: true });
+    user.mines.push({ mine_name: firstMine, unlocked: true });
 
-    await updateUser(user.id, { 
+    await updateUser(user.user_id, { 
         cash: user.cash, 
-        iceCash: user.iceCash, 
-        fireCash: user.fireCash,
+        ice_cash: user.ice_cash, 
+        fire_cash: user.fire_cash,
         continents: user.continents, 
         mines: user.mines 
     });
@@ -97,14 +97,14 @@ async function handleContinentManage(message, user) {
 
 function areAllStarterMinesUnlocked(user) {
     const starterMines = ['Coal Mine', 'Gold Mine', 'Ruby Mine', 'Diamond Mine', 'Emerald Mine'];
-    return starterMines.every(mine => user.mines.some(m => m.mineName === mine && mine.unlocked));
+    return starterMines.every(mine => user.mines.some(m => m.mine_name === mine && mine.unlocked));
 }
 
 function getUserCashByType(user, cashType) {
     switch (cashType) {
         case 1: return user.cash;
-        case 2: return user.iceCash;
-        case 3: return user.fireCash;
+        case 2: return user.ice_cash;
+        case 3: return user.fire_cash;
         default: return 0;
     }
 }
@@ -112,8 +112,8 @@ function getUserCashByType(user, cashType) {
 function deductUserCashByType(user, cashType, amount) {
     switch (cashType) {
         case 1: user.cash -= amount; break;
-        case 2: user.iceCash -= amount; break;
-        case 3: user.fireCash -= amount; break;
+        case 2: user.ice_cash -= amount; break;
+        case 3: user.fire_cash -= amount; break;
     }
 }
 
