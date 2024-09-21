@@ -70,8 +70,8 @@ async function scheduleNextUpdate(client) {
         await handleBoostTimers(); // Run every second
     });
 	
-	// Set up an interval to call handleManagerWork for all users every 5 seconds
-    setInterval(async () => {
+	// Schedule manager work for all users every 10 seconds
+    cron.schedule('*/10 * * * * *', async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
             for (const userId in allUsers) {
@@ -79,25 +79,24 @@ async function scheduleNextUpdate(client) {
                     const user = allUsers[userId];
                     await handleManagerWork(user, userId);
                 } catch (userError) {
-                    console.warn(`Manager work for user ${userId} failed.`);
-                    continue;
+                    console.warn(`Manager work for user ${userId} failed.`, userError);
+                    continue; // Continue to the next user even if one fails
                 }
             }
         } catch (error) {
             console.error('Error fetching or handling users:', error);
         }
-    }, 5000);
+    });
 }
 
 // Function to start manager work
 async function handleManagerWork(user, userId) {
-    // Check if user data is valid
     if (!user) {
         console.error('User data is undefined or invalid.');
         return;
     }
 
-    // Ensure user properties are defined
+    // Initialize user properties if not present
     user.mines = user.mines || [];
     user.cash = user.cash || 0;
     user.idle_cash = user.idle_cash || 0;
@@ -105,58 +104,49 @@ async function handleManagerWork(user, userId) {
     user.current_mine = user.current_mine || (user.mines.length > 0 ? user.mines[0].mine_name : null);
 
     const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-
     if (!currentMine) {
         console.error(`Current mine data for user ${userId} not found.`);
         return;
     }
 
-    // Ensure managers are properly initialized
-    currentMine.managers = currentMine.managers || {
-        shaft: [],
-        elevator: [],
-        warehouse: []
-    };
-	
-	// Ensure workstations are properly initialized
+    currentMine.managers = currentMine.managers || { shaft: [], elevator: [], warehouse: [] };
     currentMine.mineshafts = currentMine.mineshafts || [];
-	currentMine.elevator = currentMine.elevator || [];
-	currentMine.warehouse = currentMine.warehouse || [];
-	
-	// Ensure there are workers in the mineshafts
+    currentMine.elevator = currentMine.elevator || [];
+    currentMine.warehouse = currentMine.warehouse || [];
+
     if (currentMine.mineshafts.length === 0) {
-        return;
+        return; // No workers in the mineshafts
     }
 
-    // Function to handle cash production
+    // Handle cash production
     async function produceCash(isIdle = false) {
         try {
             const productionRate = currentMine.factor || 1;
             const shaftsCount = currentMine.mineshafts.length;
-
             let totalGainPerSecond = 0;
+
             currentMine.mineshafts.forEach(shaft => {
                 if (shaft.gain_per_second_per_worker && shaft.number_of_workers) {
                     totalGainPerSecond += (shaft.gain_per_second_per_worker * shaft.number_of_workers);
                 }
             });
 
-            // Ensure all required managers are assigned before producing cash
+            // Ensure all managers are assigned before producing cash
             const shaftManagerAssigned = currentMine.managers?.shaft?.some(m => m.assigned);
             const elevatorManagerAssigned = currentMine.managers?.elevator?.some(m => m.assigned);
             const warehouseManagerAssigned = currentMine.managers?.warehouse?.some(m => m.assigned);
 
             if (shaftManagerAssigned && elevatorManagerAssigned && warehouseManagerAssigned) {
-                // Calculate cash based on efficiency (10% when idle)
                 const efficiency = isIdle ? 0.1 : 1.0;
                 const cashProduced = totalGainPerSecond * productionRate * efficiency;
-				
-				// Calculate the total income factor from active boosts
-				const totalIncomeFactor = (user.active_boosts && user.active_boosts.length > 0)
+
+                // Apply boost factors
+                const totalIncomeFactor = (user.active_boosts && user.active_boosts.length > 0)
                     ? user.active_boosts.reduce((total, boost) => total + boost.income_factor, 1)
                     : 1;
-				const multiplier = 5;
-				const adjustedCashProduced = cashProduced * totalIncomeFactor * multiplier;
+
+                const multiplier = 10;
+                const adjustedCashProduced = cashProduced * totalIncomeFactor * multiplier;
 
                 // Add to either active cash or idle cash
                 if (isIdle) {
@@ -170,17 +160,12 @@ async function handleManagerWork(user, userId) {
         }
     }
 
-    // Determine if the user is idle
     const currentTime = Date.now();
     const lastActivityTime = user.last_idle;
+    const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000; // Idle if inactive for over 10 minutes
 
-    // Check if the user is idle (inactive for over 10 minutes)
-    const isIdle = currentTime - lastActivityTime > 10 * 60 * 1000;
-
-    // Produce cash
     await produceCash(isIdle);
 
-    // Save user data with adjusted balance
     try {
         await updateUser(userId, {
             cash: user.cash,
