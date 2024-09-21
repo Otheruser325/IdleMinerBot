@@ -1,0 +1,40 @@
+[
+    {
+        "cash": 67938086346590744,
+        "continents": [
+            {
+                "CashType": 1,
+                "ContinentName": "Start Continent",
+                "Cost": 0,
+                "MineTypes": ["Coal Mine", "Gold Mine", "Ruby Mine", "Diamond Mine", "Emerald Mine"]
+            }
+        ],
+        "current_continent": "Start Continent",
+        "current_mine": "Coal Mine",
+        "fire_cash": 10,
+        "ice_cash": 10,
+        "idle_cash": 507523915105018600,
+        "idle_fire_cash": 0,
+        "idle_ice_cash": 0,
+        "inventory": {
+            "boosters": [
+                {
+                    "active_time": 3600,
+                    "income_factor": 2,
+                    "item_id": 1,
+                    "item_name": "x2 Boost",
+                    "stock": 0
+                }
+            ]
+        },
+        "last_daily": 1726839139032,
+        "last_idle": 1726852970316,
+        "mines": [
+		    {"factor":1,"mine_name":"Coal Mine","mine_number":1,"prestige_count":0,"barriers":[{"build_time_in_seconds":0,"cost":0,"from_tier":0,"max_number_of_videos_per_hour":0,"order":0,"SecondsReducedPerVideoWatched":0,"to_tier":5,"unlocked":true},{"build_time_in_seconds":3600,"cost":240000000,"from_tier":5,"max_number_of_videos_per_hour":2,"order":1,"SecondsReducedPerVideoWatched":1800,"to_tier":10,"unlocked":true},{"build_time_in_seconds":21600,"cost":15300000000000000,"from_tier":10,"max_number_of_videos_per_hour":2,"order":2,"SecondsReducedPerVideoWatched":1800,"to_tier":15,"unlocked":true},{"build_time_in_seconds":86400,"cost":3.68E25,"from_tier":15,"max_number_of_videos_per_hour":2,"order":3,"SecondsReducedPerVideoWatched":1800,"to_tier":20,"unlocked":false},{"build_time_in_seconds":259200,"cost":1.76E37,"from_tier":20,"max_number_of_videos_per_hour":2,"order":4,"SecondsReducedPerVideoWatched":1800,"to_tier":25,"unlocked":false},{"build_time_in_seconds":432000,"cost":1.47E53,"from_tier":25,"max_number_of_videos_per_hour":2,"order":5,"SecondsReducedPerVideoWatched":1800,"to_tier":30,"unlocked":false}],"elevator":[{"capacity":1076420612207467,"last_worked_on":1726172641564,"level":189,"loading_per_second":2.6910515305186675E14,"speed":1.630000000000001,"total_deposit":0}],"managers":{"elevator":[{"Area":"Elevator","assigned":true,"effect_id":11,"manager_id":534,"name":"Zackary Zhao","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":565,"name":"Chung Clapper","rarity_id":3,"value_x":6},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":544,"name":"Guadalupe Gennaro","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":534,"name":"Zackary Zhao","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":541,"name":"Jacques Jandreau","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":535,"name":"Eusebio Emig","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":552,"name":"Derrick Delrosario","rarity_id":2,"value_x":4},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":540,"name":"Cedric Custard","rarity_id":1,"value_x":2},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":564,"name":"Alex Antley","rarity_id":3,"value_x":6},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":549,"name":"Lonnie Laster","rarity_id":2,"value_x":4},{"Area":"Elevator","assigned":false,"effect_id":11,"manager_id":539,"name":"Lindsay Likes","rarity_id":1,"value_x":2}],"shaft":[{"Area":"Shaft","assigned":true,"effect_id":8,"manager_id":183,"name":"Carroll Clausen","rarity_id":1,"value_x":3},{"Area":"Shaft","assigned":false,"effect_id":8,"manager_id":177,"name":"Kristofer Kammerer","rarity_id":1,"value_x":3}],"warehouse":[{"Area":"Warehouse","assigned":false,"effect_id":1,"manager_id":4,"name":"Alan Artist","rarity_id":1,"value_x":3},{"Area":"Warehouse","assigned":true,"effect_id":1,"manager_id":9,"name":"Keven Kanagy","rarity_id":1,"value_x":3},{"Area":"Warehouse","assigned":false,"effect_id":1,"manager_id":1,"name":"Benjamin Booth","rarity_id":1,"value_x":3},{"Area":"Warehouse","assigned":false,"effect_id":1,"manager_id":6,"name":"Sam Stroop","rarity_id":1,"value_x":3},{"Area":"Warehouse","assigned":false,"effect_id":1,"manager_id":18,"name":"Ed Elks","rarity_id":2,"value_x":5},{"Area":"Warehouse","assigned":false,"effect_id":1,"manager_id":2,"name":"Tony Temblador","rarity_id":1,"value_x":3}]},"mineshafts":[{"capacity_per_worker":1.3680587532206113E12,"gain_per_second_per_worker":3.4201468830515283E11,"last_worked_on":1726172219531,"level":310,"number_of_workers":5,"tier":1,"total_deposit":0,"worker_walking_speed_per_second":4},{"capacity_per_worker":6.000816070887926E11,"gain_per_second_per_worker":1.5002040177219815E11,"level":240,"number_of_workers":5,"tier":2,"total_deposit":0,"worker_walking_speed_per_second":3},{"capacity_per_worker":6.8020579600059E9,"gain_per_second_per_worker":1.700514490001475E9,"level":150,"number_of_workers":4,"tier":3,"total_deposit":0,"worker_walking_speed_per_second":3},{"capacity_per_worker":1.2532735845896883E10,"gain_per_second_per_worker":3.1331839614742208E9,"level":125,"number_of_workers":4,"tier":4,"total_deposit":0,"worker_walking_speed_per_second":3},{"capacity_per_worker":1.2532735845896887E11,"gain_per_second_per_worker":3.1331839614742218E10,"level":125,"number_of_workers":4,"tier":5,"total_deposit":0,"worker_walking_speed_per_second":3},{"capacity_per_worker":7.396136498942294E13,"gain_per_second_per_worker":1.8490341247355734E13,"level":135,"number_of_workers":4,"tier":6,"total_deposit":0,"worker_walking_speed_per_second":3},{"capacity_per_worker":1.5943823702055764E12,"gain_per_second_per_worker":3.985955925513941E11,"level":60,"number_of_workers":3,"tier":7,"total_deposit":0,"worker_walking_speed_per_second":2},{"capacity_per_worker":30000000000,"gain_per_second_per_worker":7500000000,"level":1,"number_of_workers":1,"tier":8,"total_deposit":0,"worker_walking_speed_per_second":2},{"capacity_per_worker":300000000000,"gain_per_second_per_worker":75000000000,"level":1,"number_of_workers":1,"tier":9,"total_deposit":0,"worker_walking_speed_per_second":2},{"capacity_per_worker":3000000000000,"gain_per_second_per_worker":750000000000,"level":1,"number_of_workers":1,"tier":10,"total_deposit":0,"worker_walking_speed_per_second":2}],"warehouse":[{"capacity_per_worker":404061791369169,"last_worked_on":1726172659573,"level":188,"loading_per_second":1.0101544784229225E14,"number_of_workers":3,"total_deposit":0,"worker_walking_speed_per_second":2}]}
+		],
+        "streak": 16,
+        "super_cash": 296,
+        "user_id": "822964244697710612",
+        "username": "otheruser325"
+    }
+]
