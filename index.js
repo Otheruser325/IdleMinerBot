@@ -60,13 +60,13 @@ async function scheduleNextUpdate(client) {
         await handleMissingData(); // Run every 10 seconds
     });
 	
-	// Check barrier unlock time
-    cron.schedule('* * * * * *', async () => {
+	// Check barrier unlock time every 10 seconds
+    cron.schedule('*/10 * * * * *', async () => {
         await handleBarrierUnlockTime(); // Run every second
     });
 	
-	// Schedule boost timer updates every second
-    cron.schedule('* * * * * *', async () => {
+	// Schedule boost timer updates every 10 seconds
+    cron.schedule('*/10 * * * * *', async () => {
         await handleBoostTimers(); // Run every second
     });
 	
