@@ -83,11 +83,11 @@ async function handleOverview(message, user, currentMine, args, userId) {
         .setTitle(`Mineshaft Tier ${tier} Overview in ${currentMine.mine_name}`)
         .addFields(
             { name: 'Level', value: `${shaft.level}`, inline: true },
-            { name: 'Workers', value: `${shaft.numberOfWorkers}`, inline: true },
+            { name: 'Workers', value: `${shaft.number_of_workers}`, inline: true },
             { name: 'Gain per Second', value: `${numberFormat(adjustedGain)}`, inline: true },
             { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacity)}`, inline: true },
-            { name: 'Worker Speed', value: `${shaft.workerWalkingSpeedPerSecond} units/sec`, inline: true },
-            { name: 'Total Deposit', value: `${numberFormat(shaft.totalDeposit)}`, inline: true }
+            { name: 'Worker Speed', value: `${shaft.worker_walking_speed_per_second} units/sec`, inline: true },
+            { name: 'Total Deposit', value: `${numberFormat(shaft.total_deposit)}`, inline: true }
         )
         .setTimestamp();
 
