@@ -375,19 +375,19 @@ client.on('messageCreate', async message => {
         const user = await getUser(userId);
         if (user) {
             const currentTime = Date.now();
-            const isIdle = currentTime - user.lastIdle > 10 * 60 * 1000;
+            const isIdle = currentTime - user.last_idle > 10 * 60 * 1000;
 
             if (isIdle) {
-                const currentMine = user.mines.find(mine => mine.MineName === user.currentMine);
+                const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
                 if (!currentMine) {
                     return message.reply('Current mine data not found.');
                 }
 
                 await handleManagerWork(user, userId);
-				await message.reply(`You have collected ${numberFormat(user.idleCash)} cash from your idle workers.`);
-                user.cash += user.idleCash;
-                user.idleCash = 0;
-                user.lastIdle = currentTime;
+				await message.reply(`You have collected ${numberFormat(user.idle_cash)} cash from your idle workers.`);
+                user.cash += user.idle_cash;
+                user.idle_cash = 0;
+                user.last_idle = currentTime;
 
                 await updateUser(userId, user);
             } else {

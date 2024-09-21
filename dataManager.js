@@ -120,22 +120,43 @@ async function initializeGuild(guildId, guildName, ownerId) {
 
 // Get guild by ID from Supabase
 async function getGuild(guildId) {
-    const guildRef = db.ref(`guilds/${guildId}`);
-    const snapshot = await guildRef.once('value');
-    return snapshot.exists() ? snapshot.val() : null;
+    const { data, error } = await supabase
+        .from('guilds')
+        .select('*')
+        .eq('id', guildId)
+        .single();
+    
+    if (error) {
+        console.error(`Error fetching guild ${guildId}:`, error);
+        return null;
+    }
+    return data;
 }
 
 // Update guild data in Supabase
 async function updateGuild(guildId, updates) {
-    const guildRef = db.ref(`guilds/${guildId}`);
-    await guildRef.update(updates);
+    const { data, error } = await supabase
+        .from('guilds')
+        .update(updates)
+        .eq('id', guildId);
+
+    if (error) {
+        console.error(`Error updating guild ${guildId}:`, error);
+    }
+    return data;
 }
 
 // Get all guilds from Supabase
 async function getAllGuilds() {
-    const guildsRef = db.ref('guilds');
-    const snapshot = await guildsRef.once('value');
-    return snapshot.exists() ? snapshot.val() : {};
+    const { data, error } = await supabase
+        .from('guilds')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching all guilds:', error);
+        return {};
+    }
+    return data || [];
 }
 
 // Guild-user related functions
@@ -162,16 +183,23 @@ async function addUserToGuild(guildId, userId) {
     }
 }
 
-// Get a user from a specific guild from Realtime Database
+// Get a user from a specific guild from Supabase
 const getUserInGuild = async (guildId, userId) => {
     try {
-        const guild = await db.ref(`guilds/${guildId}`).once('value');
-        if (!guild.exists()) return null;
+        const { data: guild, error: guildError } = await supabase
+            .from('guilds')
+            .select('users')
+            .eq('id', guildId)
+            .single();
 
-        const guildData = guild.val();
-        if (!guildData || !guildData.users) return null;
+        if (guildError) {
+            console.error(`Error fetching guild ${guildId}:`, guildError);
+            return null;
+        }
 
-        const userData = guildData.users[userId];
+        if (!guild || !guild.users) return null;
+
+        const userData = guild.users[userId];
         return userData ? { ...userData, userId } : null;
     } catch (error) {
         console.error(`Error fetching user ${userId} in guild ${guildId}:`, error);
@@ -179,7 +207,7 @@ const getUserInGuild = async (guildId, userId) => {
     }
 };
 
-// Get users in a specific guild from Realtime Database
+// Get users in a specific guild from Supabase
 async function getUsersInGuild(guildId) {
     const guild = await getGuild(guildId);
     if (guild && guild.members) {
