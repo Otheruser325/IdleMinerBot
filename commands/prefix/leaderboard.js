@@ -32,7 +32,7 @@ module.exports = {
             const getTopUsers = (cashType) => {
                 return Object.values(allUsers)
                     .filter(user => 
-                        guildMembers.has(user.userId) && // Check if the user exists in the guild
+                        guildMembers.has(user.user_id) && // Check if the user exists in the guild
                         (
                             (cashType === 'super_cash' && user[cashType] > 0) || // Filter out users with zero superCash
                             (user[cashType] && user[cashType] >= minCashThreshold) // Apply minimum cash for other types
@@ -52,7 +52,7 @@ module.exports = {
                     .setTitle(`${cashTypeLabel} Leaderboard - Top 15`)
                     .setDescription(
                         topUsers.length
-                            ? topUsers.map((user, index) => `${index + 1}. ${guildMembers.get(user.userId)?.user.username || 'Unknown'} - ${numberFormat(user[cashType])} ${cashTypeLabel}`).join('\n')
+                            ? topUsers.map((user, index) => `${index + 1}. ${guildMembers.get(user.user_id)?.user.username || 'Unknown'} - ${numberFormat(user[cashType])} ${cashTypeLabel}`).join('\n')
                             : 'No users found'
                     )
                     .setTimestamp();
