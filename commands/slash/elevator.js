@@ -83,7 +83,7 @@ async function handleElevatorOverview(interaction, user, elevator, currentMine, 
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
             { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
             { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
-			{ name: 'Total Deposit', value: `${numberFormat(elevatorInfo.total_deposit)}`, inline: true }
+			{ name: 'Total Deposit', value: `${numberFormat(elevator.total_deposit)}`, inline: true }
         )
         .setTimestamp();
 
