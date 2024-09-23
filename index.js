@@ -282,7 +282,7 @@ async function handleBoostTimers() {
     try {
         const allUsers = await getAllUsers();
 
-        for (const userId of allUsers) {
+        for (const user of allUsers) {
             // Initialize active boosts if they don't exist
             if (!user.active_boosts) {
                 user.active_boosts = [];
