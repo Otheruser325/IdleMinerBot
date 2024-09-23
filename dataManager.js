@@ -60,6 +60,7 @@ async function initializeUser(userId, username) {
                 streak: 0,
                 last_daily: 0,
                 last_idle: 0,
+				has_premium: false,
                 active_boosts: [],
                 inventory: {}
             }]);

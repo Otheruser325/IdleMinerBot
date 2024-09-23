@@ -199,6 +199,7 @@ async function handleMissingData() {
             user.streak = user.streak || 0;
             user.last_daily = user.last_daily || Date.now();
             user.last_idle = user.last_idle || Date.now();
+			user.has_premium = user.has_premium || false,
             user.current_continent = user.current_continent || 'Start Continent';
             user.current_mine = user.current_mine || (user.mines.length > 0 ? user.mines[0].mine_name : null);
 

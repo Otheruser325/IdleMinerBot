@@ -2,7 +2,15 @@ function calculateDailyReward(user) {
     const baseCash = 30; // Base reward
     const streakBonus = 5; // Bonus per streak
     const streakMultiplier = Math.max(user.streak, 0); // Ensure streak is non-negative
-    return baseCash + (streakMultiplier * streakBonus);
+
+    let cash = baseCash + (streakMultiplier * streakBonus);
+
+    // Triple the reward if the user is a premium member
+    if (user.has_premium) {
+        cash *= 3;
+    }
+
+    return cash;
 }
 
 function formatTime(ms) {
