@@ -144,9 +144,12 @@ async function handleManagerWork(user, userId) {
                 const totalIncomeFactor = (user.active_boosts && user.active_boosts.length > 0)
                     ? user.active_boosts.reduce((total, boost) => total + boost.income_factor, 1)
                     : 1;
+					
+				// Apply premium boost if the user is premium
+                const premiumBoost = user.has_premium ? 2 : 1;
 
                 const multiplier = 15;
-                const adjustedCashProduced = cashProduced * totalIncomeFactor * multiplier;
+                const adjustedCashProduced = cashProduced * totalIncomeFactor * premiumBoost * multiplier;
 
                 // Add to either active cash or idle cash
                 if (isIdle) {
