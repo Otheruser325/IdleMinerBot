@@ -302,9 +302,13 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
             setTimeout(async () => {
                 await interaction.editReply('Selling minerals...');
                 setTimeout(async () => {
+					// Apply boost factors
+					const totalIncomeFactor = (user.active_boosts && user.active_boosts.length > 0)
+                        ? user.active_boosts.reduce((total, boost) => total + boost.income_factor, 1)
+                        : 1;
                     const cashReward = warehouse.total_deposit;
                     warehouse.total_deposit = 0;
-                    user.cash += cashReward; // Add the minerals value to user's cash
+                    user.cash += cashReward * totalIncomeFactor; // Add the minerals value to user's cash
                     await updateUser(userId, user); // Update the user data
                     await interaction.editReply(`Successfully sold minerals worth ${numberFormat(cashReward)}.`);
                 }, WALKING_TIME); // Selling minerals also takes time
