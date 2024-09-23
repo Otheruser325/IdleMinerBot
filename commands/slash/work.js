@@ -176,12 +176,12 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
 	if (elevator.last_worked_on && (now - elevator.last_worked_on < SHAFT_TRAVEL_TIME)) {
         const remainingTime = SHAFT_TRAVEL_TIME - (now - elevator.last_worked_on);
         const secondsRemaining = Math.ceil(remainingTime / 1000);
-        return message.reply(`Please wait ${secondsRemaining} seconds for the elevator to finish its tasks.`);
+        return interaction.reply(`Please wait ${secondsRemaining} seconds for the elevator to finish its tasks.`);
     }
 
     elevator.last_worked_on = now;
     let totalDeposit = 0; // Track total minerals collected
-    const initialMessage = await message.reply('Travelling to the shafts...');
+    const initialMessage = await interaction.reply('Travelling to the shafts...');
 
     // Process each shaft
     for (const shaft of currentMine.mineshafts) {
