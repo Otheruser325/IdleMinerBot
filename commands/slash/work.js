@@ -110,7 +110,7 @@ async function handleShaftWork(interaction, user, currentMine, userId, tier) {
 
     const mineProcess = new Promise((resolve) => {
         setTimeout(async () => {
-            await interaction.editReply('Mining deposit in Shaft...');
+            await interaction.editReply(`Mining deposit in Shaft ${tier}...`);
             setTimeout(async () => {
                 await interaction.editReply('Extracting minerals into the basket...');
                 setTimeout(async () => {
