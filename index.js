@@ -190,7 +190,7 @@ async function handleMissingData() {
         const allUsers = await getAllUsers();
         for (const user of allUsers) {
             user.username = user.username || 'Unknown';
-            user.user_id = user.user_id || userId;
+            user.user_id = user.user_id || user;
             user.continents = user.continents || [continentData[0]];
             user.mines = user.mines || [];
             user.cash = user.cash || 0;
@@ -232,7 +232,7 @@ async function handleMissingData() {
                 }
             }
 
-            await updateUser(userId, user);
+            await updateUser(user.user_id, user);
         }
     } catch (error) {
         console.error('Error handling missing data for users:', error);
@@ -270,7 +270,7 @@ async function handleBarrierUnlockTime() {
                 });
             });
 
-            await updateUser(userId, user);
+            await updateUser(user.user_id, user);
         }
     } catch (error) {
         console.error('Error handling barrier unlock time:', error);
@@ -292,7 +292,7 @@ async function handleBoostTimers() {
             user.active_boosts = user.active_boosts.filter(boost => boost.end_time > Date.now());
 
             // Update the user data
-            await updateUser(userId, user);
+            await updateUser(user.user_id, user);
         }
     } catch (error) {
         console.error('Error handling boost timers:', error);
