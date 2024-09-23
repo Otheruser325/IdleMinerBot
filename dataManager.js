@@ -86,6 +86,10 @@ async function getUser(userId) {
 
 // Update user data in Supabase
 async function updateUser(userId, updates) {
+	if (Object.keys(updates).length === 0) {
+        return; // No updates to send
+    }
+	
     const { error } = await supabase
         .from('users')
         .update(updates)
@@ -98,11 +102,12 @@ async function updateUser(userId, updates) {
 
 // Get all users from Supabase
 async function getAllUsers() {
-    const { data: users, error } = await supabase
-        .from('users')
-        .select('*');
-
-    return error ? [] : users;
+    const { data: users, error } = await supabase.from('users').select('*');
+    if (error) {
+        console.error('Error fetching users:', error);
+        return [];
+    }
+    return users;
 }
 
 // Guild-related functions

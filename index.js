@@ -17,6 +17,9 @@ EventEmitter.defaultMaxListeners = 20;
 // Load environment variables from .env file
 dotenv.config();
 
+// Introduce a delay between updates to avoid hitting rate limits
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
 const guildId = process.env.GUILD_ID; // Optional: for guild-specific commands
@@ -74,12 +77,12 @@ async function scheduleNextUpdate(client) {
     cron.schedule('*/15 * * * * *', async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
-            for (const userId in allUsers) {
+            for (const user of allUsers) {
                 try {
-                    const user = allUsers[userId];
-                    await handleManagerWork(user, userId);
+                    await handleManagerWork(user, user.user_id);
+					await delay(100); // Delay of 100ms between user updates
                 } catch (userError) {
-                    console.warn(`Manager work for user ${userId} failed.`, userError);
+                    console.warn(`Manager work for user ${user.user_id} failed.`, userError);
                     continue; // Continue to the next user even if one fails
                 }
             }
@@ -185,9 +188,7 @@ async function handleManagerWork(user, userId) {
 async function handleMissingData() {
     try {
         const allUsers = await getAllUsers();
-        for (const userId in allUsers) {
-            const user = allUsers[userId];
-
+        for (const user of allUsers) {
             user.username = user.username || 'Unknown';
             user.user_id = user.user_id || userId;
             user.continents = user.continents || [continentData[0]];
@@ -243,9 +244,7 @@ async function handleBarrierUnlockTime() {
     try {
         const allUsers = await getAllUsers();
 
-        for (const userId in allUsers) {
-            const user = allUsers[userId];
-
+        for (const user of allUsers) {
             user.mines.forEach(mine => {
                 // Initialize or restore missing barriers
                 if (!mine.barriers || mine.barriers.length < mineRegions.length) {
@@ -283,9 +282,7 @@ async function handleBoostTimers() {
     try {
         const allUsers = await getAllUsers();
 
-        for (const userId in allUsers) {
-            const user = allUsers[userId];
-            
+        for (const userId of allUsers) {
             // Initialize active boosts if they don't exist
             if (!user.active_boosts) {
                 user.active_boosts = [];
