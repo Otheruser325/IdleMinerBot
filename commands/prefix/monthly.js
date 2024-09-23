@@ -1,5 +1,6 @@
 const { getUser, updateUser } = require('../../dataManager');
 const { EmbedBuilder } = require('discord.js');
+const { calculateDailyReward, formatTime } = require('../../utils/dailyManager');
 const numberFormat = require('../../utils/numberFormat');
 
 module.exports = {
