@@ -110,6 +110,17 @@ module.exports = {
         currentMine.mineshafts = currentMine.mineshafts || [];
         currentMine.elevator = currentMine.elevator || [];
         currentMine.warehouse = currentMine.warehouse || [];
+		
+		// Ensure there is at least one shaft to check
+        if (!currentMine.mineshafts[0]) {
+            return interaction.reply(`You don't have a valid tier 1 shaft in your ${currentMine.mine_name}. Purchase and upgrade it before accessing your managers.`);
+        }
+
+        // Check if the first shaft (tier 1) is at least level 5
+        const firstShaftLevel = currentMine.mineshafts[0].level;
+        if (firstShaftLevel < 5) {
+            return interaction.reply(`You need to upgrade your first shaft to **Level 5** in your __${currentMine.mine_name}__ before accessing your managers.`);
+        }
 
         switch (subcommand) {
             case 'hire':
