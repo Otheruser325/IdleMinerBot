@@ -62,16 +62,16 @@ async function scheduleNextUpdate(client) {
 	
 	// Check barrier unlock time every 10 seconds
     cron.schedule('*/10 * * * * *', async () => {
-        await handleBarrierUnlockTime(); // Run every second
+        await handleBarrierUnlockTime(); // Run every 10 seconds
     });
 	
-	// Schedule boost timer updates every 10 seconds
-    cron.schedule('*/10 * * * * *', async () => {
-        await handleBoostTimers(); // Run every second
+	// Schedule boost timer updates every minute
+    cron.schedule('*/60 * * * * *', async () => {
+        await handleBoostTimers(); // Run every minute
     });
 	
 	// Schedule manager work for all users every 10 seconds
-    cron.schedule('*/10 * * * * *', async () => {
+    cron.schedule('*/15 * * * * *', async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
             for (const userId in allUsers) {
@@ -145,7 +145,7 @@ async function handleManagerWork(user, userId) {
                     ? user.active_boosts.reduce((total, boost) => total + boost.income_factor, 1)
                     : 1;
 
-                const multiplier = 10;
+                const multiplier = 15;
                 const adjustedCashProduced = cashProduced * totalIncomeFactor * multiplier;
 
                 // Add to either active cash or idle cash
