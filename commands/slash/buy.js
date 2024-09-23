@@ -1,6 +1,7 @@
 const { getUser, updateUser } = require('../../dataManager');
 const shopData = require('../../config/shopData.json').items;
 const numberFormat = require('../../utils/numberFormat');
+const sendPremiumDM = require('../../utils/sendPremiumDM');
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
@@ -29,6 +30,45 @@ module.exports = {
 
     if (user.super_cash < item.SuperCashCost) {
       return interaction.reply('You do not have enough Super Cash to purchase this item.');
+    }
+	
+	// Handle Premium Pass Purchase
+    if (item.ItemName === 'Premium Pass') {
+      // Update user with premium benefits
+      const updatedUser = {
+        super_cash: user.super_cash - item.SuperCashCost,
+        has_premium: true,
+        super_cash: user.super_cash + 1000,
+        inventory: user.inventory || {}
+      };
+	  
+	  if (user.has_premium) return interaction.reply('You`ve already purchased the premium pass.');
+
+      // Add 12-hour x2 and 1-hour x10 boosts to the user's inventory
+      if (!updatedUser.inventory.boosters) updatedUser.inventory.boosters = [];
+      updatedUser.inventory.boosters.push(
+        {
+          item_id: 2,
+          item_name: 'Long x2 Boost',
+          active_time: 43200,
+          income_factor: 2,
+          stock: 1
+        },
+        {
+          item_id: 3,
+          item_name: 'x10 Boost',
+          active_time: 3600,
+          income_factor: 10,
+          stock: 1
+        }
+      );
+
+      await updateUser(userId, updatedUser);
+
+      // Send DM to user
+      await sendPremiumDM(interaction.user);
+
+      return interaction.reply('Congratulations! You have purchased the Premium Pass and received your rewards!');
     }
 
     // Initialize user's inventory if it doesn't exist

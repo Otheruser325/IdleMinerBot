@@ -39,6 +39,13 @@
       "InstantCashTime": 0,
       "Category": "boosters",
       "CanBeBoughtInItemShop": true
+    },
+	{
+      "id": 5,
+      "ItemName": "Premium Pass",
+      "SuperCashCost": 5000,
+      "Category": "premium",
+      "CanBeBoughtInItemShop": true
     }
   ]
 }
