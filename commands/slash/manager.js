@@ -113,7 +113,7 @@ module.exports = {
 		
 		// Ensure there is at least one shaft to check
         if (!currentMine.mineshafts[0]) {
-            return interaction.reply(`You don't have a valid tier 1 shaft in your ${currentMine.mine_name}. Purchase and upgrade it before accessing your managers.`);
+            return interaction.reply(`You don't have a valid tier 1 shaft in your ${currentMine.mine_name}. Purchase it using **\`im!shaft buy 1\`** before accessing your managers.`);
         }
 
         // Check if the first shaft (tier 1) is at least level 5
