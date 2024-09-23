@@ -277,7 +277,7 @@ async function handleWarehouseWork(interaction, user, currentMine, userId) {
     }
 
     warehouse.last_worked_on = now;
-    const initialMessage = await interaction.reply(`Walking into the deposit base with ${NumberOfWorkers} workers...`);
+    const initialMessage = await interaction.reply(`Walking into the deposit base with ${NumberOfWorkers} transporters...`);
 	
 	setTimeout(async () => {
         await interaction.editReply('Extracting minerals from the deposit tank...');

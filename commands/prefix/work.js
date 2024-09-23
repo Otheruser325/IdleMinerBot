@@ -266,7 +266,7 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
     }
 
     warehouse.last_worked_on = now;
-    const initialMessage = await message.reply('Walking into the deposit base with warehouse workers...');
+    const initialMessage = await message.reply(`Walking into the deposit base with ${NumberOfWorkers} transporters...`);
 
     setTimeout(async () => {
         await initialMessage.edit('Extracting minerals from the deposit tank...');

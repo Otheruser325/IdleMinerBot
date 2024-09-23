@@ -388,7 +388,7 @@ async function handleManagerOverview(message, user, currentMine, area) {
     const areaManagers = currentMine.managers[area] || [];
 
     if (areaManagers.length === 0) {
-        return message.reply(`No managers assigned to the ${area}.`);
+        return message.reply(`There are no managers currently in the ${area}.`);
     }
 
     const managerList = areaManagers.map(m => `ID: ${m.manager_id}, Name: ${m.name}, Assigned: ${m.assigned ? 'Yes' : 'No'}`).join('\n');
