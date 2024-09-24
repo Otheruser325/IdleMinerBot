@@ -32,7 +32,7 @@ module.exports = {
                 .addStringOption(option => 
                     option.setName('name')
                         .setDescription('The name of the mine to manage.')
-                        .setRequired(true))),
+                        .setRequired(true)))
 		.addSubcommand(subcommand =>
             subcommand
                 .setName('prestige')
