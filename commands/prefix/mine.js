@@ -23,7 +23,7 @@ module.exports = {
         const subcommand = args[0].toLowerCase();
         const mineName = args.slice(1).join(' ');
 
-        if (!mineName && (subcommand === 'buy' || subcommand === 'visit' || subcommand === 'manage')) {
+        if (!mineName && ['buy', 'visit', 'manage', 'prestige'].includes(subcommand)) {
             return message.reply(`Please specify the name of the mine to \`${subcommand}\`.`);
         }
 
@@ -131,4 +131,49 @@ async function handleMineManage(message, mineName, user, userId) {
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });
+}
+
+async function handleMinePrestige(message, mineName, user, userId) {
+    if (!mineName) {
+        return message.reply('Please specify the name of the mine you want to prestige.');
+    }
+
+    const mine = user.mines.find(m => m.mine_name.toLowerCase() === mineName.toLowerCase());
+
+    if (!mine) {
+        return message.reply('You do not own this mine.');
+    }
+
+    const currentPrestigeLevel = mineFactors.find(factor => factor.MineName === mine.mine_name && factor.PrestigeCount === mine.prestige_count);
+
+    if (!currentPrestigeLevel) {
+        return message.reply('Invalid prestige level for this mine.');
+    }
+
+    const nextPrestigeLevel = mineFactors.find(factor => factor.MineName === mine.mine_name && factor.PrestigeCount === mine.prestige_count + 1);
+
+    if (!nextPrestigeLevel) {
+        return message.reply('You have already maxed out the prestige for this mine.');
+    }
+
+    if (user.cash < nextPrestigeLevel.Cost) {
+        return message.reply(`You don't have enough Cash to prestige the ${mine.MineName}. You need ${numberFormat(nextPrestigeLevel.Cost)} Cash.`);
+    }
+
+    // Deduct the cash and update the mine prestige
+	user.cash -= nextPrestigeLevel.Cost;
+    user.super_cash += nextPrestigeLevel.SuperCashGained;
+    mine.factor = nextPrestigeLevel.Factor;
+    mine.prestige_count = nextPrestigeLevel.PrestigeCount;
+
+    // Resort the mines based on mine_number after successful prestige
+    user.mines.sort((a, b) => a.mine_number - b.mine_number);
+
+    await updateUser(userId, {
+		cash: user.cash,
+        super_cash: user.super_cash,
+        mines: user.mines
+    });
+
+    return message.reply(`Congratulations! Your ${mine.MineName} has been prestiged to level ${nextPrestigeLevel.PrestigeCount}. It now has a production factor of ${nextPrestigeLevel.Factor}.`);
 }
