@@ -33,6 +33,14 @@ module.exports = {
                     option.setName('name')
                         .setDescription('The name of the mine to manage.')
                         .setRequired(true))),
+		.addSubcommand(subcommand =>
+            subcommand
+                .setName('prestige')
+                .setDescription('Prestige an existing mine.')
+                .addStringOption(option => 
+                    option.setName('name')
+                        .setDescription('The name of the mine to prestige.')
+                        .setRequired(true))),
     async execute(interaction) {
         const userId = interaction.user.id;
         let user = await getUser(userId);
@@ -54,8 +62,11 @@ module.exports = {
             case 'manage':
                 await handleMineManage(interaction, mineName, user, userId);
                 break;
+			case 'prestige':
+                await handleMinePrestige(interaction, mineName, user, userId);
+                break;
             default:
-                return interaction.reply(`Invalid subcommand. Use \`buy\`, \`visit\`, or \`manage\`.`);
+                return interaction.reply(`Invalid subcommand. Use \`buy\`, \`visit\`, \`manage\`, or \`prestige\`.`);
         }
     }
 };
@@ -147,4 +158,49 @@ async function handleMineManage(interaction, mineName, user, userId) {
         .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
+}
+
+async function handleMinePrestige(interaction, mineName, user, userId) {
+    if (!mineName) {
+        return interaction.reply('Please specify the name of the mine you want to prestige.');
+    }
+
+    const mine = user.mines.find(m => m.mine_name.toLowerCase() === mineName.toLowerCase());
+
+    if (!mine) {
+        return interaction.reply('You do not own this mine.');
+    }
+
+    const currentPrestigeLevel = mineFactors.find(factor => factor.MineName === mine.mine_name && factor.PrestigeCount === mine.prestige_count);
+
+    if (!currentPrestigeLevel) {
+        return interaction.reply('Invalid prestige level for this mine.');
+    }
+
+    const nextPrestigeLevel = mineFactors.find(factor => factor.MineName === mine.mine_name && factor.PrestigeCount === mine.prestige_count + 1);
+
+    if (!nextPrestigeLevel) {
+        return interaction.reply('You have already maxed out the prestige for this mine.');
+    }
+
+    if (user.cash < nextPrestigeLevel.Cost) {
+        return interaction.reply(`You don't have enough Cash to prestige the ${mine.MineName}. You need ${numberFormat(nextPrestigeLevel.Cost)} Cash.`);
+    }
+
+    // Deduct the cash and update the mine prestige
+	user.cash -= nextPrestigeLevel.Cost;
+    user.super_cash += nextPrestigeLevel.SuperCashGained;
+    mine.factor = nextPrestigeLevel.Factor;
+    mine.prestige_count = nextPrestigeLevel.PrestigeCount;
+
+    // Resort the mines based on mine_number after successful prestige
+    user.mines.sort((a, b) => a.mine_number - b.mine_number);
+
+    await updateUser(userId, {
+		cash: user.cash,
+        super_cash: user.super_cash,
+        mines: user.mines
+    });
+
+    return interaction.reply(`Congratulations! Your ${mine.MineName} has been prestiged to level ${nextPrestigeLevel.PrestigeCount}. It now has a production factor of ${nextPrestigeLevel.Factor}.`);
 }
