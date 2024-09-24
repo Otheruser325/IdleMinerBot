@@ -59,13 +59,13 @@ for (const file of slashCommandFiles) {
 
 // Schedule updates regularly
 async function scheduleNextUpdate(client) {
-    cron.schedule('*/10 * * * * *', async () => {
-        await handleMissingData(); // Run every 10 seconds
+    cron.schedule('*/15 * * * * *', async () => {
+        await handleMissingData(); // Run every 15 seconds
     });
 	
-	// Check barrier unlock time every 10 seconds
-    cron.schedule('*/10 * * * * *', async () => {
-        await handleBarrierUnlockTime(); // Run every 10 seconds
+	// Check barrier unlock time every 15 seconds
+    cron.schedule('*/15 * * * * *', async () => {
+        await handleBarrierUnlockTime(); // Run every 15 seconds
     });
 	
 	// Schedule boost timer updates every minute
@@ -73,8 +73,8 @@ async function scheduleNextUpdate(client) {
         await handleBoostTimers(); // Run every minute
     });
 	
-	// Schedule manager work for all users every 10 seconds
-    cron.schedule('*/15 * * * * *', async () => {
+	// Schedule manager work for all users every minute
+    cron.schedule('*/60 * * * * *', async () => {
         try {
             const allUsers = await getAllUsers(); // Retrieve all users
             for (const user of allUsers) {
