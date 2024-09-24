@@ -37,6 +37,9 @@ module.exports = {
             case 'manage':
                 await handleMineManage(message, mineName, user, userId);
                 break;
+			case 'prestige':
+                await handleMinePrestige(message, mineName, user, userId);
+                break;
             default:
                 return message.reply(`Invalid subcommand, <@${userId}>! To use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
         }
