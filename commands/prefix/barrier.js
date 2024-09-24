@@ -83,7 +83,7 @@ async function handleUnlock(message, user, currentMine, args, userId) {
 
     await updateUser(userId, user);
 
-    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.BuildTimeInSeconds} seconds.`);
+    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.build_time_in_seconds} seconds.`);
 }
 
 // Function to handle the "overview" subcommand
