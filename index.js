@@ -106,7 +106,9 @@ async function handleManagerWork(user, userId) {
     user.last_idle = user.last_idle || Date.now();
     user.current_mine = user.current_mine || (user.mines.length > 0 ? user.mines[0].mine_name : null);
 
-    const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
+    const currentMine = user.mines.find(mine => 
+        mine.mine_name.toLowerCase() === user.current_mine.toLowerCase()
+    );
     if (!currentMine) {
         console.error(`Current mine data for user ${userId} not found.`);
         return;

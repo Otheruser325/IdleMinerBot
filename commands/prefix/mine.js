@@ -20,7 +20,7 @@ module.exports = {
         }
 
         const subcommand = args[0];
-        const mineName = args.slice(1).join(' ').toLowerCase();
+        const mineName = args.slice(1).join(' ');
 
         if (!mineName && (subcommand === 'buy' || subcommand === 'visit' || subcommand === 'manage')) {
             return message.reply(`Please specify the name of the mine to \`${subcommand}\`.`);

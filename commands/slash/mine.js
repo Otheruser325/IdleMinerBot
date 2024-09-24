@@ -42,7 +42,7 @@ module.exports = {
         }
 
         const subcommand = interaction.options.getSubcommand();
-        const mineName = interaction.options.getString('name').toLowerCase();
+        const mineName = interaction.options.getString('name');
 
         switch (subcommand) {
             case 'buy':
