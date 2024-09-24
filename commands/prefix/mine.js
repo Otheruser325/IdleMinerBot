@@ -16,7 +16,7 @@ module.exports = {
         }
 
         if (args.length < 1) {
-            return message.reply(`<@${userId}>, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
+            return message.reply(`<@${userId}>, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, \`manage\`, or \`prestige\` respectively.`);
         }
 
         // Convert only the subcommand to lowercase
@@ -41,7 +41,7 @@ module.exports = {
                 await handleMinePrestige(message, mineName, user, userId);
                 break;
             default:
-                return message.reply(`Invalid subcommand, <@${userId}>! To use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, or \`manage\` respectively.`);
+                return message.reply(`Invalid subcommand, <@${userId}>! To use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, \`manage\`, or \`prestige\` respectively.`);
         }
     }
 };
