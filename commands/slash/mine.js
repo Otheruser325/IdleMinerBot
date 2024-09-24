@@ -65,7 +65,7 @@ async function handleMineBuy(interaction, mineName, user, userId) {
         return interaction.reply('Please specify the name of the mine you want to buy.');
     }
 
-    const mine = mineFactors.find(m => m.MineName === mineName);
+    const mine = mineFactors.find(m => m.MineName.toLowerCase() === mineName.toLowerCase());
 
     if (!mine) {
         return interaction.reply('Invalid mine name. Please specify a valid mine to buy.');
@@ -114,19 +114,20 @@ async function handleMineVisit(interaction, mineName, user, userId) {
     if (!mineName) {
         return interaction.reply('Please specify the name of the mine you want to visit.');
     }
+	
+	const selectedMine = user.mines.find(m => m.mine_name.toLowerCase() === mineName.toLowerCase());
 
-    if (user.current_mine.toLowerCase() === mineName) {
-        return interaction.reply(`You are already in the ${mineName}.`);
-    }
-
-    const mine = user.mines.find(m => m.mine_name === mineName);
-
-    if (!mine) {
+    if (!selectedMine) {
         return interaction.reply('You do not own this mine.');
     }
 
-    await updateUser(userId, { current_mine: mineName });
-    return interaction.reply(`You have successfully moved to the ${mine.mine_name}.`);
+    if (user.current_mine === selectedMine.mine_name) {
+        return interaction.reply(`You are already in the ${selectedMine.mine_name}.`);
+    }
+
+    await updateUser(userId, { current_mine: selectedMine.mine_name });
+
+    return interaction.reply(`You have successfully moved to the ${selectedMine.mine_name}.`);
 }
 
 async function handleMineManage(interaction, mineName, user, userId) {
@@ -134,7 +135,7 @@ async function handleMineManage(interaction, mineName, user, userId) {
         return interaction.reply('Please specify the name of the mine you want to manage.');
     }
 
-    const mine = user.mines.find(m => m.mine_name === mineName);
+    const mine = user.mines.find(m => m.mine_name.toLowerCase() === mineName.toLowerCase());
     if (!mine) {
         return interaction.reply('You do not own this mine.');
     }
