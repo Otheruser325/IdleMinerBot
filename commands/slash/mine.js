@@ -184,7 +184,7 @@ async function handleMinePrestige(interaction, mineName, user, userId) {
     }
 
     if (user.cash < nextPrestigeLevel.Cost) {
-        return interaction.reply(`You don't have enough Cash to prestige the ${mine.MineName}. You need ${numberFormat(nextPrestigeLevel.Cost)} Cash.`);
+        return interaction.reply(`You don't have enough Cash to prestige the ${mine.mine_name}. You need ${numberFormat(nextPrestigeLevel.Cost)} Cash.`);
     }
 
     // Deduct the cash and update the mine prestige
@@ -202,5 +202,5 @@ async function handleMinePrestige(interaction, mineName, user, userId) {
         mines: user.mines
     });
 
-    return interaction.reply(`Congratulations! Your ${mine.MineName} has been prestiged to level ${nextPrestigeLevel.PrestigeCount}. It now has a production factor of ${nextPrestigeLevel.Factor}.`);
+    return interaction.reply(`Congratulations! Your ${mine.mine_name} has been prestiged to level ${nextPrestigeLevel.PrestigeCount}. It now has a production factor of ${nextPrestigeLevel.Factor}.`);
 }
