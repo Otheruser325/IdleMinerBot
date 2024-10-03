@@ -220,7 +220,7 @@ async function handleElevatorWork(interaction, user, currentMine, userId) {
     }
 
     if (totalDeposit === 0) {
-        return interaction.reply('No minerals were extracted, as there were none available in the shafts.');
+        return interaction.editReply('No minerals were extracted, as there were none available in the shafts.');
     }
 	
 	// Travel back to base
