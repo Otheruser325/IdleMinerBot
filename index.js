@@ -444,6 +444,10 @@ client.on(Events.InteractionCreate, async interaction => {
     } else if (interaction.isButton()) {
         handleButtonInteraction(interaction);
 		
+	// Handle Modal Forms
+    } else if (interaction.isModalSubmit()) {
+        handleModalFormInteraction(interaction);
+		
     } else {
         console.error('Received an unhandled interaction type.');
     }
@@ -465,7 +469,7 @@ async function handleSelectMenuInteraction(interaction) {
     const user = await getUser(userId);
 
     try {
-        // Add your select menu handling logic here
+        // Handle selection menu interactions
     } catch (error) {
         handleInteractionError(interaction, 'There was an error trying to process the selection menu!');
         console.error('Error executing select menu interaction:', error);
@@ -479,10 +483,24 @@ async function handleButtonInteraction(interaction) {
     const user = await getUser(userId);
 
     try {
-        // Add your button handling logic here
+        // Handle button interactions
     } catch (error) {
         handleInteractionError(interaction, 'There was an error trying to process that button!');
         console.error('Error executing button interaction:', error);
+    }
+}
+
+// Handle Modal Form Interaction
+async function handleModalFormInteraction(interaction) {
+    const customId = interaction.customId;
+	const userId = interaction.user.id;
+    const user = await getUser(userId);
+
+    try {
+        // Handle modal form interactions
+    } catch (error) {
+        handleInteractionError(interaction, 'There was an error trying to submit this form!');
+        console.error('Error executing modal form interaction:', error);  
     }
 }
 
