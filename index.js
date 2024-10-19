@@ -59,13 +59,13 @@ for (const file of slashCommandFiles) {
 
 // Schedule updates regularly
 async function scheduleNextUpdate(client) {
-    cron.schedule('*/15 * * * * *', async () => {
-        await handleMissingData(); // Run every 15 seconds
+    cron.schedule('*/20 * * * * *', async () => {
+        await handleMissingData(); // Run every 20 seconds
     });
 	
 	// Check barrier unlock time every 15 seconds
-    cron.schedule('*/15 * * * * *', async () => {
-        await handleBarrierUnlockTime(); // Run every 15 seconds
+    cron.schedule('*/20 * * * * *', async () => {
+        await handleBarrierUnlockTime(); // Run every 20 seconds
     });
 	
 	// Schedule boost timer updates every minute

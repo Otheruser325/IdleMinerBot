@@ -81,8 +81,13 @@ module.exports = {
                     await i.update({ embeds: [newEmbed], components: [generateButtons(currentPage, totalPages)] });
                 } catch (error) {
                     if (error.code === 10008) {
-                        // Handle unknown message error (e.g., message was deleted)
-                        console.error('The message was not found or has been deleted.');
+                        return message.channel.send(`The help embed was deleted and couldn't be recovered, please try again later.`);
+                    } else if (error.code === 10062) {
+                        return message.channel.send(`My systematic networking is currently out of sync and timed out. Please try again later.`);
+                    } else if (error.status === 403 || error.status === 404 || error.status === 503 || error.status === 520) {
+                        return message.channel.send(`An unexpected error occurred. Please try again later.`);
+                    } else if (error.message.includes("Interaction was not replied")) {
+                        return message.channel.send(`An interaction error occurred. Please try again later.`);
                     } else {
                         // Handle other errors
                         console.error('Error updating message:', error);
@@ -96,8 +101,15 @@ module.exports = {
                         await messageReply.edit({ components: [] });
                     } catch (error) {
                         if (error.code === 10008) {
-                            // Handle unknown message error
-                            console.error('The message was not found or has been deleted.');
+                            return message.channel.send(`The help embed was deleted and couldn't be recovered, please try again later.`);
+                        } else if (error.code === 10062) {
+                            return message.channel.send(`My systematic networking is currently out of sync and timed out. Please try again later.`);
+                        } else if (error.code === 40060) {
+                            return message.channel.send("I couldn't reuse this interaction as I've already acknowledged it. Please try again later.");
+                        } else if (error.status === 403 || error.status === 404 || error.status === 503 || error.status === 520) {
+                            return message.channel.send(`An unexpected error occurred. Please try again later.`);
+                        } else if (error.message.includes("Interaction was not replied")) {
+                            return message.channel.send(`An interaction error occurred. Please try again later.`);
                         } else {
                             // Handle other errors
                             console.error('Error removing components:', error);
