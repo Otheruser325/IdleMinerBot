@@ -199,6 +199,286 @@
             "Cost": 9.8000000000000003e+55,
             "Factor": 24,
             "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 1,
+            "MineNumber": 11,
+            "MineName": "Amber Mine",
+            "Cost": 6.99e+22,
+            "Factor": 4,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 1,
+            "MineNumber": 12,
+            "MineName": "Sunstone Mine",
+            "Cost": 4.26e+26,
+            "Factor": 8,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 1,
+            "MineNumber": 13,
+            "MineName": "Topaz Mine",
+            "Cost": 1.74e+34,
+            "Factor": 12,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 1,
+            "MineNumber": 14,
+            "MineName": "Platinum Mine",
+            "Cost": 7.2e+41,
+            "Factor": 17,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 1,
+            "MineNumber": 15,
+            "MineName": "Obsidian Mine",
+            "Cost": 2.94e+54,
+            "Factor": 24,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 1,
+            "MineName": "Coal Mine",
+            "Cost": 5.76e+46,
+            "Factor": 20,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 2,
+            "MineName": "Gold Mine",
+            "Cost": 6.89e+58,
+            "Factor": 28,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 3,
+            "MineName": "Ruby Mine",
+            "Cost": 3.32e+66,
+            "Factor": 33,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 4,
+            "MineName": "Diamond Mine",
+            "Cost": 1.66e+71,
+            "Factor": 38,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 5,
+            "MineName": "Emerald Mine",
+            "Cost": 8.81e+76,
+            "Factor": 48,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 6,
+            "MineName": "Amethyst Mine",
+            "Cost": 6.91e+46,
+            "Factor": 20,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 7,
+            "MineName": "Moonstone Mine",
+            "Cost": 8.26e+58,
+            "Factor": 28,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 8,
+            "MineName": "Sapphire Mine",
+            "Cost": 3.98e+66,
+            "Factor": 33,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 9,
+            "MineName": "Crystal Mine",
+            "Cost": 1.99e+71,
+            "Factor": 38,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 10,
+            "MineName": "Jade Mine",
+            "Cost": 1.05e+77,
+            "Factor": 48,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 2,
+            "MineNumber": 11,
+            "MineName": "Amber Mine",
+            "Cost": 8.64e+46,
+            "Factor": 20,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 12,
+            "MineName": "Sunstone Mine",
+            "Cost": 1.03e+59,
+            "Factor": 28,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 13,
+            "MineName": "Topaz Mine",
+            "Cost": 4.98e+66,
+            "Factor": 33,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 14,
+            "MineName": "Platinum Mine",
+            "Cost": 2.49e+71,
+            "Factor": 38,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 2,
+            "MineNumber": 15,
+            "MineName": "Obsidian Mine",
+            "Cost": 1.32e+77,
+            "Factor": 48,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 1,
+            "MineName": "Coal Mine",
+            "Cost": 9.13e+62,
+            "Factor": 30,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 2,
+            "MineName": "Gold Mine",
+            "Cost": 1.32e+73,
+            "Factor": 42,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 3,
+            "MineName": "Ruby Mine",
+            "Cost": 4.62e+78,
+            "Factor": 52,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 4,
+            "MineName": "Diamond Mine",
+            "Cost": 9.54e+79,
+            "Factor": 57,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 5,
+            "MineName": "Emerald Mine",
+            "Cost": 3.24e+83,
+            "Factor": 70,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 6,
+            "MineName": "Amethyst Mine",
+            "Cost": 1.09e+63,
+            "Factor": 30,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 7,
+            "MineName": "Moonstone Mine",
+            "Cost": 1.58e+73,
+            "Factor": 42,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 8,
+            "MineName": "Sapphire Mine",
+            "Cost": 5.54e+78,
+            "Factor": 52,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 9,
+            "MineName": "Crystal Mine",
+            "Cost": 1.14e+80,
+            "Factor": 57,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 10,
+            "MineName": "Jade Mine",
+            "Cost": 3.88e+83,
+            "Factor": 70,
+            "SuperCashGained": 200
+        },
+		{
+            "PrestigeCount": 3,
+            "MineNumber": 11,
+            "MineName": "Amber Mine",
+            "Cost": 1.36e+63,
+            "Factor": 30,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 12,
+            "MineName": "Sunstone Mine",
+            "Cost": 1.98e+73,
+            "Factor": 42,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 13,
+            "MineName": "Topaz Mine",
+            "Cost": 6.93e+78,
+            "Factor": 52,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 14,
+            "MineName": "Platinum Mine",
+            "Cost": 1.43e+80,
+            "Factor": 57,
+            "SuperCashGained": 200
+        },
+        {
+            "PrestigeCount": 3,
+            "MineNumber": 15,
+            "MineName": "Obsidian Mine",
+            "Cost": 4.86e+83,
+            "Factor": 70,
+            "SuperCashGained": 200
         }
     ]
 }

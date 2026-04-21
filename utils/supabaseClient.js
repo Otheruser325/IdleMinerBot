@@ -1,8 +1,21 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const supabaseUrl = 'https://bigrhcxvvnaovhnjzijh.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ3JoY3h2dm5hb3Zobmp6aWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5MjY4OTIsImV4cCI6MjA0MjUwMjg5Mn0.z-TfXfhK4IIVDZo3t73XKQHaaFT124n26xD3vIwcr-0';
+dotenv.config();
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl) {
+    throw new Error('Missing SUPABASE_URL in environment');
+}
+
+if (!supabaseKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY (preferred) or SUPABASE_ANON_KEY in environment');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-module.exports = supabase;
+export default supabase;

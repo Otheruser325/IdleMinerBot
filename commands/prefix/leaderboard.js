@@ -1,14 +1,16 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const { getAllUsers } = require('../../dataManager');
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import numberFormat from '../../utils/numberFormat.js';
+import { getAllUsers } from '../../dataManager.js';
 
-module.exports = {
+export default {
     name: 'leaderboard',
     description: 'Displays the top 15 users in the guild by cash.',
     aliases: ['lb'],
     async execute(message) {
         try {
-            const guildId = message.guild.id;
+            if (!message.guild) {
+                return message.reply('Leaderboards are only available in servers.');
+            }
             
             // Fetch all members, this ensures we have the latest member data
             const guildMembers = await message.guild.members.fetch();

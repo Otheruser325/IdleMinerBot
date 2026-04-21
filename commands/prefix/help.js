@@ -1,9 +1,13 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const commandsPerPage = 10; // Number of commands per page
 
-module.exports = {
+export default {
     name: 'help',
     description: 'Lists all available prefix commands or provides detailed help for a specific command.',
     async execute(message, args) {
@@ -13,7 +17,9 @@ module.exports = {
         const defaultCommands = [];
 
         for (const file of commandFiles) {
-            const command = require(path.join(__dirname, '../../commands/prefix', file));
+            const commandPath = path.join(__dirname, '../../commands/prefix', file);
+            const commandModule = await import('file://' + commandPath);
+            const command = commandModule.default || commandModule;
             if (command.name === 'help') continue; // Skip the help command
 
             let commandName = command.name;

@@ -1,4 +1,4 @@
-module.exports = async function guildDM(user, message) {
+export default async function guildDM(user, message) {
     try {
         await user.send(message);
     } catch (error) {

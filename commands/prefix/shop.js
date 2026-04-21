@@ -1,9 +1,12 @@
-const { getUser } = require('../../dataManager');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const shopData = require('../../config/shopData.json').items;
-const numberFormat = require('../../utils/numberFormat');
+import { getUser } from '../../dataManager.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import shopDataJson from '../../config/shopData.json' with { type: 'json' };
+import numberFormat from '../../utils/numberFormat.js';
+import { isShopUnlocked } from '../../utils/progression.js';
 
-module.exports = {
+const shopData = shopDataJson.items;
+
+export default {
   name: 'shop',
   description: 'Browse and purchase special deals and boosters.',
   async execute(message) {
@@ -11,7 +14,11 @@ module.exports = {
     const user = await getUser(userId);
 
     if (!user) {
-      return message.reply('You need to start the game first by using `im!start`.');
+      return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+    }
+
+    if (!isShopUnlocked(user)) {
+      return message.reply('Shop unlocks after you buy Shaft Tier 3 on Coal Mine for the first time.');
     }
 
     let page = 0;

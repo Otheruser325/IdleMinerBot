@@ -1,45 +1,1390 @@
 {
   "managerCosts": [
-    { "AmountManagersBought": 0, "Warehouse": 100, "Elevator": 100, "Shaft": 100 },
-    { "AmountManagersBought": 1, "Warehouse": 500, "Elevator": 500, "Shaft": 200 },
-    { "AmountManagersBought": 2, "Warehouse": 2500, "Elevator": 2500, "Shaft": 400 },
-    { "AmountManagersBought": 3, "Warehouse": 12500, "Elevator": 12500, "Shaft": 800 },
-    { "AmountManagersBought": 4, "Warehouse": 100000, "Elevator": 100000, "Shaft": 3200 },
-    { "AmountManagersBought": 5, "Warehouse": 800000, "Elevator": 800000, "Shaft": 14400 },
-    { "AmountManagersBought": 6, "Warehouse": 6400000, "Elevator": 6400000, "Shaft": 64800 },
-    { "AmountManagersBought": 7, "Warehouse": 51200000, "Elevator": 51200000, "Shaft": 291000 },
-    { "AmountManagersBought": 8, "Warehouse": 409000000, "Elevator": 409000000, "Shaft": 1310000 },
-    { "AmountManagersBought": 9, "Warehouse": 3270000000, "Elevator": 3270000000, "Shaft": 5900000 },
-    { "AmountManagersBought": 10, "Warehouse": 26200000000, "Elevator": 26200000000, "Shaft": 26500000 },
-	{ "AmountManagersBought": 11, "Warehouse": 209000000000, "Elevator": 209000000000, "Shaft": 119000000 },
-	{ "AmountManagersBought": 12, "Warehouse": 1670000000000, "Elevator": 1670000000000, "Shaft": 538000000 },
-	{ "AmountManagersBought": 13, "Warehouse": 13400000000000, "Elevator": 13400000000000, "Shaft": 2420000000 },
-	{ "AmountManagersBought": 14, "Warehouse": 107000000000000, "Elevator": 107000000000000, "Shaft": 10800000000 },
-	{ "AmountManagersBought": 15, "Warehouse": 858000000000000, "Elevator": 858000000000000, "Shaft": 49000000000 },
-	{ "AmountManagersBought": 16, "Warehouse": 6870000000000000, "Elevator": 6870000000000000, "Shaft": 220000000000 },
-	{ "AmountManagersBought": 17, "Warehouse": 54900000000000000, "Elevator": 54900000000000000, "Shaft": 992000000000 },
-	{ "AmountManagersBought": 18, "Warehouse": 439000000000000000, "Elevator": 439000000000000000, "Shaft": 4460000000000 },
-	{ "AmountManagersBought": 19, "Warehouse": 3510000000000000000, "Elevator": 3510000000000000000, "Shaft": 20100000000000 },
-	{ "AmountManagersBought": 20, "Warehouse": 28100000000000000000, "Elevator": 28100000000000000000, "Shaft": 90400000000000 },
-	{ "AmountManagersBought": 21, "Warehouse": 225000000000000000000, "Elevator": 225000000000000000000, "Shaft": 407000000000000 },
-	{ "AmountManagersBought": 22, "Warehouse": 1.8e+21, "Elevator": 1.8e+21, "Shaft": 1830000000000000 },
-	{ "AmountManagersBought": 23, "Warehouse": 1.44e+22, "Elevator": 1.44e+22, "Shaft": 8240000000000000 },
-	{ "AmountManagersBought": 24, "Warehouse": 1.15e+23, "Elevator": 1.15e+23, "Shaft": 37100000000000000 },
-	{ "AmountManagersBought": 25, "Warehouse": 9.2200000000000006e+23, "Elevator": 9.2200000000000006e+23, "Shaft": 166000000000000000 },
-	{ "AmountManagersBought": 26, "Warehouse": 7.3700000000000004e+24, "Elevator": 7.3700000000000004e+24, "Shaft": 751000000000000000 },
-	{ "AmountManagersBought": 27, "Warehouse": 5.9e+25, "Elevator": 5.9e+25, "Shaft": 3380000000000000000 },
-	{ "AmountManagersBought": 28, "Warehouse": 4.72e+26, "Elevator": 4.72e+26, "Shaft": 15200000000000000000 },
-	{ "AmountManagersBought": 29, "Warehouse": 3.77e+27, "Elevator": 3.77e+27, "Shaft": 68400000000000000000 },
-	{ "AmountManagersBought": 30, "Warehouse": 3.0199999999999999e+28, "Elevator": 3.0199999999999999e+28, "Shaft": 308000000000000000000 },
-	{ "AmountManagersBought": 31, "Warehouse": 2.4100000000000001e+29, "Elevator": 2.4100000000000001e+29, "Shaft": 1.38e+21 },
-	{ "AmountManagersBought": 32, "Warehouse": 1.9300000000000001e+30, "Elevator": 1.9300000000000001e+30, "Shaft": 6.2300000000000005e+21 },
-	{ "AmountManagersBought": 33, "Warehouse": 1.5399999999999999e+31, "Elevator": 1.5399999999999999e+31, "Shaft": 2.8e+22 },
-	{ "AmountManagersBought": 34, "Warehouse": 1.23e+32, "Elevator": 1.23e+32, "Shaft": 1.26e+23 },
-	{ "AmountManagersBought": 35, "Warehouse": 9.8999999999999999e+32, "Elevator": 9.8999999999999999e+32, "Shaft": 5.6800000000000002e+23 },
-	{ "AmountManagersBought": 36, "Warehouse": 7.9199999999999999e+33, "Elevator": 7.9199999999999999e+33, "Shaft": 2.5499999999999998e+24 },
-	{ "AmountManagersBought": 37, "Warehouse": 6.3299999999999999e+34, "Elevator": 6.3299999999999999e+34, "Shaft": 1.1499999999999999e+25 },
-	{ "AmountManagersBought": 38, "Warehouse": 5.0699999999999997e+35, "Elevator": 5.0699999999999997e+35, "Shaft": 5.1799999999999997e+25 },
-	{ "AmountManagersBought": 39, "Warehouse": 4.0500000000000001e+36, "Elevator": 4.0500000000000001e+36, "Shaft": 1.8099999999999999e+26 },
-	{ "AmountManagersBought": 40, "Warehouse": 3.2400000000000001e+37, "Elevator": 3.2400000000000001e+37, "Shaft": 6.34e+26 }
+    {
+    "AmountManagersBought": 0,
+    "Warehouse": 100,
+    "Elevator": 100,
+    "Shaft": 100
+  },
+  {
+    "AmountManagersBought": 1,
+    "Warehouse": 500,
+    "Elevator": 500,
+    "Shaft": 200
+  },
+  {
+    "AmountManagersBought": 2,
+    "Warehouse": 2500,
+    "Elevator": 2500,
+    "Shaft": 400
+  },
+  {
+    "AmountManagersBought": 3,
+    "Warehouse": 12500,
+    "Elevator": 12500,
+    "Shaft": 800
+  },
+  {
+    "AmountManagersBought": 4,
+    "Warehouse": 100000,
+    "Elevator": 100000,
+    "Shaft": 3200
+  },
+  {
+    "AmountManagersBought": 5,
+    "Warehouse": 800000,
+    "Elevator": 800000,
+    "Shaft": 14400
+  },
+  {
+    "AmountManagersBought": 6,
+    "Warehouse": 6400000,
+    "Elevator": 6400000,
+    "Shaft": 64800
+  },
+  {
+    "AmountManagersBought": 7,
+    "Warehouse": 51200000,
+    "Elevator": 51200000,
+    "Shaft": 291000
+  },
+  {
+    "AmountManagersBought": 8,
+    "Warehouse": 409000000,
+    "Elevator": 409000000,
+    "Shaft": 1310000
+  },
+  {
+    "AmountManagersBought": 9,
+    "Warehouse": 3270000000,
+    "Elevator": 3270000000,
+    "Shaft": 5900000
+  },
+  {
+    "AmountManagersBought": 10,
+    "Warehouse": 26200000000,
+    "Elevator": 26200000000,
+    "Shaft": 26500000
+  },
+  {
+    "AmountManagersBought": 11,
+    "Warehouse": 209000000000,
+    "Elevator": 209000000000,
+    "Shaft": 119000000
+  },
+  {
+    "AmountManagersBought": 12,
+    "Warehouse": 1670000000000,
+    "Elevator": 1670000000000,
+    "Shaft": 538000000
+  },
+  {
+    "AmountManagersBought": 13,
+    "Warehouse": 13400000000000,
+    "Elevator": 13400000000000,
+    "Shaft": 2420000000
+  },
+  {
+    "AmountManagersBought": 14,
+    "Warehouse": 107000000000000,
+    "Elevator": 107000000000000,
+    "Shaft": 10800000000
+  },
+  {
+    "AmountManagersBought": 15,
+    "Warehouse": 858000000000000,
+    "Elevator": 858000000000000,
+    "Shaft": 49000000000
+  },
+  {
+    "AmountManagersBought": 16,
+    "Warehouse": 6870000000000000,
+    "Elevator": 6870000000000000,
+    "Shaft": 220000000000
+  },
+  {
+    "AmountManagersBought": 17,
+    "Warehouse": 54900000000000000,
+    "Elevator": 54900000000000000,
+    "Shaft": 992000000000
+  },
+  {
+    "AmountManagersBought": 18,
+    "Warehouse": 439000000000000000,
+    "Elevator": 439000000000000000,
+    "Shaft": 4460000000000
+  },
+  {
+    "AmountManagersBought": 19,
+    "Warehouse": 3510000000000000000,
+    "Elevator": 3510000000000000000,
+    "Shaft": 20100000000000
+  },
+  {
+    "AmountManagersBought": 20,
+    "Warehouse": 28100000000000000000,
+    "Elevator": 28100000000000000000,
+    "Shaft": 90400000000000
+  },
+  {
+    "AmountManagersBought": 21,
+    "Warehouse": 225000000000000000000,
+    "Elevator": 225000000000000000000,
+    "Shaft": 407000000000000
+  },
+  {
+    "AmountManagersBought": 22,
+    "Warehouse": 1.8e+21,
+    "Elevator": 1.8e+21,
+    "Shaft": 1830000000000000
+  },
+  {
+    "AmountManagersBought": 23,
+    "Warehouse": 1.44e+22,
+    "Elevator": 1.44e+22,
+    "Shaft": 8240000000000000
+  },
+  {
+    "AmountManagersBought": 24,
+    "Warehouse": 1.15e+23,
+    "Elevator": 1.15e+23,
+    "Shaft": 37100000000000000
+  },
+  {
+    "AmountManagersBought": 25,
+    "Warehouse": 9.22e+23,
+    "Elevator": 9.22e+23,
+    "Shaft": 166000000000000000
+  },
+  {
+    "AmountManagersBought": 26,
+    "Warehouse": 7.37e+24,
+    "Elevator": 7.37e+24,
+    "Shaft": 751000000000000000
+  },
+  {
+    "AmountManagersBought": 27,
+    "Warehouse": 5.9e+25,
+    "Elevator": 5.9e+25,
+    "Shaft": 3380000000000000000
+  },
+  {
+    "AmountManagersBought": 28,
+    "Warehouse": 4.72e+26,
+    "Elevator": 4.72e+26,
+    "Shaft": 15200000000000000000
+  },
+  {
+    "AmountManagersBought": 29,
+    "Warehouse": 3.77e+27,
+    "Elevator": 3.77e+27,
+    "Shaft": 68400000000000000000
+  },
+  {
+    "AmountManagersBought": 30,
+    "Warehouse": 3.02e+28,
+    "Elevator": 3.02e+28,
+    "Shaft": 308000000000000000000
+  },
+  {
+    "AmountManagersBought": 31,
+    "Warehouse": 2.41e+29,
+    "Elevator": 2.41e+29,
+    "Shaft": 1.38e+21
+  },
+  {
+    "AmountManagersBought": 32,
+    "Warehouse": 1.93e+30,
+    "Elevator": 1.93e+30,
+    "Shaft": 6.23e+21
+  },
+  {
+    "AmountManagersBought": 33,
+    "Warehouse": 1.54e+31,
+    "Elevator": 1.54e+31,
+    "Shaft": 2.8e+22
+  },
+  {
+    "AmountManagersBought": 34,
+    "Warehouse": 1.23e+32,
+    "Elevator": 1.23e+32,
+    "Shaft": 1.26e+23
+  },
+  {
+    "AmountManagersBought": 35,
+    "Warehouse": 9.9e+32,
+    "Elevator": 9.9e+32,
+    "Shaft": 5.68e+23
+  },
+  {
+    "AmountManagersBought": 36,
+    "Warehouse": 7.92e+33,
+    "Elevator": 7.92e+33,
+    "Shaft": 2.55e+24
+  },
+  {
+    "AmountManagersBought": 37,
+    "Warehouse": 6.33e+34,
+    "Elevator": 6.33e+34,
+    "Shaft": 1.15e+25
+  },
+  {
+    "AmountManagersBought": 38,
+    "Warehouse": 5.07e+35,
+    "Elevator": 5.07e+35,
+    "Shaft": 5.18e+25
+  },
+  {
+    "AmountManagersBought": 39,
+    "Warehouse": 4.05e+36,
+    "Elevator": 4.05e+36,
+    "Shaft": 1.81e+26
+  },
+  {
+    "AmountManagersBought": 40,
+    "Warehouse": 3.24e+37,
+    "Elevator": 3.24e+37,
+    "Shaft": 6.34e+26
+  },
+  {
+    "AmountManagersBought": 41,
+    "Warehouse": 2.59e+38,
+    "Elevator": 2.59e+38,
+    "Shaft": 2.22e+27
+  },
+  {
+    "AmountManagersBought": 42,
+    "Warehouse": 2.07e+39,
+    "Elevator": 2.07e+39,
+    "Shaft": 7.77e+27
+  },
+  {
+    "AmountManagersBought": 43,
+    "Warehouse": 1.66e+40,
+    "Elevator": 1.66e+40,
+    "Shaft": 2.72e+28
+  },
+  {
+    "AmountManagersBought": 44,
+    "Warehouse": 1.32e+41,
+    "Elevator": 1.32e+41,
+    "Shaft": 9.52e+28
+  },
+  {
+    "AmountManagersBought": 45,
+    "Warehouse": 1.06e+42,
+    "Elevator": 1.06e+42,
+    "Shaft": 3.33e+29
+  },
+  {
+    "AmountManagersBought": 46,
+    "Warehouse": 8.5e+42,
+    "Elevator": 8.5e+42,
+    "Shaft": 1.16e+30
+  },
+  {
+    "AmountManagersBought": 47,
+    "Warehouse": 6.8e+43,
+    "Elevator": 6.8e+43,
+    "Shaft": 2.33e+30
+  },
+  {
+    "AmountManagersBought": 48,
+    "Warehouse": 5.44e+44,
+    "Elevator": 5.44e+44,
+    "Shaft": 4.66e+30
+  },
+  {
+    "AmountManagersBought": 49,
+    "Warehouse": 4.35e+45,
+    "Elevator": 4.35e+45,
+    "Shaft": 9.33e+30
+  },
+  {
+    "AmountManagersBought": 50,
+    "Warehouse": 3.48e+46,
+    "Elevator": 3.48e+46,
+    "Shaft": 1.86e+31
+  },
+  {
+    "AmountManagersBought": 51,
+    "Warehouse": 2.78e+47,
+    "Elevator": 2.78e+47,
+    "Shaft": 3.73e+31
+  },
+  {
+    "AmountManagersBought": 52,
+    "Warehouse": 2.23e+48,
+    "Elevator": 2.23e+48,
+    "Shaft": 7.46e+31
+  },
+  {
+    "AmountManagersBought": 53,
+    "Warehouse": 1.78e+49,
+    "Elevator": 1.78e+49,
+    "Shaft": 1.49e+32
+  },
+  {
+    "AmountManagersBought": 54,
+    "Warehouse": 1.42e+50,
+    "Elevator": 1.42e+50,
+    "Shaft": 2.98e+32
+  },
+  {
+    "AmountManagersBought": 55,
+    "Warehouse": 1.14e+51,
+    "Elevator": 1.14e+51,
+    "Shaft": 5.97e+32
+  },
+  {
+    "AmountManagersBought": 56,
+    "Warehouse": 9.13e+51,
+    "Elevator": 9.13e+51,
+    "Shaft": 1.19e+33
+  },
+  {
+    "AmountManagersBought": 57,
+    "Warehouse": 7.3e+52,
+    "Elevator": 7.3e+52,
+    "Shaft": 2.38e+33
+  },
+  {
+    "AmountManagersBought": 58,
+    "Warehouse": 5.84e+53,
+    "Elevator": 5.84e+53,
+    "Shaft": 4.77e+33
+  },
+  {
+    "AmountManagersBought": 59,
+    "Warehouse": 4.67e+54,
+    "Elevator": 4.67e+54,
+    "Shaft": 9.55e+33
+  },
+  {
+    "AmountManagersBought": 60,
+    "Warehouse": 3.74e+55,
+    "Elevator": 3.74e+55,
+    "Shaft": 1.91e+34
+  },
+  {
+    "AmountManagersBought": 61,
+    "Warehouse": 2.99e+56,
+    "Elevator": 2.99e+56,
+    "Shaft": 3.82e+34
+  },
+  {
+    "AmountManagersBought": 62,
+    "Warehouse": 2.39e+57,
+    "Elevator": 2.39e+57,
+    "Shaft": 7.64e+34
+  },
+  {
+    "AmountManagersBought": 63,
+    "Warehouse": 1.91e+58,
+    "Elevator": 1.91e+58,
+    "Shaft": 1.52e+35
+  },
+  {
+    "AmountManagersBought": 64,
+    "Warehouse": 1.53e+59,
+    "Elevator": 1.53e+59,
+    "Shaft": 3.05e+35
+  },
+  {
+    "AmountManagersBought": 65,
+    "Warehouse": 1.22e+60,
+    "Elevator": 1.22e+60,
+    "Shaft": 6.11e+35
+  },
+  {
+    "AmountManagersBought": 66,
+    "Warehouse": 9.8e+60,
+    "Elevator": 9.8e+60,
+    "Shaft": 1.22e+36
+  },
+  {
+    "AmountManagersBought": 67,
+    "Warehouse": 7.84e+61,
+    "Elevator": 7.84e+61,
+    "Shaft": 2.44e+36
+  },
+  {
+    "AmountManagersBought": 68,
+    "Warehouse": 6.27e+62,
+    "Elevator": 6.27e+62,
+    "Shaft": 4.89e+36
+  },
+  {
+    "AmountManagersBought": 69,
+    "Warehouse": 5.02e+63,
+    "Elevator": 5.02e+63,
+    "Shaft": 9.78e+36
+  },
+  {
+    "AmountManagersBought": 70,
+    "Warehouse": 4.01e+64,
+    "Elevator": 4.01e+64,
+    "Shaft": 1.95e+37
+  },
+  {
+    "AmountManagersBought": 71,
+    "Warehouse": 3.21e+65,
+    "Elevator": 3.21e+65,
+    "Shaft": 3.91e+37
+  },
+  {
+    "AmountManagersBought": 72,
+    "Warehouse": 2.57e+66,
+    "Elevator": 2.57e+66,
+    "Shaft": 7.82e+37
+  },
+  {
+    "AmountManagersBought": 73,
+    "Warehouse": 2.05e+67,
+    "Elevator": 2.05e+67,
+    "Shaft": 1.56e+38
+  },
+  {
+    "AmountManagersBought": 74,
+    "Warehouse": 1.64e+68,
+    "Elevator": 1.64e+68,
+    "Shaft": 3.13e+38
+  },
+  {
+    "AmountManagersBought": 75,
+    "Warehouse": 1.31e+69,
+    "Elevator": 1.31e+69,
+    "Shaft": 6.26e+38
+  },
+  {
+    "AmountManagersBought": 76,
+    "Warehouse": 1.05e+70,
+    "Elevator": 1.05e+70,
+    "Shaft": 1.25e+39
+  },
+  {
+    "AmountManagersBought": 77,
+    "Warehouse": 8.42e+70,
+    "Elevator": 8.42e+70,
+    "Shaft": 2.5e+39
+  },
+  {
+    "AmountManagersBought": 78,
+    "Warehouse": 6.73e+71,
+    "Elevator": 6.73e+71,
+    "Shaft": 5.01e+39
+  },
+  {
+    "AmountManagersBought": 79,
+    "Warehouse": 5.39e+72,
+    "Elevator": 5.39e+72,
+    "Shaft": 1e+40
+  },
+  {
+    "AmountManagersBought": 80,
+    "Warehouse": 4.31e+73,
+    "Elevator": 4.31e+73,
+    "Shaft": 2e+40
+  },
+  {
+    "AmountManagersBought": 81,
+    "Warehouse": 3.45e+74,
+    "Elevator": 3.45e+74,
+    "Shaft": 4e+40
+  },
+  {
+    "AmountManagersBought": 82,
+    "Warehouse": 2.76e+75,
+    "Elevator": 2.76e+75,
+    "Shaft": 8.01e+40
+  },
+  {
+    "AmountManagersBought": 83,
+    "Warehouse": 2.2e+76,
+    "Elevator": 2.2e+76,
+    "Shaft": 1.6e+41
+  },
+  {
+    "AmountManagersBought": 84,
+    "Warehouse": 1.76e+77,
+    "Elevator": 1.76e+77,
+    "Shaft": 3.2e+41
+  },
+  {
+    "AmountManagersBought": 85,
+    "Warehouse": 1.41e+78,
+    "Elevator": 1.41e+78,
+    "Shaft": 6.41e+41
+  },
+  {
+    "AmountManagersBought": 86,
+    "Warehouse": 1.13e+79,
+    "Elevator": 1.13e+79,
+    "Shaft": 1.28e+42
+  },
+  {
+    "AmountManagersBought": 87,
+    "Warehouse": 9.04e+79,
+    "Elevator": 9.04e+79,
+    "Shaft": 2.56e+42
+  },
+  {
+    "AmountManagersBought": 88,
+    "Warehouse": 7.23e+80,
+    "Elevator": 7.23e+80,
+    "Shaft": 5.13e+42
+  },
+  {
+    "AmountManagersBought": 89,
+    "Warehouse": 5.78e+81,
+    "Elevator": 5.78e+81,
+    "Shaft": 1.02e+43
+  },
+  {
+    "AmountManagersBought": 90,
+    "Warehouse": 4.63e+82,
+    "Elevator": 4.63e+82,
+    "Shaft": 2.05e+43
+  },
+  {
+    "AmountManagersBought": 91,
+    "Warehouse": 3.7e+83,
+    "Elevator": 3.7e+83,
+    "Shaft": 4.1e+43
+  },
+  {
+    "AmountManagersBought": 92,
+    "Warehouse": 2.96e+84,
+    "Elevator": 2.96e+84,
+    "Shaft": 8.2e+43
+  },
+  {
+    "AmountManagersBought": 93,
+    "Warehouse": 2.37e+85,
+    "Elevator": 2.37e+85,
+    "Shaft": 1.64e+44
+  },
+  {
+    "AmountManagersBought": 94,
+    "Warehouse": 1.89e+86,
+    "Elevator": 1.89e+86,
+    "Shaft": 3.28e+44
+  },
+  {
+    "AmountManagersBought": 95,
+    "Warehouse": 1.51e+87,
+    "Elevator": 1.51e+87,
+    "Shaft": 6.56e+44
+  },
+  {
+    "AmountManagersBought": 96,
+    "Warehouse": 1.21e+88,
+    "Elevator": 1.21e+88,
+    "Shaft": 1.31e+45
+  },
+  {
+    "AmountManagersBought": 97,
+    "Warehouse": 9.71e+88,
+    "Elevator": 9.71e+88,
+    "Shaft": 2.62e+45
+  },
+  {
+    "AmountManagersBought": 98,
+    "Warehouse": 7.77e+89,
+    "Elevator": 7.77e+89,
+    "Shaft": 5.25e+45
+  },
+  {
+    "AmountManagersBought": 99,
+    "Warehouse": 6.21e+90,
+    "Elevator": 6.21e+90,
+    "Shaft": 1.05e+46
+  },
+  {
+    "AmountManagersBought": 100,
+    "Warehouse": 4.97e+91,
+    "Elevator": 4.97e+91,
+    "Shaft": 2.1e+46
+  },
+  {
+    "AmountManagersBought": 101,
+    "Warehouse": 3.97e+92,
+    "Elevator": 3.97e+92,
+    "Shaft": 4.2e+46
+  },
+  {
+    "AmountManagersBought": 102,
+    "Warehouse": 3.18e+93,
+    "Elevator": 3.18e+93,
+    "Shaft": 8.4e+46
+  },
+  {
+    "AmountManagersBought": 103,
+    "Warehouse": 2.54e+94,
+    "Elevator": 2.54e+94,
+    "Shaft": 1.68e+47
+  },
+  {
+    "AmountManagersBought": 104,
+    "Warehouse": 2.03e+95,
+    "Elevator": 2.03e+95,
+    "Shaft": 3.36e+47
+  },
+  {
+    "AmountManagersBought": 105,
+    "Warehouse": 1.62e+96,
+    "Elevator": 1.62e+96,
+    "Shaft": 6.72e+47
+  },
+  {
+    "AmountManagersBought": 106,
+    "Warehouse": 1.3e+97,
+    "Elevator": 1.3e+97,
+    "Shaft": 1.34e+48
+  },
+  {
+    "AmountManagersBought": 107,
+    "Warehouse": 1.04e+98,
+    "Elevator": 1.04e+98,
+    "Shaft": 2.68e+48
+  },
+  {
+    "AmountManagersBought": 108,
+    "Warehouse": 8.34e+98,
+    "Elevator": 8.34e+98,
+    "Shaft": 5.37e+48
+  },
+  {
+    "AmountManagersBought": 109,
+    "Warehouse": 6.67e+99,
+    "Elevator": 6.67e+99,
+    "Shaft": 1.07e+49
+  },
+  {
+    "AmountManagersBought": 110,
+    "Warehouse": 5.33e+100,
+    "Elevator": 5.33e+100,
+    "Shaft": 2.15e+49
+  },
+  {
+    "AmountManagersBought": 111,
+    "Warehouse": 4.27e+101,
+    "Elevator": 4.27e+101,
+    "Shaft": 4.3e+49
+  },
+  {
+    "AmountManagersBought": 112,
+    "Warehouse": 3.41e+102,
+    "Elevator": 3.41e+102,
+    "Shaft": 8.6e+49
+  },
+  {
+    "AmountManagersBought": 113,
+    "Warehouse": 2.73e+103,
+    "Elevator": 2.73e+103,
+    "Shaft": 1.72e+50
+  },
+  {
+    "AmountManagersBought": 114,
+    "Warehouse": 2.18e+104,
+    "Elevator": 2.18e+104,
+    "Shaft": 3.44e+50
+  },
+  {
+    "AmountManagersBought": 115,
+    "Warehouse": 1.74e+105,
+    "Elevator": 1.74e+105,
+    "Shaft": 6.88e+50
+  },
+  {
+    "AmountManagersBought": 116,
+    "Warehouse": 1.39e+106,
+    "Elevator": 1.39e+106,
+    "Shaft": 1.37e+51
+  },
+  {
+    "AmountManagersBought": 117,
+    "Warehouse": 1.11e+107,
+    "Elevator": 1.11e+107,
+    "Shaft": 2.75e+51
+  },
+  {
+    "AmountManagersBought": 118,
+    "Warehouse": 8.95e+107,
+    "Elevator": 8.95e+107,
+    "Shaft": 5.5e+51
+  },
+  {
+    "AmountManagersBought": 119,
+    "Warehouse": 7.16e+108,
+    "Elevator": 7.16e+108,
+    "Shaft": 1.1e+52
+  },
+  {
+    "AmountManagersBought": 120,
+    "Warehouse": 5.73e+109,
+    "Elevator": 5.73e+109,
+    "Shaft": 2.2e+52
+  },
+  {
+    "AmountManagersBought": 121,
+    "Warehouse": 4.58e+110,
+    "Elevator": 4.58e+110,
+    "Shaft": 4.4e+52
+  },
+  {
+    "AmountManagersBought": 122,
+    "Warehouse": 3.66e+111,
+    "Elevator": 3.66e+111,
+    "Shaft": 8.81e+52
+  },
+  {
+    "AmountManagersBought": 123,
+    "Warehouse": 2.93e+112,
+    "Elevator": 2.93e+112,
+    "Shaft": 1.76e+53
+  },
+  {
+    "AmountManagersBought": 124,
+    "Warehouse": 2.34e+113,
+    "Elevator": 2.34e+113,
+    "Shaft": 3.52e+53
+  },
+  {
+    "AmountManagersBought": 125,
+    "Warehouse": 1.87e+114,
+    "Elevator": 1.87e+114,
+    "Shaft": 7.05e+53
+  },
+  {
+    "AmountManagersBought": 126,
+    "Warehouse": 1.5e+115,
+    "Elevator": 1.5e+115,
+    "Shaft": 1.41e+54
+  },
+  {
+    "AmountManagersBought": 127,
+    "Warehouse": 1.2e+116,
+    "Elevator": 1.2e+116,
+    "Shaft": 2.82e+54
+  },
+  {
+    "AmountManagersBought": 128,
+    "Warehouse": 9.61e+116,
+    "Elevator": 9.61e+116,
+    "Shaft": 5.64e+54
+  },
+  {
+    "AmountManagersBought": 129,
+    "Warehouse": 7.69e+117,
+    "Elevator": 7.69e+117,
+    "Shaft": 1.12e+55
+  },
+  {
+    "AmountManagersBought": 130,
+    "Warehouse": 6.15e+118,
+    "Elevator": 6.15e+118,
+    "Shaft": 2.25e+55
+  },
+  {
+    "AmountManagersBought": 131,
+    "Warehouse": 4.92e+119,
+    "Elevator": 4.92e+119,
+    "Shaft": 4.51e+55
+  },
+  {
+    "AmountManagersBought": 132,
+    "Warehouse": 3.94e+120,
+    "Elevator": 3.94e+120,
+    "Shaft": 9.02e+55
+  },
+  {
+    "AmountManagersBought": 133,
+    "Warehouse": 3.15e+121,
+    "Elevator": 3.15e+121,
+    "Shaft": 1.8e+56
+  },
+  {
+    "AmountManagersBought": 134,
+    "Warehouse": 2.52e+122,
+    "Elevator": 2.52e+122,
+    "Shaft": 3.61e+56
+  },
+  {
+    "AmountManagersBought": 135,
+    "Warehouse": 2.01e+123,
+    "Elevator": 2.01e+123,
+    "Shaft": 7.22e+56
+  },
+  {
+    "AmountManagersBought": 136,
+    "Warehouse": 1.61e+124,
+    "Elevator": 1.61e+124,
+    "Shaft": 1.44e+57
+  },
+  {
+    "AmountManagersBought": 137,
+    "Warehouse": 1.29e+125,
+    "Elevator": 1.29e+125,
+    "Shaft": 2.88e+57
+  },
+  {
+    "AmountManagersBought": 138,
+    "Warehouse": 1.03e+126,
+    "Elevator": 1.03e+126,
+    "Shaft": 5.77e+57
+  },
+  {
+    "AmountManagersBought": 139,
+    "Warehouse": 8.26e+126,
+    "Elevator": 8.26e+126,
+    "Shaft": 1.15e+58
+  },
+  {
+    "AmountManagersBought": 140,
+    "Warehouse": 6.61e+127,
+    "Elevator": 6.61e+127,
+    "Shaft": 2.31e+58
+  },
+  {
+    "AmountManagersBought": 141,
+    "Warehouse": 5.28e+128,
+    "Elevator": 5.28e+128,
+    "Shaft": 9.24e+58
+  },
+  {
+    "AmountManagersBought": 142,
+    "Warehouse": 4.23e+129,
+    "Elevator": 4.23e+129,
+    "Shaft": 3.69e+59
+  },
+  {
+    "AmountManagersBought": 143,
+    "Warehouse": 3.3800000000000002e+130,
+    "Elevator": 3.3800000000000002e+130,
+    "Shaft": 1.47e+60
+  },
+  {
+    "AmountManagersBought": 144,
+    "Warehouse": 2.7e+131,
+    "Elevator": 2.7e+131,
+    "Shaft": 5.91e+60
+  },
+  {
+    "AmountManagersBought": 145,
+    "Warehouse": 2.16e+132,
+    "Elevator": 2.16e+132,
+    "Shaft": 2.36e+61
+  },
+  {
+    "AmountManagersBought": 146,
+    "Warehouse": 1.73e+133,
+    "Elevator": 1.73e+133,
+    "Shaft": 9.46e+61
+  },
+  {
+    "AmountManagersBought": 147,
+    "Warehouse": 1.38e+134,
+    "Elevator": 1.38e+134,
+    "Shaft": 3.78e+62
+  },
+  {
+    "AmountManagersBought": 148,
+    "Warehouse": 1.1e+135,
+    "Elevator": 1.1e+135,
+    "Shaft": 1.51e+63
+  },
+  {
+    "AmountManagersBought": 149,
+    "Warehouse": 8.87e+135,
+    "Elevator": 8.87e+135,
+    "Shaft": 6.05e+63
+  },
+  {
+    "AmountManagersBought": 150,
+    "Warehouse": 7.09e+136,
+    "Elevator": 7.09e+136,
+    "Shaft": 2.42e+64
+  },
+  {
+    "AmountManagersBought": 151,
+    "Warehouse": 5.67e+137,
+    "Elevator": 5.67e+137,
+    "Shaft": 1.45e+65
+  },
+  {
+    "AmountManagersBought": 152,
+    "Warehouse": 4.54e+138,
+    "Elevator": 4.54e+138,
+    "Shaft": 8.72e+65
+  },
+  {
+    "AmountManagersBought": 153,
+    "Warehouse": 3.63e+139,
+    "Elevator": 3.63e+139,
+    "Shaft": 5.23e+66
+  },
+  {
+    "AmountManagersBought": 154,
+    "Warehouse": 2.9e+140,
+    "Elevator": 2.9e+140,
+    "Shaft": 3.14e+67
+  },
+  {
+    "AmountManagersBought": 155,
+    "Warehouse": 2.32e+141,
+    "Elevator": 2.32e+141,
+    "Shaft": 1.88e+68
+  },
+  {
+    "AmountManagersBought": 156,
+    "Warehouse": 1.86e+142,
+    "Elevator": 1.86e+142,
+    "Shaft": 1.13e+69
+  },
+  {
+    "AmountManagersBought": 157,
+    "Warehouse": 1.48e+143,
+    "Elevator": 1.48e+143,
+    "Shaft": 6.78e+69
+  },
+  {
+    "AmountManagersBought": 158,
+    "Warehouse": 1.19e+144,
+    "Elevator": 1.19e+144,
+    "Shaft": 4.06e+70
+  },
+  {
+    "AmountManagersBought": 159,
+    "Warehouse": 9.52e+144,
+    "Elevator": 9.52e+144,
+    "Shaft": 2.44e+71
+  },
+  {
+    "AmountManagersBought": 160,
+    "Warehouse": 7.62e+145,
+    "Elevator": 7.62e+145,
+    "Shaft": 1.46e+72
+  },
+  {
+    "AmountManagersBought": 161,
+    "Warehouse": 6.09e+146,
+    "Elevator": 6.09e+146,
+    "Shaft": 1.17e+73
+  },
+  {
+    "AmountManagersBought": 162,
+    "Warehouse": 4.87e+147,
+    "Elevator": 4.87e+147,
+    "Shaft": 9.37e+73
+  },
+  {
+    "AmountManagersBought": 163,
+    "Warehouse": 3.9e+148,
+    "Elevator": 3.9e+148,
+    "Shaft": 7.5e+74
+  },
+  {
+    "AmountManagersBought": 164,
+    "Warehouse": 3.12e+149,
+    "Elevator": 3.12e+149,
+    "Shaft": 6e+75
+  },
+  {
+    "AmountManagersBought": 165,
+    "Warehouse": 2.49e+150,
+    "Elevator": 2.49e+150,
+    "Shaft": 4.8e+76
+  },
+  {
+    "AmountManagersBought": 166,
+    "Warehouse": 1.99e+151,
+    "Elevator": 1.99e+151,
+    "Shaft": 3.84e+77
+  },
+  {
+    "AmountManagersBought": 167,
+    "Warehouse": 1.59e+152,
+    "Elevator": 1.59e+152,
+    "Shaft": 3.07e+78
+  },
+  {
+    "AmountManagersBought": 168,
+    "Warehouse": 1.27e+153,
+    "Elevator": 1.27e+153,
+    "Shaft": 2.45e+79
+  },
+  {
+    "AmountManagersBought": 169,
+    "Warehouse": 1.02e+154,
+    "Elevator": 1.02e+154,
+    "Shaft": 1.96e+80
+  },
+  {
+    "AmountManagersBought": 170,
+    "Warehouse": 8.18e+154,
+    "Elevator": 8.18e+154,
+    "Shaft": 1.57e+81
+  },
+  {
+    "AmountManagersBought": 171,
+    "Warehouse": 6.54e+155,
+    "Elevator": 6.54e+155,
+    "Shaft": 1.25e+82
+  },
+  {
+    "AmountManagersBought": 172,
+    "Warehouse": 5.23e+156,
+    "Elevator": 5.23e+156,
+    "Shaft": 1e+83
+  },
+  {
+    "AmountManagersBought": 173,
+    "Warehouse": 4.18e+157,
+    "Elevator": 4.18e+157,
+    "Shaft": 8.05e+83
+  },
+  {
+    "AmountManagersBought": 174,
+    "Warehouse": 3.35e+158,
+    "Elevator": 3.35e+158,
+    "Shaft": 6.44e+84
+  },
+  {
+    "AmountManagersBought": 175,
+    "Warehouse": 2.68e+159,
+    "Elevator": 2.68e+159,
+    "Shaft": 5.15e+85
+  },
+  {
+    "AmountManagersBought": 176,
+    "Warehouse": 2.14e+160,
+    "Elevator": 2.14e+160,
+    "Shaft": 4.12e+86
+  },
+  {
+    "AmountManagersBought": 177,
+    "Warehouse": 1.71e+161,
+    "Elevator": 1.71e+161,
+    "Shaft": 3.29e+87
+  },
+  {
+    "AmountManagersBought": 178,
+    "Warehouse": 1.37e+162,
+    "Elevator": 1.37e+162,
+    "Shaft": 2.63e+88
+  },
+  {
+    "AmountManagersBought": 179,
+    "Warehouse": 1.09e+163,
+    "Elevator": 1.09e+163,
+    "Shaft": 2.11e+89
+  },
+  {
+    "AmountManagersBought": 180,
+    "Warehouse": 8.78e+163,
+    "Elevator": 8.78e+163,
+    "Shaft": 1.68e+90
+  },
+  {
+    "AmountManagersBought": 181,
+    "Warehouse": 7.02e+164,
+    "Elevator": 7.02e+164,
+    "Shaft": 1.35e+91
+  },
+  {
+    "AmountManagersBought": 182,
+    "Warehouse": 5.62e+165,
+    "Elevator": 5.62e+165,
+    "Shaft": 1.08e+92
+  },
+  {
+    "AmountManagersBought": 183,
+    "Warehouse": 4.49e+166,
+    "Elevator": 4.49e+166,
+    "Shaft": 8.64e+92
+  },
+  {
+    "AmountManagersBought": 184,
+    "Warehouse": 3.59e+167,
+    "Elevator": 3.59e+167,
+    "Shaft": 6.91e+93
+  },
+  {
+    "AmountManagersBought": 185,
+    "Warehouse": 2.87e+168,
+    "Elevator": 2.87e+168,
+    "Shaft": 5.53e+94
+  },
+  {
+    "AmountManagersBought": 186,
+    "Warehouse": 2.3e+169,
+    "Elevator": 2.3e+169,
+    "Shaft": 4.42e+95
+  },
+  {
+    "AmountManagersBought": 187,
+    "Warehouse": 1.84e+170,
+    "Elevator": 1.84e+170,
+    "Shaft": 3.54e+96
+  },
+  {
+    "AmountManagersBought": 188,
+    "Warehouse": 1.47e+171,
+    "Elevator": 1.47e+171,
+    "Shaft": 2.83e+97
+  },
+  {
+    "AmountManagersBought": 189,
+    "Warehouse": 1.17e+172,
+    "Elevator": 1.17e+172,
+    "Shaft": 2.26e+98
+  },
+  {
+    "AmountManagersBought": 190,
+    "Warehouse": 9.43e+172,
+    "Elevator": 9.43e+172,
+    "Shaft": 1.81e+99
+  },
+  {
+    "AmountManagersBought": 191,
+    "Warehouse": 7.54e+173,
+    "Elevator": 7.54e+173,
+    "Shaft": 1.45e+100
+  },
+  {
+    "AmountManagersBought": 192,
+    "Warehouse": 6.03e+174,
+    "Elevator": 6.03e+174,
+    "Shaft": 1.16e+101
+  },
+  {
+    "AmountManagersBought": 193,
+    "Warehouse": 4.83e+175,
+    "Elevator": 4.83e+175,
+    "Shaft": 9.28e+101
+  },
+  {
+    "AmountManagersBought": 194,
+    "Warehouse": 3.86e+176,
+    "Elevator": 3.86e+176,
+    "Shaft": 7.42e+102
+  },
+  {
+    "AmountManagersBought": 195,
+    "Warehouse": 3.09e+177,
+    "Elevator": 3.09e+177,
+    "Shaft": 5.94e+103
+  },
+  {
+    "AmountManagersBought": 196,
+    "Warehouse": 2.47e+178,
+    "Elevator": 2.47e+178,
+    "Shaft": 4.75e+104
+  },
+  {
+    "AmountManagersBought": 197,
+    "Warehouse": 1.97e+179,
+    "Elevator": 1.97e+179,
+    "Shaft": 3.8e+105
+  },
+  {
+    "AmountManagersBought": 198,
+    "Warehouse": 1.58e+180,
+    "Elevator": 1.58e+180,
+    "Shaft": 3.04e+106
+  },
+  {
+    "AmountManagersBought": 199,
+    "Warehouse": 1.26e+181,
+    "Elevator": 1.26e+181,
+    "Shaft": 2.43e+107
+  },
+  {
+    "AmountManagersBought": 200,
+    "Warehouse": 1.01e+182,
+    "Elevator": 1.01e+182,
+    "Shaft": 1.94e+108
+  },
+  {
+    "AmountManagersBought": 201,
+    "Warehouse": 8.1e+182,
+    "Elevator": 8.1e+182,
+    "Shaft": 1.55e+109
+  },
+  {
+    "AmountManagersBought": 202,
+    "Warehouse": 6.48e+183,
+    "Elevator": 6.48e+183,
+    "Shaft": 1.24e+110
+  },
+  {
+    "AmountManagersBought": 203,
+    "Warehouse": 5.18e+184,
+    "Elevator": 5.18e+184,
+    "Shaft": 9.97e+110
+  },
+  {
+    "AmountManagersBought": 204,
+    "Warehouse": 4.14e+185,
+    "Elevator": 4.14e+185,
+    "Shaft": 7.97e+111
+  },
+  {
+    "AmountManagersBought": 205,
+    "Warehouse": 3.31e+186,
+    "Elevator": 3.31e+186,
+    "Shaft": 6.38e+112
+  },
+  {
+    "AmountManagersBought": 206,
+    "Warehouse": 2.65e+187,
+    "Elevator": 2.65e+187,
+    "Shaft": 5.1e+113
+  },
+  {
+    "AmountManagersBought": 207,
+    "Warehouse": 2.12e+188,
+    "Elevator": 2.12e+188,
+    "Shaft": 4.08e+114
+  },
+  {
+    "AmountManagersBought": 208,
+    "Warehouse": 1.69e+189,
+    "Elevator": 1.69e+189,
+    "Shaft": 3.26e+115
+  },
+  {
+    "AmountManagersBought": 209,
+    "Warehouse": 1.35e+190,
+    "Elevator": 1.35e+190,
+    "Shaft": 2.61e+116
+  },
+  {
+    "AmountManagersBought": 210,
+    "Warehouse": 1.08e+191,
+    "Elevator": 1.08e+191,
+    "Shaft": 2.09e+117
+  },
+  {
+    "AmountManagersBought": 211,
+    "Warehouse": 8.7e+191,
+    "Elevator": 8.7e+191,
+    "Shaft": 1.67e+118
+  },
+  {
+    "AmountManagersBought": 212,
+    "Warehouse": 6.96e+192,
+    "Elevator": 6.96e+192,
+    "Shaft": 1.33e+119
+  },
+  {
+    "AmountManagersBought": 213,
+    "Warehouse": 5.56e+193,
+    "Elevator": 5.56e+193,
+    "Shaft": 1.07e+120
+  },
+  {
+    "AmountManagersBought": 214,
+    "Warehouse": 4.45e+194,
+    "Elevator": 4.45e+194,
+    "Shaft": 8.56e+120
+  },
+  {
+    "AmountManagersBought": 215,
+    "Warehouse": 3.56e+195,
+    "Elevator": 3.56e+195,
+    "Shaft": 6.85e+121
+  },
+  {
+    "AmountManagersBought": 216,
+    "Warehouse": 2.85e+196,
+    "Elevator": 2.85e+196,
+    "Shaft": 5.48e+122
+  },
+  {
+    "AmountManagersBought": 217,
+    "Warehouse": 2.28e+197,
+    "Elevator": 2.28e+197,
+    "Shaft": 4.38e+123
+  },
+  {
+    "AmountManagersBought": 218,
+    "Warehouse": 1.82e+198,
+    "Elevator": 1.82e+198,
+    "Shaft": 3.5e+124
+  },
+  {
+    "AmountManagersBought": 219,
+    "Warehouse": 1.45e+199,
+    "Elevator": 1.45e+199,
+    "Shaft": 2.8e+125
+  },
+  {
+    "AmountManagersBought": 220,
+    "Warehouse": 1.16e+200,
+    "Elevator": 1.16e+200,
+    "Shaft": 2.24e+126
+  },
+  {
+    "AmountManagersBought": 221,
+    "Warehouse": 9.34e+200,
+    "Elevator": 9.34e+200,
+    "Shaft": 1.79e+127
+  },
+  {
+    "AmountManagersBought": 222,
+    "Warehouse": 7.47e+201,
+    "Elevator": 7.47e+201,
+    "Shaft": 1.43e+128
+  },
+  {
+    "AmountManagersBought": 223,
+    "Warehouse": 5.98e+202,
+    "Elevator": 5.98e+202,
+    "Shaft": 1.14e+129
+  },
+  {
+    "AmountManagersBought": 224,
+    "Warehouse": 4.78e+203,
+    "Elevator": 4.78e+203,
+    "Shaft": 9.19e+129
+  },
+  {
+    "AmountManagersBought": 225,
+    "Warehouse": 3.82e+204,
+    "Elevator": 3.82e+204,
+    "Shaft": 7.35e+130
+  },
+  {
+    "AmountManagersBought": 226,
+    "Warehouse": 3.06e+205,
+    "Elevator": 3.06e+205,
+    "Shaft": 5.88e+131
+  },
+  {
+    "AmountManagersBought": 227,
+    "Warehouse": 2.44e+206,
+    "Elevator": 2.44e+206,
+    "Shaft": 4.7e+132
+  },
+  {
+    "AmountManagersBought": 228,
+    "Warehouse": 1.95e+207,
+    "Elevator": 1.95e+207,
+    "Shaft": 3.76e+133
+  },
+  {
+    "AmountManagersBought": 229,
+    "Warehouse": 1.56e+208,
+    "Elevator": 1.56e+208,
+    "Shaft": 3.01e+134
+  },
+  {
+    "AmountManagersBought": 230,
+    "Warehouse": 1.25e+209,
+    "Elevator": 1.25e+209,
+    "Shaft": 2.41e+135
+  }
   ]
 }

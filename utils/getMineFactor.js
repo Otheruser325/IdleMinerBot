@@ -1,6 +1,8 @@
-const mineFactors = require('../config/mineFactors.json').mines;
+import mineFactorsJson from '../config/mineFactors.json' with { type: 'json' };
 
-module.exports = function getMineFactor(mineName) {
+const mineFactors = mineFactorsJson.mines;
+
+export default function getMineFactor(mineName) {
     const mine = mineFactors.find(m => m.MineName === mineName);
-    return mine ? mine.Factor : 1; // Default to 1 if not found
+    return mine ? mine.Factor : 1;
 }

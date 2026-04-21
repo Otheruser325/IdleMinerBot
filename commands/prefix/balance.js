@@ -1,6 +1,6 @@
-const { EmbedBuilder } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const { getUser } = require('../../dataManager');
+import { EmbedBuilder } from 'discord.js';
+import numberFormat from '../../utils/numberFormat.js';
+import { getUser } from '../../dataManager.js';
 
 const wealthDescriptions = [
     { minCash: 1e33, description: 'Decillionaire!' },
@@ -24,7 +24,7 @@ const wealthDescriptions = [
     { minCash: 0, description: 'Average' }
 ];
 
-module.exports = {
+export default {
     name: 'balance',
     description: 'Check your balance and cash types.',
     aliases: ['bank', 'bal'],
@@ -54,6 +54,12 @@ module.exports = {
                     }
                 }
 
+                // Check if target is a bot
+                const targetMember = message.guild?.members.cache.get(userId);
+                if (targetMember?.user.bot) {
+                    return message.reply('This is not a real user.');
+                }
+
                 targetUsername = message.guild
                     ? message.guild.members.cache.get(userId)?.user.username || userMention
                     : userMention;
@@ -64,7 +70,7 @@ module.exports = {
 
             // Check if the user exists
             if (!user) {
-                return message.reply(`${targetUsername} needs to start the game first by using \`im!start\`.`);
+                return message.reply(`${targetUsername} needs to start the game first by using \`im!start\` (or \`/start\` if using slash).`);
             }
 
             // Extract and format user's balance data

@@ -1,54 +1,62 @@
-const { getUser, updateUser } = require('../../dataManager');
-const { EmbedBuilder } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const warehouseData = require('../../config/warehouseData.json').warehouseData;
-const getMineFactor = require('../../utils/getMineFactor');
+import { getUser, updateUser, withUserLock } from '../../dataManager.js';
+import { EmbedBuilder } from 'discord.js';
+import numberFormat from '../../utils/numberFormat.js';
+import warehouseDataJson from '../../config/warehouseData.json' with { type: 'json' };
+import getMineFactor from '../../utils/getMineFactor.js';
+import {
+    applyCapacityBoost,
+    applyLoadingSpeedBoost,
+    formatActiveAreaAbilities,
+    getActiveEffects
+} from '../../utils/managerAbilities.js';
+import { getWarehouseTravelTimeMs } from '../../utils/movementTimes.js';
 
-module.exports = {
+const warehouseData = warehouseDataJson.warehouseData;
+
+export default {
     name: 'warehouse',
     description: 'Manage your warehouse with options to view and upgrade.',
     usage: '<subcommand>',
     exampleUsage: 'v warehouse overview | v warehouse upgrade',
     async execute(message, args) {
         const userId = message.author.id;
-        const user = await getUser(userId);
+        return withUserLock(userId, async () => {
+            const user = await getUser(userId);
 
-        if (!user) {
-            return message.reply('You need to start the game first by using `im!start`.');
-        }
+            if (!user) {
+                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+            }
 
-        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-        if (!currentMine) {
-            return message.reply('Current mine data not found.');
-        }
+            const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
+            if (!currentMine) {
+                return message.reply('Current mine data not found.');
+            }
 		
-		if (args.length < 1) {
-            return message.reply(`<@${userId}>, to operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.MineName}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!)`);
-        }
+		    if (args.length < 1) {
+                return message.reply(`<@${userId}>, to operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!)`);
+            }
 		
-		const subcommand = args[0].toLowerCase();
+		    const subcommand = args[0].toLowerCase();
 
-        // Lazy initialization of warehouse
-        if (!currentMine.warehouse) {
-            currentMine.warehouse = [];
-        }
+            if (!currentMine.warehouse) {
+                currentMine.warehouse = [];
+            }
 
-        if (currentMine.warehouse.length === 0) {
-            return interaction.reply('You need to work in the Elevator before accessing the Warehouse.');
-        }
+            if (currentMine.warehouse.length === 0) {
+                return message.reply('You need to work in the Elevator before accessing the Warehouse.');
+            }
 
-        const warehouse = currentMine.warehouse[0]; // Accessing the first warehouse
+            const warehouse = currentMine.warehouse[0];
 
-        switch (subcommand) {
-            case 'overview':
-                await handleWarehouseOverview(message, user, warehouse, currentMine, args, userId);
-                break;
-            case 'upgrade':
-                await handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId);
-                break;
-            default:
-			    return message.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
-        }
+            switch (subcommand) {
+                case 'overview':
+                    return handleWarehouseOverview(message, user, warehouse, currentMine, args, userId);
+                case 'upgrade':
+                    return handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId);
+                default:
+			        return message.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
+            }
+        });
     }
 };
 
@@ -63,15 +71,27 @@ async function handleWarehouseOverview(message, user, warehouse, currentMine, ar
     const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedCapacityPerWorker = warehouseInfo.CapacityPerWorker * mineFactor;
     const adjustedLoadingRate = warehouseInfo.LoadingPerSecond * mineFactor;
+    const effects = getActiveEffects(currentMine);
+    const baseWalkingTime = 4000 / Math.max(warehouseInfo.WorkerWalkingSpeedPerSecond || 1, 1);
+    const boostedWalkingTime = getWarehouseTravelTimeMs(warehouse.worker_walking_speed_per_second || warehouseInfo.WorkerWalkingSpeedPerSecond, currentMine);
+    const boostedCapacityPerWorker = applyCapacityBoost(adjustedCapacityPerWorker, 'warehouse', currentMine);
+    const boostedLoadingRate = applyLoadingSpeedBoost(adjustedLoadingRate, 'warehouse', currentMine);
+    const boostedIncome = effects.income_multiplier.warehouse > 1
+        ? `${effects.income_multiplier.warehouse.toFixed(2)}x sale value`
+        : 'No income multiplier active';
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Warehouse Overview in ${currentMine.mine_name} (Level ${warehouse.level})`)
+        .setTitle(`Warehouse Overview in ${currentMine.mine_name}`)
         .addFields(
+            { name: 'Level', value: `${warehouse.level}`, inline: true },
             { name: 'Number of Workers', value: `${warehouseInfo.NumberOfWorkers}`, inline: true },
-            { name: 'Capacity per Worker', value: `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
-            { name: 'Worker Walking Speed', value: `${warehouseInfo.WorkerWalkingSpeedPerSecond} units/sec`, inline: true },
-            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true }
+            { name: 'Capacity per Worker', value: boostedCapacityPerWorker !== adjustedCapacityPerWorker ? `${numberFormat(adjustedCapacityPerWorker)} -> ${numberFormat(boostedCapacityPerWorker)} units` : `${numberFormat(adjustedCapacityPerWorker)} units`, inline: true },
+            { name: 'Walking Speed', value: `${warehouseInfo.WorkerWalkingSpeedPerSecond} units/sec`, inline: true },
+            { name: 'Walking Time', value: boostedWalkingTime !== baseWalkingTime ? `${(baseWalkingTime / 1000).toFixed(2)}s -> ${(boostedWalkingTime / 1000).toFixed(2)}s per trip` : `${(baseWalkingTime / 1000).toFixed(2)}s per trip`, inline: true },
+            { name: 'Loading Rate', value: boostedLoadingRate !== adjustedLoadingRate ? `${numberFormat(adjustedLoadingRate)} -> ${numberFormat(boostedLoadingRate)} units/sec` : `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
+            { name: 'Income Effect', value: boostedIncome, inline: true },
+            { name: 'Active Ability Boosts', value: formatActiveAreaAbilities(currentMine, 'warehouse'), inline: false }
         )
         .setTimestamp();
 
@@ -128,7 +148,7 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
             warehouse.loading_per_second = nextWarehouseInfo.LoadingPerSecond * getMineFactor(currentMine.mine_name);
             
             if (nextWarehouseInfo.BigUpdate === 1) {
-                superCashEarned += nextWarehouseInfo.SuperCashReward;
+                superCashEarned += 15;
             }
 
             currentLevel = nextLevel;

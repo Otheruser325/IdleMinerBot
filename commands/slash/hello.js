@@ -1,10 +1,12 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+import { SlashCommandBuilder } from 'discord.js';
+import prefixCommand from '../prefix/hello.js';
+import { executePrefixCommandFromInteraction } from '../../utils/commandBridge.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('hello')
-        .setDescription('Replies with Hello!'),
+        .setDescription('Say hello.'),
     async execute(interaction) {
-        await interaction.reply('Hello!');
-    },
+        return executePrefixCommandFromInteraction(interaction, prefixCommand);
+    }
 };

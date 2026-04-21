@@ -1,49 +1,46 @@
-const { getUser, updateUser } = require('../../dataManager');
-const { EmbedBuilder } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const mineRegions = require('../../config/mineRegions.json').regions;
+import { getUser, updateUser, withUserLock } from '../../dataManager.js';
+import { EmbedBuilder } from 'discord.js';
+import numberFormat from '../../utils/numberFormat.js';
 
-module.exports = {
+export default {
     name: 'barrier',
     description: 'Manage barriers in your mine to unlock new tiers.',
     usage: '<subcommand> [arguments]',
     exampleUsage: 'v barrier unlock 1',
     async execute(message, args) {
         const userId = message.author.id;
-        const user = await getUser(userId);
+        return withUserLock(userId, async () => {
+            const user = await getUser(userId);
 
-        if (!user) {
-            return message.reply('You need to start the game first by using `im!start`.');
-        }
+            if (!user) {
+                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+            }
 
-        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-        if (!currentMine) {
-            return message.reply('Current mine data not found.');
-        }
-		
-		if (args.length < 1) {
-            return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
-        }
-		
-		const subcommand = args[0].toLowerCase();
+            const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
+            if (!currentMine) {
+                return message.reply('Current mine data not found.');
+            }
 
-        switch (subcommand) {
-            case 'unlock':
-                await handleUnlock(message, user, currentMine, args, userId);
-                break;
-            case 'overview':
-                await handleOverview(message, currentMine);
-                break;
-            case 'remove':
-                await handleRemove(message, user, currentMine, args, userId);
-                break;
-            default:
-			    return message.reply(`Invalid subcommand, <@${userId}>! To manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
-        }
+            if (args.length < 1) {
+                return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
+            }
+
+            const subcommand = args[0].toLowerCase();
+
+            switch (subcommand) {
+                case 'unlock':
+                    return handleUnlock(message, user, currentMine, args, userId);
+                case 'overview':
+                    return handleOverview(message, currentMine);
+                case 'remove':
+                    return handleRemove(message, user, currentMine, args, userId);
+                default:
+                    return message.reply(`Invalid subcommand, <@${userId}>! To manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
+            }
+        });
     }
 };
 
-// Function to handle the "unlock" subcommand
 async function handleUnlock(message, user, currentMine, args, userId) {
     const barrierOrder = parseInt(args[1], 10);
 
@@ -62,7 +59,7 @@ async function handleUnlock(message, user, currentMine, args, userId) {
         return message.reply(`You must unlock Barrier ${barrierOrder - 1} before unlocking Barrier ${barrierOrder}.`);
     }
 
-    const requiredTier = (barrierOrder === 1) ? 5 : 10;
+    const requiredTier = barrierOrder === 1 ? 5 : 10;
     const requiredShaftsUnlocked = currentMine.mineshafts.some(shaft => shaft.tier >= requiredTier);
 
     if (!requiredShaftsUnlocked) {
@@ -73,35 +70,45 @@ async function handleUnlock(message, user, currentMine, args, userId) {
         return message.reply(`Barrier ${barrierOrder} is already unlocked.`);
     }
 
-    if (user.cash < barrier.Cost) {
-        return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(barrier.Cost)}`);
+    if (barrier.unlock_time && barrier.unlock_time > Date.now()) {
+        return message.reply(`Barrier ${barrierOrder} is already being removed.`);
     }
 
-    // Deduct the cash and set the barrier as in the process of being unlocked
+    if (user.cash < barrier.cost) {
+        return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(barrier.cost)}`);
+    }
+
     user.cash -= barrier.cost;
-    barrier.unlock_time = Date.now() + barrier.build_time_in_seconds * 1000;
+    barrier.unlock_time = Date.now() + (barrier.build_time_in_seconds || 0) * 1000;
 
     await updateUser(userId, user);
 
     return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.build_time_in_seconds} seconds.`);
 }
 
-// Function to handle the "overview" subcommand
 async function handleOverview(message, currentMine) {
     const embed = new EmbedBuilder()
         .setTitle('Barrier Overview')
-        .setDescription(`Here is the current status of your barriers in the ${currentMine.mine_name}:`)
+        .setDescription(`Here is the current status of your barriers in ${currentMine.mine_name}:`)
         .setColor('#00FF00');
 
     currentMine.barriers.forEach((barrier, index) => {
-        const status = barrier.unlocked ? 'Unlocked' : `Locked (Unlocking in ${Math.max(0, Math.floor((barrier.unlock_time - Date.now()) / 1000))} seconds)`;
+        let status;
+        if (barrier.unlocked) {
+            status = 'Unlocked';
+        } else if (barrier.unlock_time && barrier.unlock_time > Date.now()) {
+            const secondsRemaining = Math.max(0, Math.floor((barrier.unlock_time - Date.now()) / 1000));
+            status = `Unlocking in ${secondsRemaining}s`;
+        } else {
+            status = barrier.cost > 0 ? `Locked (${numberFormat(barrier.cost)} Cash)` : 'Locked';
+        }
+
         embed.addFields({ name: `Barrier ${index + 1}`, value: status, inline: true });
     });
 
-    message.reply({ embeds: [embed] });
+    return message.reply({ embeds: [embed] });
 }
 
-// Function to handle the "remove" subcommand
 async function handleRemove(message, user, currentMine, args, userId) {
     const barrierOrder = parseInt(args[1], 10);
 
@@ -115,7 +122,11 @@ async function handleRemove(message, user, currentMine, args, userId) {
         return message.reply('Barrier data not found.');
     }
 
-    if (!barrier.unlock_time || Date.now() < barrier.unlock_time) {
+    if (!barrier.unlock_time && !barrier.unlocked) {
+        return message.reply(`Barrier ${barrierOrder} has not been purchased for removal yet.`);
+    }
+
+    if (barrier.unlock_time && Date.now() < barrier.unlock_time) {
         return message.reply(`Barrier ${barrierOrder} is still being removed. Please wait until the process is complete.`);
     }
 

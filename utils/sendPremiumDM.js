@@ -1,4 +1,4 @@
-module.exports = async function sendPremiumDM(user) {
+export default async function sendPremiumDM(user) {
   const premiumMessage = `
     **Congratulations for going Premium!**
     

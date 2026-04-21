@@ -1,54 +1,62 @@
-const { getUser, updateUser } = require('../../dataManager');
-const { EmbedBuilder } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const elevatorData = require('../../config/elevatorData.json').elevatorData;
-const getMineFactor = require('../../utils/getMineFactor');
+import { getUser, updateUser, withUserLock } from '../../dataManager.js';
+import { EmbedBuilder } from 'discord.js';
+import numberFormat from '../../utils/numberFormat.js';
+import elevatorDataJson from '../../config/elevatorData.json' with { type: 'json' };
+import getMineFactor from '../../utils/getMineFactor.js';
+import {
+    applyCapacityBoost,
+    applyLoadingSpeedBoost,
+    formatActiveAreaAbilities,
+    getActiveEffects
+} from '../../utils/managerAbilities.js';
+import { getElevatorSegmentTravelTimeMs } from '../../utils/movementTimes.js';
 
-module.exports = {
+const elevatorData = elevatorDataJson.elevatorData;
+
+export default {
     name: 'elevator',
     description: 'Manage your elevator with options to view and upgrade.',
     usage: '<subcommand>',
     exampleUsage: 'v elevator overview | v elevator upgrade',
     async execute(message, args) {
         const userId = message.author.id;
-        const user = await getUser(userId);
+        return withUserLock(userId, async () => {
+            const user = await getUser(userId);
 
-        if (!user) {
-            return message.reply('You need to start the game first by using `im!start`.');
-        }
+            if (!user) {
+                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+            }
 
-        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-        if (!currentMine) {
-            return message.reply('Current mine data not found.');
-        }
+            const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
+            if (!currentMine) {
+                return message.reply('Current mine data not found.');
+            }
 
-        if (args.length < 1) {
-            return message.reply(`<@${userId}>, to operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
-        }
+            if (args.length < 1) {
+                return message.reply(`<@${userId}>, to operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
+            }
 
-        const subcommand = args[0].toLowerCase();
+            const subcommand = args[0].toLowerCase();
 
-        // Lazy initialization of elevator
-        if (!currentMine.elevator) {
-            currentMine.elevator = [];
-        }
+            if (!currentMine.elevator) {
+                currentMine.elevator = [];
+            }
 
-        if (currentMine.elevator.length === 0) {
-            return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
-        }
+            if (currentMine.elevator.length === 0) {
+                return message.reply('You need to work in Mineshaft 1 before accessing the Elevator.');
+            }
 
-        const elevator = currentMine.elevator[0]; // Accessing the first elevator
+            const elevator = currentMine.elevator[0];
 
-        switch (subcommand) {
-            case 'overview':
-                await handleElevatorOverview(message, user, elevator, currentMine, args, userId);
-                break;
-            case 'upgrade':
-                await handleElevatorUpgrade(message, user, elevator, currentMine, args, userId);
-                break;
-            default:
-                return message.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
-        }
+            switch (subcommand) {
+                case 'overview':
+                    return handleElevatorOverview(message, user, elevator, currentMine, args, userId);
+                case 'upgrade':
+                    return handleElevatorUpgrade(message, user, elevator, currentMine, args, userId);
+                default:
+                    return message.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
+            }
+        });
     }
 };
 
@@ -63,15 +71,27 @@ async function handleElevatorOverview(message, user, elevator, currentMine, args
     const mineFactor = getMineFactor(currentMine.mine_name);
     const adjustedCapacity = elevatorInfo.Capacity * mineFactor;
     const adjustedLoadingRate = elevatorInfo.LoadingPerSecond * mineFactor;
+    const effects = getActiveEffects(currentMine);
+    const baseTravelTime = 1000 / Math.max(elevatorInfo.Speed || 1, 0.1);
+    const boostedTravelTime = getElevatorSegmentTravelTimeMs(elevator.speed || elevatorInfo.Speed, currentMine);
+    const boostedCapacity = applyCapacityBoost(adjustedCapacity, 'elevator', currentMine);
+    const boostedLoadingRate = applyLoadingSpeedBoost(adjustedLoadingRate, 'elevator', currentMine);
+    const boostedIncome = effects.income_multiplier.elevator > 1
+        ? `${effects.income_multiplier.elevator.toFixed(2)}x sale value`
+        : 'No income multiplier active';
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Elevator Overview in ${currentMine.mine_name} (Level ${elevator.level})`)
+        .setTitle(`Elevator Overview in ${currentMine.mine_name}`)
         .addFields(
+            { name: 'Level', value: `${elevator.level}`, inline: true },
             { name: 'Speed', value: `${elevatorInfo.Speed} units/sec`, inline: true },
-            { name: 'Capacity', value: `${numberFormat(adjustedCapacity)} units`, inline: true },
-            { name: 'Loading Rate', value: `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
-            { name: 'Total Deposit', value: `${numberFormat(elevator.total_deposit)}`, inline: true }
+            { name: 'Travel Time', value: boostedTravelTime !== baseTravelTime ? `${(baseTravelTime / 1000).toFixed(2)}s -> ${(boostedTravelTime / 1000).toFixed(2)}s per trip` : `${(baseTravelTime / 1000).toFixed(2)}s per trip`, inline: true },
+            { name: 'Capacity', value: boostedCapacity !== adjustedCapacity ? `${numberFormat(adjustedCapacity)} -> ${numberFormat(boostedCapacity)} units` : `${numberFormat(adjustedCapacity)} units`, inline: true },
+            { name: 'Loading Rate', value: boostedLoadingRate !== adjustedLoadingRate ? `${numberFormat(adjustedLoadingRate)} -> ${numberFormat(boostedLoadingRate)} units/sec` : `${numberFormat(adjustedLoadingRate)} units/sec`, inline: true },
+            { name: 'Income Effect', value: boostedIncome, inline: true },
+            { name: 'Total Deposit', value: `${numberFormat(elevator.total_deposit)}`, inline: true },
+            { name: 'Active Ability Boosts', value: formatActiveAreaAbilities(currentMine, 'elevator'), inline: false }
         )
         .setTimestamp();
 
@@ -80,7 +100,7 @@ async function handleElevatorOverview(message, user, elevator, currentMine, args
 
 // Function to handle the "upgrade" subcommand for the elevator
 async function handleElevatorUpgrade(message, user, elevator, currentMine, args, userId) {
-    const upgradeCount = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for upgrade count
+    const upgradeCount = args[1] ? parseInt(args[1], 10) : 1;
 
     if (isNaN(upgradeCount) || upgradeCount < 1) {
         return message.reply('Please provide a valid number of upgrades (positive integer).');
@@ -127,12 +147,12 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, args,
             elevator.loading_per_second = nextElevatorInfo.LoadingPerSecond * getMineFactor(currentMine.mine_name);
 
             if (nextElevatorInfo.BigUpdate === 1) {
-                superCashEarned += nextElevatorInfo.SuperCashReward;
+                superCashEarned += 15;
             }
 
             currentLevel = nextLevel;
         } else {
-            break; // Stop upgrading if no further upgrades are available
+            break;
         }
     }
 

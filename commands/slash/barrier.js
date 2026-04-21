@@ -1,140 +1,39 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getUser, updateUser } = require('../../dataManager');
-const { EmbedBuilder } = require('discord.js');
-const numberFormat = require('../../utils/numberFormat');
-const mineRegions = require('../../config/mineRegions.json').regions;
+import { SlashCommandBuilder } from 'discord.js';
+import prefixCommand from '../prefix/barrier.js';
+import { executePrefixCommandFromInteraction } from '../../utils/commandBridge.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('barrier')
-        .setDescription('Manage barriers in your mine to unlock new tiers.')
+        .setDescription('Manage barriers in your mine.')
         .addSubcommand(subcommand =>
             subcommand
                 .setName('unlock')
                 .setDescription('Unlock a barrier.')
-                .addIntegerOption(option => 
-                    option.setName('order')
-                        .setDescription('The order number of the barrier to unlock.')
-                        .setRequired(true)))
+                .addIntegerOption(option =>
+                    option.setName('order').setDescription('Barrier order number.').setRequired(true)
+                )
+        )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('overview')
-                .setDescription('Get an overview of barriers.'))
+                .setDescription('View your current barriers.')
+        )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('remove')
-                .setDescription('Remove a barrier.')
-                .addIntegerOption(option => 
-                    option.setName('order')
-                        .setDescription('The order number of the barrier to remove.')
-                        .setRequired(true))),
+                .setDescription('Remove a completed barrier.')
+                .addIntegerOption(option =>
+                    option.setName('order').setDescription('Barrier order number.').setRequired(true)
+                )
+        ),
     async execute(interaction) {
-        const userId = interaction.user.id;
-        const user = await getUser(userId);
-
-        if (!user) {
-            return interaction.reply('You need to start the game first by using `/start`.');
-        }
-
-        const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-        if (!currentMine) {
-            return interaction.reply('Current mine data not found.');
-        }
-
         const subcommand = interaction.options.getSubcommand();
-
-        switch (subcommand) {
-            case 'unlock':
-                await handleUnlock(interaction, user, currentMine, userId);
-                break;
-            case 'overview':
-                await handleOverview(interaction, currentMine);
-                break;
-            case 'remove':
-                await handleRemove(interaction, user, currentMine, userId);
-                break;
-            default:
-                return interaction.reply(`Invalid subcommand, <@${userId}>! To manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **/barrier unlock (index)**, view all current barriers in your mine using **/barrier overview** or demolish a barrier that is finished using **/barrier remove (index)**.`);
+        const order = interaction.options.getInteger('order');
+        const args = [subcommand];
+        if (order !== null) {
+            args.push(String(order));
         }
+        return executePrefixCommandFromInteraction(interaction, prefixCommand, args);
     }
 };
-
-async function handleUnlock(interaction, user, currentMine, userId) {
-    const barrierOrder = interaction.options.getInteger('order');
-
-    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
-        return interaction.reply('Please provide a valid barrier order number.');
-    }
-
-    const barrier = currentMine.barriers[barrierOrder];
-    const previousBarrier = currentMine.barriers[barrierOrder - 1];
-
-    if (!barrier) {
-        return interaction.reply('Barrier data not found.');
-    }
-
-    if (!previousBarrier.unlocked && barrierOrder > 1) {
-        return interaction.reply(`You must unlock Barrier ${barrierOrder - 1} before unlocking Barrier ${barrierOrder}.`);
-    }
-
-    const requiredTier = (barrierOrder === 1) ? 5 : 10;
-    const requiredShaftsUnlocked = currentMine.mineshafts.some(shaft => shaft.tier >= requiredTier);
-
-    if (!requiredShaftsUnlocked) {
-        return interaction.reply(`You must have unlocked shafts of tier ${requiredTier} to unlock Barrier ${barrierOrder}.`);
-    }
-
-    if (barrier.unlocked) {
-        return interaction.reply(`Barrier ${barrierOrder} is already unlocked.`);
-    }
-
-    if (user.cash < barrier.cost) {
-        return interaction.reply(`You do not have enough cash to unlock this barrier. Cost: ${numberFormat(barrier.cost)}`);
-    }
-
-    user.cash -= barrier.cost;
-    barrier.unlock_time = Date.now() + barrier.build_time_in_seconds * 1000;
-
-    await updateUser(userId, user);
-
-    return interaction.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.build_time_in_seconds} seconds.`);
-}
-
-async function handleOverview(interaction, currentMine) {
-    const embed = new EmbedBuilder()
-        .setTitle('Barrier Overview')
-        .setDescription(`Here is the current status of your barriers in the ${currentMine.mine_name}:`)
-        .setColor('#00FF00');
-
-    currentMine.barriers.forEach((barrier, index) => {
-        const status = barrier.unlocked ? 'Unlocked' : `Locked (Unlocking in ${Math.max(0, Math.floor((barrier.unlock_time - Date.now()) / 1000))} seconds)`;
-        embed.addFields({ name: `Barrier ${index + 1}`, value: status, inline: true });
-    });
-
-    return interaction.reply({ embeds: [embed] });
-}
-
-async function handleRemove(interaction, user, currentMine, userId) {
-    const barrierOrder = interaction.options.getInteger('order');
-
-    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
-        return interaction.reply('Please provide a valid barrier order number.');
-    }
-
-    const barrier = currentMine.barriers[barrierOrder];
-
-    if (!barrier) {
-        return interaction.reply('Barrier data not found.');
-    }
-
-    if (!barrier.unlock_time || Date.now() < barrier.unlock_time) {
-        return interaction.reply(`Barrier ${barrierOrder} is still being removed. Please wait until the process is complete.`);
-    }
-
-    barrier.unlocked = true;
-    barrier.unlock_time = null;
-
-    await updateUser(userId, user);
-
-    return interaction.reply(`Successfully removed Barrier ${barrierOrder}. You can now access new shafts.`);
-}

@@ -1,31 +1,67 @@
-const supabase = require('./supabaseClient');
-const { ActivityType } = require('discord.js');
+import supabase from './supabaseClient.js';
+import { ActivityType } from 'discord.js';
 
-async function updateBotStatus(client) {
+let lastKnownUserCount = null;
+
+function buildStatusText(userCount) {
+    if (userCount === 1) {
+        return '1 user is mining!';
+    }
+
+    return `${userCount} users are mining!`;
+}
+
+export async function updateBotStatus(client) {
     try {
-        // Fetch all users from Supabase
-        const { data: users, error } = await supabase
+        if (!client?.user) {
+            return;
+        }
+
+        const { error: checkError } = await supabase
             .from('users')
-            .select('*');
+            .select('user_id', { count: 'exact', head: true })
+            .limit(1);
+
+        if (checkError?.code === '42P01' || checkError?.message?.includes('relation') || checkError?.message?.includes('does not exist')) {
+            console.log('Users table not ready, skipping status update');
+            await client.user.setPresence({
+                status: 'online',
+                activities: [{ name: 'Idle Miner Bot', type: ActivityType.Playing }]
+            });
+            return;
+        }
+
+        const { count, error } = await supabase
+            .from('users')
+            .select('user_id', { count: 'exact', head: true });
 
         if (error) {
             throw new Error(`Error fetching users: ${error.message}`);
         }
 
-        // Get the count of users
-        const userCount = users.length;
+        const userCount = count || 0;
+        lastKnownUserCount = userCount;
+        const statusText = buildStatusText(userCount);
 
-        // Determine the correct term for user(s)
-        const userTerm = userCount === 1 ? 'user' : 'users';
-
-        // Update the bot's status
-        await client.user.setActivity(`${userCount} ${userTerm} are mining!`, { type: ActivityType.Playing });
-        console.log(`Bot status updated: ${userCount} ${userTerm} are mining!`);
+        await client.user.setPresence({
+            status: 'online',
+            activities: [{ name: statusText, type: ActivityType.Playing }]
+        });
+        console.log(`Bot status updated: ${statusText}`);
     } catch (error) {
-        console.error('Error updating bot status:', error);
+        console.error('Error updating bot status:', error.message);
+
+        try {
+            const fallbackText = lastKnownUserCount !== null
+                ? buildStatusText(lastKnownUserCount)
+                : 'Waiting for conquest...';
+
+            await client.user.setPresence({
+                status: 'online',
+                activities: [{ name: fallbackText, type: ActivityType.Playing }]
+            });
+        } catch {
+            // Ignore if this also fails
+        }
     }
 }
-
-module.exports = {
-    updateBotStatus
-};

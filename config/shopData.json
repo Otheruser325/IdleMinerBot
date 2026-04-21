@@ -42,6 +42,46 @@
     },
 	{
       "id": 5,
+      "ItemName": "Weekly x4 Boost",
+      "SuperCashCost": 2700,
+      "ActiveTimeSeconds": 604800,
+      "CompleteIncomeIncreaseFactor": 4,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+	{
+      "id": 6,
+      "ItemName": "x50 Boost",
+      "SuperCashCost": 3000,
+      "ActiveTimeSeconds": 3600,
+      "CompleteIncomeIncreaseFactor": 50,
+      "InstantCashTime": 0,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+	{
+      "id": 7,
+      "ItemName": "12-Hour Instant Cash",
+      "SuperCashCost": 500,
+      "ActiveTimeSeconds": 0,
+      "CompleteIncomeIncreaseFactor": 0,
+      "InstantCashTime": 43200,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+	{
+      "id": 8,
+      "ItemName": "7-Day Instant Cash",
+      "SuperCashCost": 2000,
+      "ActiveTimeSeconds": 0,
+      "CompleteIncomeIncreaseFactor": 0,
+      "InstantCashTime": 259200,
+      "Category": "boosters",
+      "CanBeBoughtInItemShop": true
+    },
+	{
+      "id": 9,
       "ItemName": "Premium Pass",
       "SuperCashCost": 5000,
       "Category": "premium",

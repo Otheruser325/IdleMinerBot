@@ -1,6 +1,6 @@
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v10'); // Updated to v10
-const dotenv = require('dotenv');
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v10';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -46,6 +46,6 @@ const deployCommands = async (clientId, token, slashCommands) => {
     }
 };
 
-module.exports = {
+export {
     deployCommands
 };

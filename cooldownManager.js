@@ -10,13 +10,13 @@ function isCooldownActive(userId, commandName) {
     if (cooldowns.has(key)) {
         const expirationTime = cooldowns.get(key);
         if (Date.now() < expirationTime) {
-            return (expirationTime - Date.now()) / 1000; // return time left in seconds
+            return (expirationTime - Date.now()) / 1000;
         }
     }
     return 0;
 }
 
-module.exports = {
+export {
     setCooldown,
     isCooldownActive
 };
