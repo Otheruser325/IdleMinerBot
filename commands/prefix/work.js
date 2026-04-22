@@ -17,6 +17,7 @@ import {
     getShaftTravelTimeMs,
     getWarehouseTravelTimeMs
 } from '../../utils/movementTimes.js';
+import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 
 const shaftData = shaftDataJson.shaftData;
 const elevatorData = elevatorDataJson.elevatorData;
@@ -227,6 +228,8 @@ async function handleShaftWork(message, user, currentMine, userId, tier) {
         return message.reply(`Unable to find data for Shaft Tier ${tier} at Level ${shaft.level}.`);
     }
 
+    const walletField = getCashField(currentMine.mine_number);
+
     const walkingTime = getShaftTravelTimeMs(shaft.worker_walking_speed_per_second, currentMine);
 
     shaft.last_worked_on = now;
@@ -242,7 +245,7 @@ async function handleShaftWork(message, user, currentMine, userId, tier) {
     const beamResult = applyShaftIncomeBeam(deposit, currentMine);
 
     if (beamResult.beamAmount > 0) {
-        user.cash += beamResult.beamAmount;
+        user[walletField] = (user[walletField] || 0) + beamResult.beamAmount;
     }
 
     shaft.total_deposit = (shaft.total_deposit || 0) + beamResult.remainingDeposit;
@@ -272,6 +275,7 @@ async function handleElevatorWork(message, user, currentMine, userId) {
     const now = Date.now();
     const loadingPerSecond = applyLoadingSpeedBoost(elevatorInfo.LoadingPerSecond, 'elevator', currentMine);
     const travelTime = getElevatorSegmentTravelTimeMs(elevator.speed || elevatorInfo.Speed, currentMine);
+    const walletField = getCashField(currentMine.mine_number);
 
     if (elevator.last_worked_on && (now - elevator.last_worked_on < travelTime)) {
         const remainingTime = travelTime - (now - elevator.last_worked_on);
@@ -322,7 +326,7 @@ async function handleElevatorWork(message, user, currentMine, userId) {
     }
 
     if (totalBeamCash > 0) {
-        user.cash += totalBeamCash;
+        user[walletField] = (user[walletField] || 0) + totalBeamCash;
     }
 
     await statusMessage.edit('Travelling back to extraction base...');
@@ -366,6 +370,9 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
         return message.reply('Warehouse data not found.');
     }
 
+    const walletField = getCashField(currentMine.mine_number);
+    const walletLabel = getCashLabelByField(walletField);
+
     const now = Date.now();
     const totalWorkerCapacity = warehouseInfo.CapacityPerWorker * warehouseInfo.NumberOfWorkers;
     const extractableAmount = Math.min(elevator.total_deposit || 0, totalWorkerCapacity);
@@ -398,14 +405,14 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
 
     const incomeResult = applyIncomeMultiplier(cashReward, currentMine);
     const finalCash = incomeResult.finalCash;
-    user.cash += finalCash;
+    user[walletField] = (user[walletField] || 0) + finalCash;
 
     await updateUser(userId, user);
 
-    let replyMessage = `Successfully sold minerals worth ${numberFormat(cashReward)}.`;
+    let replyMessage = `Successfully sold minerals worth ${numberFormat(cashReward)} ${walletLabel}.`;
     if (incomeResult.multiplier > 1) {
         replyMessage += `\nManager Income Multiplier: ${incomeResult.multiplier.toFixed(2)}x`;
-        replyMessage += `\nTotal received: ${numberFormat(finalCash)}!`;
+        replyMessage += `\nTotal received: ${numberFormat(finalCash)} ${walletLabel}!`;
     }
 
     await statusMessage.edit(replyMessage);

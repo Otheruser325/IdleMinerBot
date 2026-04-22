@@ -12,6 +12,8 @@ import {
     normalizeOwnedContinents,
     userOwnsContinent
 } from '../../utils/continentLooker.js';
+import { scaleMineCost } from '../../utils/mineDifficulty.js';
+import { getMaxPrestigeCount, getMineIdleCashPerSecond, getMineProductionPerSecond } from '../../utils/mineOverview.js';
 
 const mineFactors = mineFactorsJson.mines;
 const mineRegions = mineRegionsJson.regions;
@@ -67,7 +69,7 @@ function normalizeUserMineState(user) {
 function createMineRecord(mine) {
     return {
         prestige_count: 0,
-        mine_name: mine.MineName,
+        mine_name: getMineName(mine.MineNumber),
         mine_number: mine.MineNumber,
         factor: mine.Factor,
         mineshafts: [],
@@ -115,12 +117,6 @@ function findMineFactor(mineInput, prestigeCount = 0) {
     ) || null;
 }
 
-function getMaxPrestigeCount(mineNumber) {
-    return mineFactors
-        .filter(mine => mine.MineNumber === mineNumber)
-        .reduce((maxPrestige, mine) => Math.max(maxPrestige, mine.PrestigeCount || 0), 0);
-}
-
 function findOwnedMine(user, mineInput) {
     const resolvedMine = resolveMine(mineInput);
     if (!resolvedMine) {
@@ -151,6 +147,7 @@ function resolveOwnedMine(user, mineInput) {
 
 async function handleMineBuy(message, mineInput, user, userId) {
     const mine = findMineFactor(mineInput);
+    const mineName = mine ? getMineName(mine.MineNumber) : null;
 
     if (!mine) {
         return message.reply('Please put a valid mine name or ID');
@@ -159,7 +156,7 @@ async function handleMineBuy(message, mineInput, user, userId) {
     const mineExists = user.mines.find(existingMine => existingMine.mine_number === mine.MineNumber);
 
     if (mineExists) {
-        return message.reply(`You already own ${mine.MineName}.`);
+        return message.reply(`You already own ${mineName}.`);
     }
 
     const continent = getContinentByMineNumber(mine.MineNumber);
@@ -168,39 +165,41 @@ async function handleMineBuy(message, mineInput, user, userId) {
     }
 
     if (!userOwnsContinent(user, continent.name)) {
-        return message.reply(`You need to unlock ${continent.name} before buying ${mine.MineName}.`);
+        return message.reply(`You need to unlock ${continent.name} before buying ${mineName}.`);
     }
 
     const previousMineName = getPreviousMineNameInContinent(mine.MineNumber);
     if (previousMineName && !user.mines.some(existingMine => existingMine.mine_name === previousMineName)) {
-        return message.reply(`You need to own ${previousMineName} before buying ${mine.MineName}.`);
+        return message.reply(`You need to own ${previousMineName} before buying ${mineName}.`);
     }
 
     const cashField = getCashField(mine.MineNumber);
     const cashLabel = getCashLabelByField(cashField);
     const availableCash = user[cashField] || 0;
 
-    if (availableCash < mine.Cost) {
-        return message.reply(`You don't have enough ${cashLabel} to buy ${mine.MineName}. It costs ${numberFormat(mine.Cost)} ${cashLabel}.`);
+    const scaledMineCost = scaleMineCost(mine.Cost, mine.MineNumber);
+    if (availableCash < scaledMineCost) {
+        return message.reply(`You don't have enough ${cashLabel} to buy ${mineName}. It costs ${numberFormat(scaledMineCost)} ${cashLabel}.`);
     }
 
-    user[cashField] = availableCash - mine.Cost;
+    user[cashField] = availableCash - scaledMineCost;
     user.mines.push(createMineRecord(mine));
     user.mines.sort((left, right) => left.mine_number - right.mine_number);
-    user.current_mine = mine.MineName;
+    user.current_mine = mineName;
     user.current_continent = continent.name;
 
     await updateUser(userId, {
         cash: user.cash,
         ice_cash: user.ice_cash,
         fire_cash: user.fire_cash,
+        dawn_cash: user.dawn_cash,
         continents: user.continents,
         mines: user.mines,
         current_mine: user.current_mine,
         current_continent: user.current_continent
     });
 
-    return message.reply(`Congratulations! You purchased ${mine.MineName} (Mine ${mine.MineNumber}) in ${continent.name} using ${cashLabel}, and you're now working there.`);
+    return message.reply(`Congratulations! You purchased ${mineName} (Mine ${mine.MineNumber}) in ${continent.name} using ${cashLabel}, and you're now working there.`);
 }
 
 async function handleMineVisit(message, mineInput, user, userId) {
@@ -245,19 +244,27 @@ async function handleMineManage(message, mineInput, user) {
     const continent = getContinentByMineNumber(mine.mine_number);
     const cashLabel = getCashLabelByField(getCashField(mine.mine_number));
     const maxPrestigeCount = getMaxPrestigeCount(mine.mine_number);
+    const productionPerSecond = getMineProductionPerSecond(mine);
+    const idleCashPerSecond = getMineIdleCashPerSecond(mine, user.has_premium);
+    const storedDeposit =
+        (mine.mineshafts || []).reduce((total, shaft) => total + (shaft.total_deposit || 0), 0) +
+        ((mine.elevator?.[0]?.total_deposit) || 0) +
+        ((mine.warehouse?.[0]?.total_deposit) || 0);
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`${mine.mine_name} Management`)
-        .setDescription([
-            `Mine Number: ${mine.mine_number}`,
-            `Continent: ${continent?.name || 'Unknown Continent'}`,
-            `Cash Type: ${cashLabel}`,
-            `Factor: ${mine.factor}`,
-            `Prestige: ${(mine.prestige_count || 0)} / ${maxPrestigeCount}`,
-            `Number of Shafts: ${mine.mineshafts.length}`,
-            `Production: ${numberFormat(mine.production || 0)}`
-        ].join('\n'))
+        .addFields(
+            { name: 'Mine Number', value: `${mine.mine_number}`, inline: true },
+            { name: 'Continent', value: `${continent?.name || 'Unknown Continent'}`, inline: true },
+            { name: 'Cash Type', value: cashLabel, inline: true },
+            { name: 'Factor', value: `${mine.factor}`, inline: true },
+            { name: 'Shafts Owned', value: `${mine.mineshafts.length}`, inline: true },
+            { name: 'Stored Deposit', value: `${numberFormat(storedDeposit)}`, inline: true },
+            { name: '⭐ Prestige', value: `${mine.prestige_count || 0} / ${maxPrestigeCount}`, inline: true },
+            { name: '⭐ Production/sec', value: `${numberFormat(productionPerSecond)}`, inline: true },
+            { name: '⭐ Idle Cash/sec', value: `${numberFormat(idleCashPerSecond)} ${cashLabel}`, inline: true }
+        )
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });
@@ -274,12 +281,12 @@ async function handleMinePrestige(message, mineInput, user, userId) {
         return message.reply('You do not own that mine.');
     }
 
-    const currentPrestigeLevel = findMineFactor(mine.mine_name, mine.prestige_count || 0);
+    const currentPrestigeLevel = findMineFactor(mine.mine_number, mine.prestige_count || 0);
     if (!currentPrestigeLevel) {
         return message.reply('Invalid prestige level for this mine.');
     }
 
-    const nextPrestigeLevel = findMineFactor(mine.mine_name, (mine.prestige_count || 0) + 1);
+    const nextPrestigeLevel = findMineFactor(mine.mine_number, (mine.prestige_count || 0) + 1);
     if (!nextPrestigeLevel) {
         return message.reply(`You have already reached the maximum prestige count for ${mine.mine_name}.`);
     }
@@ -288,11 +295,12 @@ async function handleMinePrestige(message, mineInput, user, userId) {
     const cashLabel = getCashLabelByField(cashField);
     const availableCash = user[cashField] || 0;
 
-    if (availableCash < nextPrestigeLevel.Cost) {
-        return message.reply(`You don't have enough ${cashLabel} to prestige ${mine.mine_name}. You need ${numberFormat(nextPrestigeLevel.Cost)} ${cashLabel}.`);
+    const scaledPrestigeCost = scaleMineCost(nextPrestigeLevel.Cost, mine.mine_number);
+    if (availableCash < scaledPrestigeCost) {
+        return message.reply(`You don't have enough ${cashLabel} to prestige ${mine.mine_name}. You need ${numberFormat(scaledPrestigeCost)} ${cashLabel}.`);
     }
 
-    user[cashField] = availableCash - nextPrestigeLevel.Cost;
+    user[cashField] = availableCash - scaledPrestigeCost;
     user.super_cash += nextPrestigeLevel.SuperCashGained;
     resetMineAfterPrestige(mine, nextPrestigeLevel);
     user.mines.sort((left, right) => left.mine_number - right.mine_number);
@@ -301,6 +309,7 @@ async function handleMinePrestige(message, mineInput, user, userId) {
         cash: user.cash,
         ice_cash: user.ice_cash,
         fire_cash: user.fire_cash,
+        dawn_cash: user.dawn_cash,
         super_cash: user.super_cash,
         mines: user.mines
     });

@@ -12,6 +12,12 @@ import {
 } from '../../utils/managerAbilities.js';
 import { getShaftTravelTimeMs } from '../../utils/movementTimes.js';
 import { getBoosterRewardFlags } from '../../utils/progression.js';
+import { logError } from '../../utils/errorHandling.js';
+import { getMaxCorridorLevel, getMaxCountTiers } from '../../utils/miscConfig.js';
+import { scaleMineCost } from '../../utils/mineDifficulty.js';
+import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
+import { getMineNumber } from '../../utils/mineLooker.js';
+import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 
 const shaftData = shaftDataJson.shaftData;
 
@@ -66,8 +72,9 @@ async function handleOverview(message, user, currentMine, args, userId) {
 
     const tier = parseInt(args[1], 10);
 
-    if (isNaN(tier) || tier < 1 || tier > 30) {
-        return message.reply('Please provide a valid shaft tier number between 1 and 30.');
+    const maxTiers = getMaxCountTiers();
+    if (isNaN(tier) || tier < 1 || tier > maxTiers) {
+        return message.reply(`Please provide a valid shaft tier number between 1 and ${maxTiers}.`);
     }
 
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
@@ -147,8 +154,9 @@ async function handleAllShaftOverview(message, currentMine) {
 async function handleBuy(message, user, currentMine, args, userId) {
     const tier = parseInt(args[1], 10);
 
-    if (isNaN(tier) || tier < 1 || tier > 40) {
-        return message.reply('Please provide a valid shaft tier number between 1 and 40.');
+    const maxTiers = getMaxCountTiers();
+    if (isNaN(tier) || tier < 1 || tier > maxTiers) {
+        return message.reply(`Please provide a valid shaft tier number between 1 and ${maxTiers}.`);
     }
 
     // Check if the shaft can be purchased based on tier order
@@ -171,6 +179,8 @@ async function handleBuy(message, user, currentMine, args, userId) {
         }
     }
 
+    const walletField = getCashField(parseInt(currentMine.mine_number, 10) || getMineNumber(currentMine.mine_name));
+    const walletLabel = getCashLabelByField(walletField);
     const existingShaft = currentMine.mineshafts.find(s => s.tier === tier);
 
     if (existingShaft) {
@@ -182,11 +192,15 @@ async function handleBuy(message, user, currentMine, args, userId) {
         return message.reply(`Invalid shaft tier provided.`);
     }
 
-    if (user.cash < shaftInfo.Cost) {
-        return message.reply(`You do not have enough Cash to buy this shaft. Cost: ${numberFormat(shaftInfo.Cost)}`);
+    const scaledCost = scaleMineCost(shaftInfo.Cost, currentMine, {
+        ignoreDifficulty: tier === 1 && !currentMine.mineshafts.some(shaft => shaft.tier === 1)
+    });
+
+    if ((user[walletField] || 0) < scaledCost) {
+        return message.reply(`You do not have enough ${walletLabel} to buy this shaft. Cost: ${numberFormat(scaledCost)} ${walletLabel}`);
     }
 
-    user.cash -= shaftInfo.Cost;
+    user[walletField] -= scaledCost;
 
     // Adjust shaft stats based on the mine's factor
     const mineFactor = getMineFactor(currentMine.mine_name);
@@ -229,27 +243,30 @@ async function handleBuy(message, user, currentMine, args, userId) {
             try {
                 await message.author.send('You just earned a free **x2 Boost (1 hour)** for unlocking Shaft Tier 2 on Coal Mine.\nUse it with `im!use 1` when you want a temporary income boost.');
             } catch (error) {
-                console.error('Could not send booster unlock DM:', error);
+                logError('shaft:rewardDm', error, { userId, tag: message?.author?.tag });
             }
         }
     }
 
     await updateUser(userId, user);
 
-    return message.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(shaftInfo.Cost)} Cash in the ${currentMine.mine_name}.${rewardMessage}`);
+    return message.reply(`Successfully purchased Shaft Tier ${tier} for ${numberFormat(scaledCost)} ${walletLabel} in the ${currentMine.mine_name}.${rewardMessage}`);
 }
 
 // Function to handle the "upgrade" subcommand
 async function handleUpgrade(message, user, currentMine, args, userId) {
     const tier = parseInt(args[1], 10);
-    const upgradeCount = args[2] ? parseInt(args[2], 10) : 1; // Optional argument for upgrade count
+    const walletField = getCashField(parseInt(currentMine.mine_number, 10) || getMineNumber(currentMine.mine_name));
+    const walletLabel = getCashLabelByField(walletField);
+    const purchaseAmount = parsePurchaseAmount(args[2]);
 
-    if (isNaN(tier) || tier < 1 || tier > 40) {
-        return message.reply('Please provide a valid shaft tier number between 1 and 40.');
+    const maxTiers = getMaxCountTiers();
+    if (isNaN(tier) || tier < 1 || tier > maxTiers) {
+        return message.reply(`Please provide a valid shaft tier number between 1 and ${maxTiers}.`);
     }
 
-    if (isNaN(upgradeCount) || upgradeCount < 1) {
-        return message.reply('Please provide a valid number of upgrades (positive integer).');
+    if (!purchaseAmount.ok) {
+        return message.reply(purchaseAmount.message);
     }
 
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
@@ -258,41 +275,66 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
         return message.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.mine_name}.`);
     }
 
+    const maxLevel = getMaxCorridorLevel();
+    if (shaft.level >= maxLevel) {
+        return message.reply(`Shaft Tier ${tier} is already at the maximum level of ${maxLevel}.`);
+    }
+
     let totalCost = 0;
 	let superCashEarned = 0;
     let lastLevel = shaft.level;
-    const maxLevel = 1000;
+    let affordableUpgradeCount = 0;
+    const desiredUpgradeCount = purchaseAmount.isMax ? Infinity : purchaseAmount.amount;
+    let availableCash = user[walletField] || 0;
 
-    // Calculate total cost and check for max level
-    for (let i = 0; i < upgradeCount; i++) {
+    for (let i = 0; i < desiredUpgradeCount; i++) {
         const nextLevel = lastLevel + 1;
 
         if (nextLevel > maxLevel) {
-            return message.reply(`Your Mineshaft Tier ${tier} is currently maxed out and cannot be upgraded any further.`);
+            break;
         }
 
         const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
 
         if (!nextShaftInfo) {
-            return message.reply(`There is no upgrade available for Shaft Tier ${tier} at Level ${nextLevel}.`);
+            break;
         }
 
-        totalCost += nextShaftInfo.Cost;
+        const nextCost = scaleMineCost(nextShaftInfo.Cost, currentMine);
+        if (availableCash < nextCost) {
+            break;
+        }
+
+        totalCost += nextCost;
+        availableCash -= nextCost;
         lastLevel = nextLevel;
+        affordableUpgradeCount++;
     }
 
-    if (user.cash < totalCost) {
-        return message.reply(`You do not have enough Cash to upgrade this shaft ${upgradeCount} times. Total Cost: ${numberFormat(totalCost)}`);
+    if (affordableUpgradeCount < 1) {
+        if (purchaseAmount.isMax) {
+            return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} any further right now.`);
+        }
+
+        return message.reply(`You do not have enough ${walletLabel} to upgrade this shaft ${purchaseAmount.label}.`);
+    }
+
+    if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
+        if (lastLevel >= maxLevel) {
+            return message.reply(`Shaft Tier ${tier} cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
+        }
+
+        return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} ${purchaseAmount.label}.`);
     }
 
     // Apply upgrades
     let currentLevel = shaft.level;
-    for (let i = 0; i < upgradeCount; i++) {
+    for (let i = 0; i < affordableUpgradeCount; i++) {
         const nextLevel = currentLevel + 1;
         const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
 
         if (nextShaftInfo) {
-            user.cash -= nextShaftInfo.Cost;
+            user[walletField] -= scaleMineCost(nextShaftInfo.Cost, currentMine);
             shaft.level = nextLevel;
             shaft.number_of_workers = nextShaftInfo.NumberOfWorkers;
             shaft.gain_per_second_per_worker = nextShaftInfo.GainPerSecondPerWorker * getMineFactor(currentMine.mine_name);
@@ -316,5 +358,6 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
 
     await updateUser(userId, user);
 
-    return message.reply(`Shaft Tier ${tier} to Level ${shaft.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    const purchaseLabel = purchaseAmount.isMax ? `MAX (${affordableUpgradeCount} levels)` : purchaseAmount.label;
+    return message.reply(`Shaft Tier ${tier} upgraded to Level ${shaft.level} using ${purchaseLabel} for ${numberFormat(totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

@@ -1,6 +1,7 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
 import { getAllUsers } from '../../dataManager.js';
+import { logError, safeEditMessage, safeUpdateInteraction } from '../../utils/errorHandling.js';
 
 export default {
     name: 'leaderboard',
@@ -27,6 +28,7 @@ export default {
                 cash: 'Cash',
                 ice_cash: 'Ice Cash',
                 fire_cash: 'Fire Cash',
+                dawn_cash: 'Dawn Cash',
                 super_cash: 'Super Cash'
             };
 
@@ -64,11 +66,17 @@ export default {
                         new ButtonBuilder().setCustomId('cash').setLabel('Cash').setStyle(ButtonStyle.Primary),
                         new ButtonBuilder().setCustomId('ice_cash').setLabel('Ice Cash').setStyle(ButtonStyle.Primary),
                         new ButtonBuilder().setCustomId('fire_cash').setLabel('Fire Cash').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId('dawn_cash').setLabel('Dawn Cash').setStyle(ButtonStyle.Primary),
                         new ButtonBuilder().setCustomId('super_cash').setLabel('Super Cash').setStyle(ButtonStyle.Primary)
                     );
 
                 if (interaction) {
-                    await interaction.update({ embeds: [embed], components: [row] });
+                    await safeUpdateInteraction(
+                        interaction,
+                        { embeds: [embed], components: [row] },
+                        'leaderboard:update',
+                        { userId: interaction?.user?.id, cashType }
+                    );
                 } else {
                     return message.reply({ embeds: [embed], components: [row] });
                 }
@@ -77,31 +85,30 @@ export default {
             const msg = await displayLeaderboard('cash');
 
             // Interaction filter for button clicks
-            const filter = (interaction) => ['cash', 'ice_cash', 'fire_cash', 'super_cash'].includes(interaction.customId) && interaction.user.id === message.author.id;
+            const filter = (interaction) => ['cash', 'ice_cash', 'fire_cash', 'dawn_cash', 'super_cash'].includes(interaction.customId) && interaction.user.id === message.author.id;
 
             // Create a message component collector for the buttons
             const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
             // Handle button interactions
             collector.on('collect', async (interaction) => {
-                if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
-                if (interaction.customId === 'ice_cash') await displayLeaderboard('ice_cash', interaction);
-                if (interaction.customId === 'fire_cash') await displayLeaderboard('fire_cash', interaction);
-                if (interaction.customId === 'super_cash') await displayLeaderboard('super_cash', interaction);
+                try {
+                    if (interaction.customId === 'cash') await displayLeaderboard('cash', interaction);
+                    if (interaction.customId === 'ice_cash') await displayLeaderboard('ice_cash', interaction);
+                    if (interaction.customId === 'fire_cash') await displayLeaderboard('fire_cash', interaction);
+                    if (interaction.customId === 'dawn_cash') await displayLeaderboard('dawn_cash', interaction);
+                    if (interaction.customId === 'super_cash') await displayLeaderboard('super_cash', interaction);
+                } catch (error) {
+                    logError('leaderboard:collector', error, { userId: interaction?.user?.id, customId: interaction?.customId });
+                }
             });
 
             // Clean up after collector ends
             collector.on('end', async () => {
-                try {
-                    await msg.edit({ components: [] });
-                } catch (error) {
-                    if (error.code === 10008) {
-                        return message.reply('The leaderboard embed was deleted and unable to be fetched, please try again later.');
-                    }
-                }
+                await safeEditMessage(msg, { components: [] }, 'leaderboard:collector:end', { messageId: msg?.id });
             });
         } catch (error) {
-            console.error('Error in leaderboard command:', error);
+            logError('leaderboard:execute', error, { userId: message?.author?.id, guildId: message?.guild?.id });
             return message.reply('There was an error executing the leaderboard command.');
         }
     }

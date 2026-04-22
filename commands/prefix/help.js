@@ -2,6 +2,7 @@ import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'disc
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logError, safeEditMessage, safeUpdateInteraction } from '../../utils/errorHandling.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,50 +83,28 @@ export default {
                     currentPage++;
                 }
 
-                try {
-                    const newEmbed = generateEmbed(defaultCommands, currentPage);
-                    await i.update({ embeds: [newEmbed], components: [generateButtons(currentPage, totalPages)] });
-                } catch (error) {
-                    if (error.code === 10008) {
-                        return message.channel.send(`The help embed was deleted and couldn't be recovered, please try again later.`);
-                    } else if (error.code === 10062) {
-                        return message.channel.send(`My systematic networking is currently out of sync and timed out. Please try again later.`);
-                    } else if (error.status === 403 || error.status === 404 || error.status === 503 || error.status === 520) {
-                        return message.channel.send(`An unexpected error occurred. Please try again later.`);
-                    } else if (error.message.includes("Interaction was not replied")) {
-                        return message.channel.send(`An interaction error occurred. Please try again later.`);
-                    } else {
-                        // Handle other errors
-                        console.error('Error updating message:', error);
-                    }
-                }
+                const newEmbed = generateEmbed(defaultCommands, currentPage);
+                await safeUpdateInteraction(
+                    i,
+                    { embeds: [newEmbed], components: [generateButtons(currentPage, totalPages)] },
+                    'help:collector:update',
+                    { userId: i?.user?.id }
+                );
             });
 
             collector.on('end', async () => {
                 if (messageReply.editable) {
-                    try {
-                        await messageReply.edit({ components: [] });
-                    } catch (error) {
-                        if (error.code === 10008) {
-                            return message.channel.send(`The help embed was deleted and couldn't be recovered, please try again later.`);
-                        } else if (error.code === 10062) {
-                            return message.channel.send(`My systematic networking is currently out of sync and timed out. Please try again later.`);
-                        } else if (error.code === 40060) {
-                            return message.channel.send("I couldn't reuse this interaction as I've already acknowledged it. Please try again later.");
-                        } else if (error.status === 403 || error.status === 404 || error.status === 503 || error.status === 520) {
-                            return message.channel.send(`An unexpected error occurred. Please try again later.`);
-                        } else if (error.message.includes("Interaction was not replied")) {
-                            return message.channel.send(`An interaction error occurred. Please try again later.`);
-                        } else {
-                            // Handle other errors
-                            console.error('Error removing components:', error);
-                        }
-                    }
+                    await safeEditMessage(
+                        messageReply,
+                        { components: [] },
+                        'help:collector:end',
+                        { messageId: messageReply?.id }
+                    );
                 }
             });
 
         } catch (error) {
-            console.error('Error sending initial help message:', error);
+            logError('help:initialReply', error, { userId: message?.author?.id });
         }
     }
 };

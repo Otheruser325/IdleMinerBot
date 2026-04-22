@@ -15,6 +15,7 @@ import {
     resolveContinent,
     userOwnsContinent
 } from '../../utils/continentLooker.js';
+import { getMaxPrestigeCount, getMineIdleCashPerSecond } from '../../utils/mineOverview.js';
 
 const continentData = continentDataJson.continents;
 
@@ -48,6 +49,15 @@ export default {
 
 function normalizeUserContinentState(user) {
     user.continents = normalizeOwnedContinents(user.continents);
+    if (!userOwnsContinent(user, 'Ice Continent') && (user.ice_cash || 0) === 10) {
+        user.ice_cash = 0;
+    }
+    if (!userOwnsContinent(user, 'Fire Continent') && (user.fire_cash || 0) === 10) {
+        user.fire_cash = 0;
+    }
+    if (!userOwnsContinent(user, 'Dawn Continent') && (user.dawn_cash || 0) === 10) {
+        user.dawn_cash = 0;
+    }
     user.mines = (user.mines || [])
         .map(normalizeMineData)
         .sort((left, right) => (left.mine_number || 0) - (right.mine_number || 0));
@@ -111,17 +121,20 @@ async function handleContinentBuy(message, continentInput, user) {
 
     user[cashField] = availableCash - continent.Cost;
     user.continents = normalizeOwnedContinents([...user.continents, resolvedContinent.name]);
+    const unlockedCashField = getCashFieldForContinent(resolvedContinent.name);
+    user[unlockedCashField] = (user[unlockedCashField] || 0) + 10;
 
     await updateUser(user.user_id, {
         cash: user.cash,
         ice_cash: user.ice_cash,
         fire_cash: user.fire_cash,
+        dawn_cash: user.dawn_cash,
         continents: user.continents
     });
 
     const firstMineName = getMineName(resolvedContinent.minMine);
     const targetCashLabel = getCashLabelForContinent(resolvedContinent.name);
-    return message.reply(`Congratulations! You unlocked ${resolvedContinent.name} using ${cashLabel}. Your next step is to buy ${firstMineName} with ${targetCashLabel}.`);
+    return message.reply(`Congratulations! You unlocked ${resolvedContinent.name} using ${cashLabel} and received 10 ${targetCashLabel}. Your next step is to buy ${firstMineName} with ${targetCashLabel}.`);
 }
 
 async function handleContinentManage(message, user) {
@@ -152,8 +165,29 @@ async function handleContinentManage(message, user) {
     const walletLines = [
         `Starter Cash: ${numberFormat(user[getCashFieldForContinent('Start Continent')] || 0)}`,
         `Ice Cash: ${numberFormat(user[getCashFieldForContinent('Ice Continent')] || 0)}`,
-        `Fire Cash: ${numberFormat(user[getCashFieldForContinent('Fire Continent')] || 0)}`
+        `Fire Cash: ${numberFormat(user[getCashFieldForContinent('Fire Continent')] || 0)}`,
+        `Dawn Cash: ${numberFormat(user[getCashFieldForContinent('Dawn Continent')] || 0)}`
     ];
+
+    const continentMineFields = continentData.map(continent => {
+        const mineLines = getMinesForContinent(continent.ContinentName).map(mineNumber => {
+            const mineName = getMineName(mineNumber);
+            const ownedMine = (user.mines || []).find(mine => mine.mine_number === mineNumber);
+            if (!ownedMine) {
+                return `${mineName}: Locked`;
+            }
+
+            const maxPrestigeCount = getMaxPrestigeCount(mineNumber);
+            const idleCashPerSecond = getMineIdleCashPerSecond(ownedMine, user.has_premium);
+            return `${mineName}: ⭐ Prestige ${ownedMine.prestige_count || 0}/${maxPrestigeCount} | ⭐ Idle/sec ${numberFormat(idleCashPerSecond)}`;
+        });
+
+        return {
+            name: continent.ContinentName,
+            value: mineLines.join('\n').slice(0, 1024),
+            inline: false
+        };
+    });
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
@@ -167,6 +201,7 @@ async function handleContinentManage(message, user) {
             'Wallets:',
             walletLines.join('\n')
         ].join('\n'))
+        .addFields(continentMineFields)
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });

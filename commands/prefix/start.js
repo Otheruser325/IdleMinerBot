@@ -1,6 +1,7 @@
 import { initializeUser, getUser, withUserLock } from '../../dataManager.js';
 import { updateBotStatus } from '../../utils/botStatus.js';
 import { EmbedBuilder } from 'discord.js';
+import { logError } from '../../utils/errorHandling.js';
 
 export default {
     name: 'start',
@@ -32,7 +33,7 @@ export default {
                         if (error.code === 50007) {
                             await message.reply(`I couldn't send the DM to you <@${userId}>, as your DMs are closed.`);
                         } else {
-                            console.error(`Could not send DM to ${message.author.tag}.\n`, error);
+                            logError('start:sendDm', error, { userId, tag: message?.author?.tag });
                         }
                     }
 
@@ -44,7 +45,7 @@ export default {
                 if (error.code === 160002) {
                     await message.reply('Your channel must have the `Read Message History` permission before using this command.');
                 } else {
-                    console.error('Error executing the start command:', error);
+                    logError('start:execute', error, { userId });
                     await message.reply('There was an error executing this command!');
                 }
             }

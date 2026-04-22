@@ -90,6 +90,11 @@ export default {
                 .addStringOption(option =>
                     option.setName('managerid_or_name').setDescription('Manager ID or name.').setRequired(true)
                 )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('ability-all')
+                .setDescription('Activate all available assigned manager abilities in your current mine.')
         ),
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
@@ -119,6 +124,9 @@ export default {
                 break;
             case 'ability':
                 args = [subcommand, area, managerIdOrName];
+                break;
+            case 'ability-all':
+                args = ['ability', 'all'];
                 break;
             default:
                 break;

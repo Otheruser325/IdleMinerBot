@@ -4,6 +4,7 @@
  */
 
 import { getMineName, getMineNumber, resolveMine } from './mineLooker.js';
+import continentDataJson from '../config/continentData.json' with { type: 'json' };
 
 function normalizeLookupValue(value) {
     return String(value || '')
@@ -13,38 +14,18 @@ function normalizeLookupValue(value) {
         .trim();
 }
 
-const CONTINENT_RANGES = [
-    {
-        name: 'Start Continent',
-        minMine: 1,
-        maxMine: 5,
-        cashType: 'cash',
-        cashField: 'cash',
-        cashLabel: 'Starter Cash',
-        idleCashField: 'idle_cash',
-        aliases: ['start continent', 'starter continent', 'start', 'starter', 'cash', 'starter cash']
-    },
-    {
-        name: 'Ice Continent',
-        minMine: 6,
-        maxMine: 10,
-        cashType: 'ice_cash',
-        cashField: 'ice_cash',
-        cashLabel: 'Ice Cash',
-        idleCashField: 'idle_ice_cash',
-        aliases: ['ice continent', 'ice', 'ice cash']
-    },
-    {
-        name: 'Fire Continent',
-        minMine: 11,
-        maxMine: 15,
-        cashType: 'fire_cash',
-        cashField: 'fire_cash',
-        cashLabel: 'Fire Cash',
-        idleCashField: 'idle_fire_cash',
-        aliases: ['fire continent', 'fire', 'fire cash']
-    }
-];
+const continentData = continentDataJson.continents || [];
+
+const CONTINENT_RANGES = continentData.map(continent => ({
+    name: continent.ContinentName,
+    minMine: Number(continent.MinMine),
+    maxMine: Number(continent.MaxMine),
+    cashType: continent.CashField || 'cash',
+    cashField: continent.CashField || 'cash',
+    cashLabel: continent.CashLabel || 'Cash',
+    idleCashField: continent.IdleCashField || 'idle_cash',
+    aliases: continent.Aliases || []
+}));
 
 const CONTINENTS_WITH_INDEX = CONTINENT_RANGES.map((continent, index) => ({
     ...continent,

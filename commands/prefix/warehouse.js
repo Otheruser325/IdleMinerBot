@@ -10,6 +10,11 @@ import {
     getActiveEffects
 } from '../../utils/managerAbilities.js';
 import { getWarehouseTravelTimeMs } from '../../utils/movementTimes.js';
+import { getMaxGroundLevel } from '../../utils/miscConfig.js';
+import { scaleMineCost } from '../../utils/mineDifficulty.js';
+import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
+import { getMineNumber } from '../../utils/mineLooker.js';
+import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 
 const warehouseData = warehouseDataJson.warehouseData;
 
@@ -100,48 +105,71 @@ async function handleWarehouseOverview(message, user, warehouse, currentMine, ar
 
 // Function to handle the "upgrade" subcommand for the warehouse
 async function handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId) {
-    const upgradeCount = args[1] ? parseInt(args[1], 10) : 1; // Optional argument for upgrade count
+    const walletField = getCashField(parseInt(currentMine.mine_number, 10) || getMineNumber(currentMine.mine_name));
+    const walletLabel = getCashLabelByField(walletField);
+    const purchaseAmount = parsePurchaseAmount(args[1]);
 
-    if (isNaN(upgradeCount) || upgradeCount < 1) {
-        return message.reply('Please provide a valid number of upgrades (positive integer).');
+    if (!purchaseAmount.ok) {
+        return message.reply(purchaseAmount.message);
     }
 
     let totalCost = 0;
     let superCashEarned = 0;
     let lastLevel = warehouse.level;
-    const maxLevel = 4000;
+    const maxLevel = getMaxGroundLevel();
+    const desiredUpgradeCount = purchaseAmount.isMax ? Infinity : purchaseAmount.amount;
+    let affordableUpgradeCount = 0;
+    let availableCash = user[walletField] || 0;
 
-    // Calculate total cost and check for max level
-    for (let i = 0; i < upgradeCount; i++) {
+    for (let i = 0; i < desiredUpgradeCount; i++) {
         const nextLevel = lastLevel + 1;
 
         if (nextLevel > maxLevel) {
-            return message.reply(`Your Warehouse is currently maxed out and cannot be upgraded any further.`);
+            break;
         }
 
         const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
 
         if (!nextWarehouseInfo) {
-            return message.reply(`There is no upgrade available for the warehouse at Level ${nextLevel}.`);
+            break;
         }
 
-        totalCost += nextWarehouseInfo.Cost;
+        const nextCost = scaleMineCost(nextWarehouseInfo.Cost, currentMine);
+        if (availableCash < nextCost) {
+            break;
+        }
+
+        totalCost += nextCost;
+        availableCash -= nextCost;
         lastLevel = nextLevel;
+        affordableUpgradeCount++;
     }
 
-    if (user.cash < totalCost) {
-        return message.reply(`You do not have enough Cash to upgrade the warehouse ${upgradeCount} times. Total Cost: ${numberFormat(totalCost)}`);
+    if (affordableUpgradeCount < 1) {
+        if (purchaseAmount.isMax) {
+            return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse any further right now.`);
+        }
+
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}.`);
+    }
+
+    if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
+        if (lastLevel >= maxLevel) {
+            return message.reply(`The warehouse cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
+        }
+
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}.`);
     }
 
     // Apply upgrades
     let currentLevel = warehouse.level;
-    for (let i = 0; i < upgradeCount; i++) {
+    for (let i = 0; i < affordableUpgradeCount; i++) {
         const nextLevel = currentLevel + 1;
         const nextWarehouseInfo = warehouseData.find(w => w.Level === nextLevel);
 
         if (nextWarehouseInfo) {
-			user.cash -= nextWarehouseInfo.Cost;
-			warehouse.level = lastLevel;
+			user[walletField] -= scaleMineCost(nextWarehouseInfo.Cost, currentMine);
+			warehouse.level = nextLevel;
 	        warehouse.number_of_workers = nextWarehouseInfo.NumberOfWorkers;
             warehouse.capacity_per_worker = nextWarehouseInfo.CapacityPerWorker * getMineFactor(currentMine.mine_name);
             warehouse.worker_walking_speed_per_second = nextWarehouseInfo.WorkerWalkingSpeedPerSecond;
@@ -164,5 +192,6 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
 
     await updateUser(userId, user);
 
-    return message.reply(`Warehouse upgraded to Level ${warehouse.level} for ${numberFormat(totalCost)} Cash in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    const purchaseLabel = purchaseAmount.isMax ? `MAX (${affordableUpgradeCount} levels)` : purchaseAmount.label;
+    return message.reply(`Warehouse upgraded to Level ${warehouse.level} using ${purchaseLabel} for ${numberFormat(totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

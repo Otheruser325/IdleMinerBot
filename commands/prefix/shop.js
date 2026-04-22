@@ -3,6 +3,8 @@ import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'disc
 import shopDataJson from '../../config/shopData.json' with { type: 'json' };
 import numberFormat from '../../utils/numberFormat.js';
 import { isShopUnlocked } from '../../utils/progression.js';
+import { logError, safeUpdateInteraction } from '../../utils/errorHandling.js';
+import { isPremiumPassItem } from '../../utils/premiumPayments.js';
 
 const shopData = shopDataJson.items;
 
@@ -52,9 +54,32 @@ export default {
         .setDescription('Here are the items available for purchase. Use the buttons below to navigate.');
 
       shopItems.forEach(item => {
+        const isPremiumItem = isPremiumPassItem(item);
+        const priceLine = isPremiumItem
+          ? `Price: ${item.PriceDisplay || 'Paid Offer'}`
+          : `Cost: ${numberFormat(item.SuperCashCost)} Super Cash`;
+        const detailLines = [priceLine];
+        const hasInstantCash = (item.InstantCashTime || 0) > 0;
+        const hasIncomeBoost = (item.CompleteIncomeIncreaseFactor || 0) > 0;
+
+        if (!isPremiumItem) {
+          if (hasInstantCash) {
+            detailLines.push(`Instant Cash: ${formatTime(item.InstantCashTime)}`);
+            detailLines.push('Type: Instant payout item');
+          } else {
+            if (hasIncomeBoost) {
+              detailLines.push(`Income Boost: ${item.CompleteIncomeIncreaseFactor}x`);
+            }
+            detailLines.push(`Active Time: ${formatTime(item.ActiveTimeSeconds)}`);
+          }
+        } else {
+          detailLines.push('Purchase Type: Secure external checkout');
+          detailLines.push('Rewards: Premium pass, 1,000 Super Cash, Long x2 Boost, x10 Boost');
+        }
+
         embed.addFields({
           name: `${item.ItemName} (ID: ${item.id})`,
-          value: `Cost: ${numberFormat(item.SuperCashCost)} Super Cash\nIncome Boost: ${item.CompleteIncomeIncreaseFactor}x\nActive Time: ${formatTime(item.ActiveTimeSeconds)}`,
+          value: detailLines.join('\n'),
         });
       });
 
@@ -94,24 +119,16 @@ export default {
         }
 
         try {
-          await interaction.update({
+          await safeUpdateInteraction(interaction, {
             embeds: [generateEmbed(page)],
             components: [buttons(page, userId)]
-          });
+          }, 'shop:collector:update', { userId: interaction?.user?.id, customId: interaction?.customId });
         } catch (error) {
-          if (error.code === 10008) {
-            return;
-          } else {
-            console.error(`Unexpected error: ${error.message}`);
-          }
+          logError('shop:collector:update', error, { userId: interaction?.user?.id, customId: interaction?.customId });
         }
       });
     } catch (error) {
-      if (error.code === 10008) {
-        return;
-      } else {
-        console.error(`Error in shop command: ${error.message}`);
-      }
+      logError('shop:execute', error, { userId: message?.author?.id });
     }
   }
 };

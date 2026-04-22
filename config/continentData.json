@@ -4,19 +4,49 @@
       "ContinentName": "Start Continent",
       "Cost": 0,
       "CashType": 1,
+      "CashField": "cash",
+      "CashLabel": "Starter Cash",
+      "IdleCashField": "idle_cash",
+      "MinMine": 1,
+      "MaxMine": 5,
+      "Aliases": ["start continent", "starter continent", "start", "starter", "cash", "starter cash"],
       "MineTypes": ["Coal Mine", "Gold Mine", "Ruby Mine", "Diamond Mine", "Emerald Mine"]
     },
     {
       "ContinentName": "Ice Continent",
       "Cost": 2.4499999999999999e+36,
       "CashType": 2,
+      "CashField": "ice_cash",
+      "CashLabel": "Ice Cash",
+      "IdleCashField": "idle_ice_cash",
+      "MinMine": 6,
+      "MaxMine": 10,
+      "Aliases": ["ice continent", "ice", "ice cash"],
       "MineTypes": ["Amethyst Mine", "Moonstone Mine", "Sapphire Mine", "Crystal Mine", "Jade Mine"]
     },
     {
       "ContinentName": "Fire Continent",
       "Cost": 2.2099999999999998e+37,
       "CashType": 3,
+      "CashField": "fire_cash",
+      "CashLabel": "Fire Cash",
+      "IdleCashField": "idle_fire_cash",
+      "MinMine": 11,
+      "MaxMine": 15,
+      "Aliases": ["fire continent", "fire", "fire cash"],
       "MineTypes": ["Amber Mine", "Sunstone Mine", "Topaz Mine", "Platinum Mine", "Obsidian Mine"]
+    },
+    {
+      "ContinentName": "Dawn Continent",
+      "Cost": 1.99e+38,
+      "CashType": 4,
+      "CashField": "dawn_cash",
+      "CashLabel": "Dawn Cash",
+      "IdleCashField": "idle_dawn_cash",
+      "MinMine": 16,
+      "MaxMine": 20,
+      "Aliases": ["dawn continent", "dawn", "dawn cash"],
+      "MineTypes": ["Heliodor Mine", "Realgar Mine", "Alexandrite Mine", "Celestine Mine", "Titanite Mine"]
     }
   ]
 }

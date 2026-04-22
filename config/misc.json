@@ -1,0 +1,129 @@
+{
+  "misc": [
+    {
+      "key": "MaxCountTiers",
+      "value": 30,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxCorridorLevel",
+      "value": 2000,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxElevatorLevel",
+      "value": 5000,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxGroundLevel",
+      "value": 5000,
+      "valueDouble": 0
+    },
+    {
+      "key": "CorridorStartLength",
+      "value": 2,
+      "valueDouble": 0
+    },
+    {
+      "key": "CorridorMaxLength",
+      "value": 12,
+      "valueDouble": 0
+    },
+    {
+      "key": "CorridorHalfTimeValueGold",
+      "value": 10000,
+      "valueDouble": 0
+    },
+    {
+      "key": "GroundLength",
+      "value": 10,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxGroundManagerCount",
+      "value": 130,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxElevatorManagerCount",
+      "value": 130,
+      "valueDouble": 0
+    },
+    {
+      "key": "MaxCorridorManagerCount",
+      "value": 211,
+      "valueDouble": 0
+    },
+    {
+      "key": "IdleFactor",
+      "value": 0,
+      "valueDouble": 0.1
+    },
+    {
+      "key": "IdleRewardAdsFactor",
+      "value": 0,
+      "valueDouble": 2
+    },
+    {
+      "key": "MaximumMineNumbers",
+      "value": 15,
+      "valueDouble": 0
+    },
+    {
+      "key": "CapForMigration",
+      "value": -2147483648,
+      "valueDouble": 10000000000000000
+    },
+    {
+      "key": "ManagerSellReturn",
+      "value": 0,
+      "valueDouble": 0.5
+    },
+    {
+      "key": "AdWatchBoostDuration",
+      "value": 14400,
+      "valueDouble": 0
+    },
+    {
+      "key": "AdWatchBoostMaxDuration",
+      "value": 115200,
+      "valueDouble": 0
+    },
+    {
+      "key": "AdWatchIncreaseFactor",
+      "value": 0,
+      "valueDouble": 2
+    },
+    {
+      "key": "SkillBuildingUnlockCost",
+      "value": 0,
+      "valueDouble": 2880000000000000000
+    },
+    {
+      "key": "FacebookSuperCashReward",
+      "value": 300,
+      "valueDouble": 0
+    },
+    {
+      "key": "FacebookFriendIncomeIncrease",
+      "value": 0,
+      "valueDouble": 0.05
+    },
+    {
+      "key": "MaxFacebookFriends",
+      "value": 20,
+      "valueDouble": 0
+    },
+    {
+      "key": "InstagramSuperCashReward",
+      "value": 300,
+      "valueDouble": 0
+    },
+    {
+      "key": "MainlandUnlockCost",
+      "value": 0,
+      "valueDouble": 7.14e+21
+    }
+  ]
+}

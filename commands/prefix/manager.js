@@ -1,12 +1,16 @@
 import { getUser, updateUser, withUserLock } from '../../dataManager.js';
-import { EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
 import managerDataJson from '../../config/managers.json' with { type: 'json' };
 import managerCostsJson from '../../config/managerCosts.json' with { type: 'json' };
-import { getManagerAbilityInfo, formatAbilityStatus, activateAbility, getAbilityCooldownRemaining, getManagersWithAbilities, formatActiveEffects } from '../../utils/managerAbilities.js';
+import { getManagerAbilityInfo, formatAbilityStatus, activateAbility, getAbilityCooldownRemaining, getManagersWithAbilities, formatAbilityAllEffects, formatAreaLabel, formatActiveEffects } from '../../utils/managerAbilities.js';
+import { logError, safeEditMessage, safeUpdateInteraction } from '../../utils/errorHandling.js';
+import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
+import { getMineNumber } from '../../utils/mineLooker.js';
 
 const managerData = managerDataJson.managers;
 const managerCosts = managerCostsJson.managerCosts;
+const MANAGERS_PER_PAGE = 6;
 
 function normalizeManagerArea(area) {
     const normalizedArea = String(area || '').toLowerCase();
@@ -26,7 +30,7 @@ function normalizeManagerArea(area) {
 }
 
 function getManagerDisplayId(manager) {
-    const baseId = manager.manager_id ?? manager.ManagerID ?? 0;
+    const baseId = getManagerBaseId(manager);
     const genderId = manager.gender_id ?? manager.GenderId ?? 0;
     return genderId === 1 ? baseId + 100000 : baseId;
 }
@@ -46,11 +50,33 @@ function normalizeManagerIdentifier(value) {
     return { raw, numericId };
 }
 
+function getManagerBaseId(manager) {
+    const rawId = Number(manager?.manager_id ?? manager?.ManagerID ?? 0);
+    if (!Number.isFinite(rawId)) {
+        return 0;
+    }
+
+    return rawId >= 100000 ? rawId - 100000 : rawId;
+}
+
+function getNormalizedManagerName(manager) {
+    return String(manager?.name ?? manager?.Name ?? '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function normalizeOwnedManager(manager) {
     if (!manager) {
         return manager;
     }
 
+    const rawId = Number(manager.manager_id ?? manager.ManagerID ?? 0);
+    if (manager.gender_id === undefined && manager.GenderId === undefined && rawId >= 100000) {
+        manager.gender_id = 1;
+    }
+
+    manager.manager_id = getManagerBaseId(manager);
     manager.work_area = normalizeManagerArea(manager.work_area ?? manager.Area);
     if (manager.gender_id === undefined && manager.GenderId !== undefined) {
         manager.gender_id = manager.GenderId;
@@ -92,10 +118,57 @@ function pickManagerByBuyOrder(managers) {
     return candidatePool[Math.floor(Math.random() * candidatePool.length)] || null;
 }
 
+function getManagerSignature(manager) {
+    return `${getManagerDisplayId(manager)}|${getNormalizedManagerName(manager)}`;
+}
+
+function getOwnedManagerSignatures(currentMine) {
+    const ownedIds = new Set();
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        for (const manager of currentMine.managers?.[area] || []) {
+            ownedIds.add(getManagerSignature(manager));
+        }
+    });
+    return ownedIds;
+}
+
+function managerExistsInMine(currentMine, manager) {
+    return getOwnedManagerSignatures(currentMine).has(getManagerSignature(manager));
+}
+
+function managerExistsInArea(currentMine, area, manager) {
+    const areaManagers = currentMine.managers?.[area] || [];
+    const targetSignature = getManagerSignature(manager);
+    return areaManagers.some(existingManager => getManagerSignature(existingManager) === targetSignature);
+}
+
+function formatAssignedManagerLabel(manager, area, abilityName = null) {
+    const areaLabel = formatAreaLabel(area);
+    const tierLabel = area === 'shaft' && manager.assigned_tier ? ` Tier ${manager.assigned_tier}` : '';
+    const abilityLabel = abilityName ? `: ${abilityName}` : '';
+    return `${manager.name} (${areaLabel}${tierLabel}${abilityLabel})`;
+}
+
+function clampFieldValue(lines) {
+    return lines.join('\n').slice(0, 1024);
+}
+
+function getManagerHireWallet(currentMine) {
+    const mineNumber = parseInt(currentMine?.mine_number, 10) || getMineNumber(currentMine?.mine_name);
+    return getCashField(mineNumber);
+}
+
+function creditDuplicateManagerCompensation(user, currentMine, cost) {
+    const walletField = getManagerHireWallet(currentMine);
+    const compensation = Math.floor(cost * 0.5);
+    user[walletField] = (user[walletField] || 0) + compensation;
+    return { walletField, compensation };
+}
+
 function findManagerInCollection(collection = [], identifier) {
     if (identifier.numericId !== null) {
         const byId = collection.find(manager =>
-            manager.manager_id === identifier.numericId ||
+            getManagerBaseId(manager) === identifier.numericId ||
             getManagerDisplayId(manager) === identifier.numericId
         );
         if (byId) {
@@ -103,8 +176,8 @@ function findManagerInCollection(collection = [], identifier) {
         }
     }
 
-    const lowered = identifier.raw.toLowerCase();
-    return collection.find(manager => manager.name.toLowerCase() === lowered) || null;
+    const lowered = identifier.raw.toLowerCase().replace(/\s+/g, ' ').trim();
+    return collection.find(manager => getNormalizedManagerName(manager) === lowered) || null;
 }
 
 function findManagerAcrossAreas(currentMine, identifier) {
@@ -136,7 +209,7 @@ export default {
             currentMine.warehouse = currentMine.warehouse || [];
 
             if (args.length < 1) {
-                return message.reply(`<@${userId}>, to manage your managers, you'll need to do: **hire** for hiring a specific manager in your ${currentMine.mine_name}'s workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your ${currentMine.mine_name}, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. **im!manager assign warehouse 1** or **im!manager assign warehouse Benjamin Booth**), **remove** for removing an assigned manager in their workstation (i.e. **im!manager remove warehouse 1** or **im!manager remove warehouse Benjamin Booth**), **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your ${currentMine.mine_name}, or **ability** to view a manager's special ability (i.e. **im!manager ability shaft 1**).`);
+                return message.reply(`<@${userId}>, to manage your managers, you'll need to do: **hire** for hiring a specific manager in your ${currentMine.mine_name}'s workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your ${currentMine.mine_name}, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. **im!manager assign warehouse 1** or **im!manager assign warehouse Benjamin Booth**), **remove** for removing an assigned manager in their workstation (i.e. **im!manager remove warehouse 1** or **im!manager remove warehouse Benjamin Booth**), **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your ${currentMine.mine_name}, or **ability** to view a manager's special ability (i.e. **im!manager ability shaft 1** or **im!manager ability all**).`);
             }
 
             const subcommand = args[0].toLowerCase();
@@ -179,10 +252,13 @@ export default {
                 case 'ability': {
                     const abilityArea = args[1] ? normalizeManagerArea(args[1]) : null;
                     const abilityManagerId = args.slice(2).join(' ');
+                    if (args[1]?.toLowerCase() === 'all') {
+                        return handleAllManagerAbilities(message, user, currentMine, userId);
+                    }
                     return handleManagerAbility(message, user, currentMine, userId, abilityArea, abilityManagerId);
                 }
                 default:
-			        return message.reply(`Invalid subcommand, <@${userId}>! To manage your managers, you'll need to do: **hire** for hiring a specific manager in your ${currentMine.mine_name}'s workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your ${currentMine.mine_name}, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. **im!manager assign warehouse 1** or **im!manager assign warehouse Benjamin Booth**), **remove** for removing an assigned manager in their workstation (i.e. **im!manager remove warehouse 1** or **im!manager remove warehouse Benjamin Booth**), **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your ${currentMine.mine_name}, or **ability** to view a manager's special ability (i.e. **im!manager ability shaft 1**).`);
+			        return message.reply(`Invalid subcommand, <@${userId}>! To manage your managers, you'll need to do: **hire** for hiring a specific manager in your ${currentMine.mine_name}'s workstations (shaft, elevator and warehouse; i.e. im!manager hire shaft), **fire** to sack a manager from their job in your ${currentMine.mine_name}, as long you unassigned them from a workstation, **assign** for assigning a hired manager in your workstation using either ID or name, if their statistics do comply (i.e. **im!manager assign warehouse 1** or **im!manager assign warehouse Benjamin Booth**), **remove** for removing an assigned manager in their workstation (i.e. **im!manager remove warehouse 1** or **im!manager remove warehouse Benjamin Booth**), **overview** with either workstation specified (shaft, elevator or warehouse) to view all your managers you've currently hired in that workstation in your ${currentMine.mine_name}, or **ability** to view a manager's special ability (i.e. **im!manager ability shaft 1** or **im!manager ability all**).`);
             }
         });
     }
@@ -199,16 +275,17 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         return message.reply('Invalid area specified.');
     }
 
+    normalizeMineManagers(currentMine);
+
     const managersAvailable = managerData.filter(manager =>
-        normalizeManagerArea(manager.Area) === area && isDirectPurchaseManager(manager)
+        normalizeManagerArea(manager.Area) === area
+        && isDirectPurchaseManager(manager)
+        && !managerExistsInMine(currentMine, manager)
     );
 
     if (managersAvailable.length === 0) {
-        return message.reply(`No directly purchasable managers are available for the ${area}.`);
+        return message.reply(`You have already collected every directly purchasable manager available for the ${area}.`);
     }
-
-    // Ensure managers for the area are initialized
-    normalizeMineManagers(currentMine);
 
     // Calculate the number of managers currently hired in the specified area
     const numManagersHired = (currentMine.managers[area] || []).length;
@@ -226,31 +303,44 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         return message.reply(`Cost data for area "${area}" not found.`);
     }
 
-    if (user.cash < cost) {
-        return message.reply(`You need ${numberFormat(cost)} cash to hire a manager in the ${area}.`);
+    const walletField = getManagerHireWallet(currentMine);
+    const walletLabel = getCashLabelByField(walletField);
+    const availableCash = user[walletField] || 0;
+
+    if (availableCash < cost) {
+        return message.reply(`You need ${numberFormat(cost)} ${walletLabel} to hire a manager in the ${area}.`);
     }
 
-    // Determine the rarity of the manager based on odds
-    const randomNum = Math.random() * 100;
-    let rarityID = 1; // Default to junior
-
-    if (randomNum <= 60) {
-        rarityID = 1; // Junior
-    } else if (randomNum <= 85) {
-        rarityID = 2; // Senior
-    } else {
-        rarityID = 3; // Executive
+    const newManager = pickManagerByBuyOrder(managersAvailable);
+    if (!newManager) {
+        return message.reply(`No directly purchasable managers are currently available for the ${area}.`);
     }
 
-    const availableManagersByRarity = managersAvailable.filter(m => m.RarityID === rarityID);
-    if (availableManagersByRarity.length === 0) {
-        return message.reply(`No directly purchasable managers with rarity ${rarityID} are available in the ${area}.`);
+    if (managerExistsInMine(currentMine, newManager) || managerExistsInArea(currentMine, area, newManager)) {
+        const { walletField, compensation } = creditDuplicateManagerCompensation(user, currentMine, cost);
+        const walletLabel = getCashLabelByField(walletField);
+        try {
+            await updateUser(userId, user);
+            try {
+                await message.author.send(
+                    `A duplicate manager roll in ${currentMine.mine_name} was purged automatically.\nYou were compensated ${numberFormat(compensation)} ${walletLabel}.`
+                );
+                return message.reply('A duplicate manager roll was purged automatically. I sent your compensation details by DM.');
+            } catch (dmError) {
+                logError('manager:hireDuplicateComp:dm', dmError, { userId, area, managerId: getManagerBaseId(newManager) });
+                return message.reply(
+                    `A duplicate manager roll was purged automatically. Your compensation was still applied: ${numberFormat(compensation)} ${walletLabel}.`
+                );
+            }
+        } catch (error) {
+            logError('manager:hireDuplicateComp', error, { userId, area, managerId: getManagerBaseId(newManager) });
+            return message.reply('A duplicate manager was detected, but compensation could not be applied right now. Please try again later.');
+        }
     }
 
-    const newManager = pickManagerByBuyOrder(availableManagersByRarity);
-    user.cash -= cost;
+    user[walletField] = availableCash - cost;
     currentMine.managers[area].push({
-        manager_id: newManager.ManagerID,
+        manager_id: getManagerBaseId(newManager),
 		name: newManager.Name,
 		gender_id: newManager.GenderId || 0,
 		rarity_id: newManager.RarityID,
@@ -266,7 +356,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         const displayId = getManagerDisplayId({ manager_id: newManager.ManagerID, gender_id: newManager.GenderId || 0 });
         return message.reply(`Successfully hired ${newManager.Name} (${displayId}) for the ${area}.`);
     } catch (error) {
-        console.error('Failed to update user data:', error);
+        logError('manager:hire', error, { userId, area });
         return message.reply('There was an error while updating your data. Please try again later.');
     }
 }
@@ -292,7 +382,7 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
 
     // Remove the manager from all areas
     ['shaft', 'elevator', 'warehouse'].forEach(area => {
-        currentMine.managers[area] = currentMine.managers[area].filter(m => m.manager_id !== manager.manager_id);
+        currentMine.managers[area] = currentMine.managers[area].filter(m => getManagerSignature(m) !== getManagerSignature(manager));
     });
 
     // Update the user's data in the database
@@ -300,7 +390,7 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
         await updateUser(userId, user);
         return message.reply(`Successfully fired ${manager.name} (${getManagerDisplayId(manager)}).`);
     } catch (error) {
-        console.error('Failed to update user data:', error);
+        logError('manager:fire', error, { userId, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
     }
 }
@@ -372,12 +462,12 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     // Remove the manager from all other areas and set `Assigned` to false
     ['shaft', 'elevator', 'warehouse'].forEach(a => {
         currentMine.managers[a] = currentMine.managers[a].map(m => {
-            if (m.manager_id === manager.manager_id) {
+            if (getManagerSignature(m) === getManagerSignature(manager)) {
                 m.assigned = false;
                 m.assigned_tier = null; // Clear tier assignment
             }
             return m;
-        }).filter(m => m.manager_id !== manager.manager_id); // Remove manager from the area
+        }).filter(m => getManagerSignature(m) !== getManagerSignature(manager)); // Remove manager from the area
     });
 
     // Assign the manager to the new area and set properties
@@ -393,7 +483,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
         const tierInfo = (area === 'shaft' && tier) ? ` (Tier ${tier})` : '';
         return message.reply(`Successfully assigned manager ${manager.name} (${getManagerDisplayId(manager)}) to the ${area}${tierInfo}.`);
     } catch (error) {
-        console.error('Failed to update user data:', error);
+        logError('manager:assign', error, { userId, area, tier, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
     }
 }
@@ -443,7 +533,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
         await updateUser(userId, user);
         return message.reply(`Successfully removed manager ${manager.name} (${getManagerDisplayId(manager)})${tierInfo} from the ${area}.`);
     } catch (error) {
-        console.error('Failed to update user data:', error);
+        logError('manager:remove', error, { userId, area, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
     }
 }
@@ -457,37 +547,181 @@ async function handleManagerOverview(message, user, currentMine, area) {
     normalizeMineManagers(currentMine);
 
     const areasToShow = area ? [area] : ['shaft', 'elevator', 'warehouse'];
-    const sections = areasToShow.map(selectedArea => {
+    const managerEntries = areasToShow.flatMap(selectedArea => {
         const managersWithAbilities = getManagersWithAbilities(currentMine, selectedArea);
-        if (managersWithAbilities.length === 0) {
-            return {
-                name: selectedArea.charAt(0).toUpperCase() + selectedArea.slice(1),
-                value: 'No managers hired'
-            };
+        return managersWithAbilities.map(manager => ({
+            area: selectedArea,
+            manager
+        }));
+    });
+
+    if (managerEntries.length === 0) {
+        return message.reply(area ? `No managers hired in ${area}.` : `You have not hired any managers in ${currentMine.mine_name}.`);
+    }
+
+    const totalPages = Math.ceil(managerEntries.length / MANAGERS_PER_PAGE);
+    const baseTitle = area
+        ? `Managers in ${area.charAt(0).toUpperCase() + area.slice(1)}`
+        : `All Managers in ${currentMine.mine_name}`;
+
+    const buildEmbed = page => {
+        const startIndex = page * MANAGERS_PER_PAGE;
+        const pageEntries = managerEntries.slice(startIndex, startIndex + MANAGERS_PER_PAGE);
+        const embed = new EmbedBuilder()
+            .setTitle(baseTitle)
+            .setColor('#0099ff')
+            .setFooter({ text: `Page ${page + 1} of ${totalPages}` });
+
+        pageEntries.forEach(({ area: selectedArea, manager }) => {
+            const tierInfo = selectedArea === 'shaft' && manager.assigned_tier ? ` | Tier ${manager.assigned_tier}` : '';
+            const genderLabel = (manager.gender_id ?? 0) === 1 ? 'Female' : 'Male';
+            const status = manager.assigned ? 'Assigned' : 'Unassigned';
+            const abilitySummary = manager.ability_status || 'No ability status available';
+
+            embed.addFields({
+                name: `${selectedArea.charAt(0).toUpperCase() + selectedArea.slice(1)} | ${manager.name}`,
+                value: `${getManagerGenderEmoji(manager)} ID: ${getManagerDisplayId(manager)} | ${genderLabel} | ${status}${tierInfo}\n${abilitySummary}`,
+                inline: false
+            });
+        });
+
+        return embed;
+    };
+
+    if (totalPages === 1) {
+        return message.reply({ embeds: [buildEmbed(0)] });
+    }
+
+    let currentPage = 0;
+    const customToken = `${message.author.id}_${Date.now()}`;
+    const previousId = `manager_prev_${customToken}`;
+    const nextId = `manager_next_${customToken}`;
+    const buildRow = page => new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(previousId)
+            .setLabel('Previous')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page === 0),
+        new ButtonBuilder()
+            .setCustomId(nextId)
+            .setLabel('Next')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page >= totalPages - 1)
+    );
+
+    const replyMessage = await message.reply({
+        embeds: [buildEmbed(currentPage)],
+        components: [buildRow(currentPage)],
+        fetchReply: true
+    });
+
+    const collector = replyMessage.createMessageComponentCollector({
+        filter: interaction =>
+            interaction.user.id === message.author.id &&
+            [previousId, nextId].includes(interaction.customId),
+        time: 60000
+    });
+
+    collector.on('collect', async interaction => {
+        if (interaction.customId === previousId && currentPage > 0) {
+            currentPage--;
+        } else if (interaction.customId === nextId && currentPage < totalPages - 1) {
+            currentPage++;
         }
 
-        return {
-            name: selectedArea.charAt(0).toUpperCase() + selectedArea.slice(1),
-            value: managersWithAbilities.map(m => {
-                const tierInfo = (selectedArea === 'shaft' && m.assigned_tier) ? ` (Tier ${m.assigned_tier})` : '';
-                const genderLabel = (m.gender_id ?? 0) === 1 ? 'Female' : 'Male';
-                return `${getManagerGenderEmoji(m)} ID: ${getManagerDisplayId(m)}, Name: ${m.name}, Gender: ${genderLabel}, Assigned: ${m.assigned ? 'Yes' : 'No'}${tierInfo}\n${m.ability_status}`;
-            }).join('\n\n')
-        };
+        await safeUpdateInteraction(
+            interaction,
+            { embeds: [buildEmbed(currentPage)], components: [buildRow(currentPage)] },
+            'manager:overview:update',
+            { userId: interaction.user.id, page: currentPage + 1 }
+        );
     });
 
-    const embed = new EmbedBuilder()
-        .setTitle(area ? `Managers in ${area.charAt(0).toUpperCase() + area.slice(1)}` : `All Managers in ${currentMine.mine_name}`)
-        .setColor('#0099ff');
-
-    sections.forEach(section => {
-        embed.addFields({ name: section.name, value: section.value, inline: false });
+    collector.on('end', async () => {
+        if (replyMessage.editable) {
+            await safeEditMessage(
+                replyMessage,
+                { components: [] },
+                'manager:overview:end',
+                { messageId: replyMessage.id }
+            );
+        }
     });
 
-    return message.reply({ embeds: [embed] });
+    return replyMessage;
 }
 
 // Function to handle manager ability activation
+async function handleAllManagerAbilities(message, user, currentMine, userId) {
+    normalizeMineManagers(currentMine);
+
+    const activatedManagers = [];
+    const skippedCooldown = [];
+    const skippedActive = [];
+    const skippedUnassigned = [];
+
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        for (const manager of currentMine.managers[area] || []) {
+            const abilityInfo = getManagerAbilityInfo(manager);
+
+            if (!manager.assigned) {
+                skippedUnassigned.push(formatAssignedManagerLabel(manager, area));
+                continue;
+            }
+
+            if (manager.ability_state?.active) {
+                skippedActive.push(formatAssignedManagerLabel(manager, area));
+                continue;
+            }
+
+            const cooldownRemaining = getAbilityCooldownRemaining(manager);
+            if (cooldownRemaining > 0) {
+                skippedCooldown.push(formatAssignedManagerLabel(manager, area));
+                continue;
+            }
+
+            manager.ability_state = activateAbility(manager);
+            activatedManagers.push(formatAssignedManagerLabel(manager, area, abilityInfo.name));
+        }
+    });
+
+    if (activatedManagers.length === 0) {
+        const reasons = [];
+        if (skippedCooldown.length > 0) reasons.push(`${skippedCooldown.length} on cooldown`);
+        if (skippedUnassigned.length > 0) reasons.push(`${skippedUnassigned.length} unassigned`);
+        return message.reply(`No manager abilities could be activated right now${reasons.length ? ` (${reasons.join(', ')})` : ''}.`);
+    }
+
+    try {
+        await updateUser(userId, user);
+
+        const embed = new EmbedBuilder()
+            .setTitle(`Manager Abilities Activated in ${currentMine.mine_name}`)
+            .setColor('#00FF00')
+            .addFields(
+                { name: 'Activated', value: clampFieldValue(activatedManagers), inline: false },
+                { name: 'Active Effects', value: formatAbilityAllEffects(currentMine), inline: false }
+            );
+
+        if (skippedCooldown.length > 0) {
+            embed.addFields({ name: 'Skipped (Cooldown)', value: clampFieldValue(skippedCooldown), inline: false });
+        }
+
+        if (skippedActive.length > 0) {
+            embed.addFields({ name: 'Skipped (Already Active)', value: clampFieldValue(skippedActive), inline: false });
+        }
+
+        if (skippedUnassigned.length > 0) {
+            embed.addFields({ name: 'Skipped (Unassigned)', value: clampFieldValue(skippedUnassigned), inline: false });
+        }
+
+        return message.reply({ embeds: [embed] });
+    } catch (error) {
+        logError('manager:abilityAll', error, { userId });
+        return message.reply('There was an error activating all available manager abilities. Please try again.');
+    }
+}
+
 async function handleManagerAbility(message, user, currentMine, userId, area, managerIdOrName) {
     if (!area) {
         return message.reply('Please specify the area. Usage: im!manager ability <area> <manager_id_or_name>');
@@ -557,7 +791,7 @@ async function handleManagerAbility(message, user, currentMine, userId, area, ma
         
         return message.reply({ embeds: [embed] });
     } catch (error) {
-        console.error('Failed to activate ability:', error);
+        logError('manager:ability', error, { userId, area, manager: managerIdOrName });
         manager.ability_state = null; // Rollback
         return message.reply('There was an error activating the ability. Please try again.');
     }

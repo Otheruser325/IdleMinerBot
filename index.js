@@ -26,7 +26,15 @@ import {
 } from './utils/movementTimes.js';
 import mineRegionsJson from './config/mineRegions.json' with { type: 'json' };
 import continentDataJson from './config/continentData.json' with { type: 'json' };
-import { normalizeMineData, normalizeOwnedContinents } from './utils/continentLooker.js';
+import {
+    getCashField,
+    getCashLabelByField,
+    getIdleCashField,
+    normalizeMineData,
+    normalizeOwnedContinents
+} from './utils/continentLooker.js';
+import { startPremiumPaymentServer } from './utils/premiumPayments.js';
+import { purgeDuplicateManagersFromMine } from './utils/managerDuplicates.js';
 
 const mineRegions = mineRegionsJson.regions;
 const continentData = continentDataJson.continents;
@@ -45,7 +53,6 @@ dotenv.config();
 
 // Introduce a delay between updates to avoid hitting rate limits
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 async function markUserAsActive(userId) {
     if (!userId) {
         return;
@@ -155,12 +162,20 @@ async function scheduleNextUpdate(client) {
                     await handleManagerWork(user, user.user_id);
 					await delay(100);
                 } catch (userError) {
-                    console.warn(`Manager work for user ${user.user_id} failed.`, userError);
+                    logError('cron:handleManagerWork:user', userError, { userId: user?.user_id });
                     continue;
                 }
             }
         } catch (error) {
             logError('cron:handleManagerWork', error);
+        }
+    });
+
+    cron.schedule('*/60 * * * * *', async () => {
+        try {
+            await handleDuplicateManagerPurge(client);
+        } catch (error) {
+            logError('cron:handleDuplicateManagerPurge', error);
         }
     });
 }
@@ -182,9 +197,15 @@ function automateShaftWork(currentMine, managedTiers) {
         
         // Total cycle time: walk to deposit + mine + walk back
         const totalCycleTime = walkingTime + miningTime + walkingTime;
+        if (!Number.isFinite(totalCycleTime) || totalCycleTime <= 0) return;
         
         // Calculate how many mining cycles could have completed
-        const lastWorkTime = shaft.manager_last_worked || 0;
+        const lastWorkTime = shaft.manager_last_worked || now;
+        if (!shaft.manager_last_worked) {
+            shaft.manager_last_worked = now;
+            return;
+        }
+
         const timeSinceLastWork = now - lastWorkTime;
         const cyclesCompleted = Math.floor(timeSinceLastWork / totalCycleTime);
         
@@ -232,16 +253,22 @@ function automateElevatorWork(currentMine) {
     const extractableThisCycle = Math.min(totalManagedDeposit, Math.max(0, elevatorCapacity - (elevator.total_deposit || 0)));
     const loadingTime = extractableThisCycle > 0 ? (extractableThisCycle / LOADING_PER_SECOND) * 1000 : 0;
     const cycleTime = (BASE_TRAVEL_TIME * shaftCount * 2) + (loadingTime * 2);
+    if (!Number.isFinite(cycleTime) || cycleTime <= 0) return;
     
     // Check if a cycle has completed
-    const lastWorkTime = elevator.manager_last_worked || 0;
+    const lastWorkTime = elevator.manager_last_worked || now;
+    if (!elevator.manager_last_worked) {
+        elevator.manager_last_worked = now;
+        return;
+    }
+
     const timeSinceLastWork = now - lastWorkTime;
     const cyclesCompleted = Math.floor(timeSinceLastWork / cycleTime);
     
     if (cyclesCompleted < 1) return;
     
     // Update last worked timestamp
-    elevator.manager_last_worked = now;
+    elevator.manager_last_worked = now - (timeSinceLastWork % cycleTime);
     
     // Extract from managed shafts only
     let totalExtracted = 0;
@@ -302,9 +329,15 @@ function automateWarehouseWork(currentMine, user) {
 
     const LOADING_TIME = (extractableAmount / boostedLoadingRate) * 1000;
     const cycleTime = LOADING_TIME + (walkingTime * 2);
+    if (!Number.isFinite(cycleTime) || cycleTime <= 0) return 0;
     
     // Check if a cycle has completed
-    const lastWorkTime = warehouse.manager_last_worked || 0;
+    const lastWorkTime = warehouse.manager_last_worked || now;
+    if (!warehouse.manager_last_worked) {
+        warehouse.manager_last_worked = now;
+        return 0;
+    }
+
     const timeSinceLastWork = now - lastWorkTime;
     const cyclesCompleted = Math.floor(timeSinceLastWork / cycleTime);
     
@@ -340,20 +373,24 @@ function automateWarehouseWork(currentMine, user) {
 // Function to start manager work
 async function handleManagerWork(user, userId) {
     if (!userId) {
-        console.error('User data is undefined or invalid.');
         return;
     }
 
     await withUserLock(userId, async () => {
         const freshUser = await getUser(userId);
         if (!freshUser) {
-            console.error(`User ${userId} could not be loaded for manager automation.`);
             return;
         }
 
         freshUser.mines = freshUser.mines || [];
         freshUser.cash = freshUser.cash || 0;
+        freshUser.ice_cash = freshUser.ice_cash || 0;
+        freshUser.fire_cash = freshUser.fire_cash || 0;
+        freshUser.dawn_cash = freshUser.dawn_cash || 0;
         freshUser.idle_cash = freshUser.idle_cash || 0;
+        freshUser.idle_ice_cash = freshUser.idle_ice_cash || 0;
+        freshUser.idle_fire_cash = freshUser.idle_fire_cash || 0;
+        freshUser.idle_dawn_cash = freshUser.idle_dawn_cash || 0;
         freshUser.last_idle = freshUser.last_idle || Date.now();
         freshUser.current_mine = freshUser.current_mine || (freshUser.mines.length > 0 ? freshUser.mines[0].mine_name : null);
 
@@ -361,7 +398,6 @@ async function handleManagerWork(user, userId) {
             mine.mine_name.toLowerCase() === freshUser.current_mine.toLowerCase()
         );
         if (!currentMine) {
-            console.error(`Current mine data for user ${userId} not found.`);
             return;
         }
 
@@ -379,6 +415,8 @@ async function handleManagerWork(user, userId) {
         const currentTime = Date.now();
         const isIdle = currentTime - freshUser.last_idle > 10 * 60 * 1000;
         const idleEfficiency = freshUser.has_premium ? 0.2 : 0.1;
+        const cashField = getCashField(currentMine.mine_number);
+        const idleCashField = getIdleCashField(currentMine.mine_number);
 
         let totalCashGenerated = 0;
         const workflowStats = {
@@ -399,7 +437,7 @@ async function handleManagerWork(user, userId) {
                 });
 
                 if (currentMine._beamCash > 0) {
-                    freshUser.cash += currentMine._beamCash;
+                    freshUser[cashField] = (freshUser[cashField] || 0) + currentMine._beamCash;
                     currentMine._beamCash = 0;
                 }
             }
@@ -410,7 +448,7 @@ async function handleManagerWork(user, userId) {
                     workflowStats.elevatorExtracted = elevatorResult.extracted;
                     workflowStats.elevatorBeamCash = elevatorResult.beamCash;
                     if (elevatorResult.beamCash > 0) {
-                        freshUser.cash += elevatorResult.beamCash;
+                        freshUser[cashField] = (freshUser[cashField] || 0) + elevatorResult.beamCash;
                     }
                 }
             }
@@ -425,26 +463,32 @@ async function handleManagerWork(user, userId) {
 
             if (totalCashGenerated > 0) {
                 if (isIdle) {
-                    freshUser.idle_cash += totalCashGenerated;
+                    freshUser[idleCashField] = (freshUser[idleCashField] || 0) + totalCashGenerated;
                 } else {
-                    freshUser.cash += totalCashGenerated;
+                    freshUser[cashField] = (freshUser[cashField] || 0) + totalCashGenerated;
                 }
             }
 
             currentMine._managerWorkStats = workflowStats;
         } catch (error) {
-            console.error('Error in manager automation:', error);
+            logError('handleManagerWork:automation', error, { userId, mineName: currentMine?.mine_name });
         }
 
         try {
             await updateUser(userId, {
                 cash: freshUser.cash,
+                ice_cash: freshUser.ice_cash,
+                fire_cash: freshUser.fire_cash,
+                dawn_cash: freshUser.dawn_cash,
                 idle_cash: freshUser.idle_cash,
+                idle_ice_cash: freshUser.idle_ice_cash,
+                idle_fire_cash: freshUser.idle_fire_cash,
+                idle_dawn_cash: freshUser.idle_dawn_cash,
                 last_idle: freshUser.last_idle,
                 mines: freshUser.mines
             });
         } catch (error) {
-            console.error('Error updating user data:', error);
+            logError('handleManagerWork:updateUser', error, { userId, mineName: currentMine?.mine_name });
         }
     });
 }
@@ -467,9 +511,11 @@ async function handleMissingData() {
                 freshUser.cash = freshUser.cash || 0;
                 freshUser.ice_cash = freshUser.ice_cash || 0;
                 freshUser.fire_cash = freshUser.fire_cash || 0;
+                freshUser.dawn_cash = freshUser.dawn_cash || 0;
                 freshUser.idle_cash = freshUser.idle_cash || 0;
                 freshUser.idle_ice_cash = freshUser.idle_ice_cash || 0;
                 freshUser.idle_fire_cash = freshUser.idle_fire_cash || 0;
+                freshUser.idle_dawn_cash = freshUser.idle_dawn_cash || 0;
                 freshUser.super_cash = freshUser.super_cash || 0;
                 freshUser.streak = freshUser.streak || 0;
                 freshUser.last_daily = freshUser.last_daily || Date.now();
@@ -612,7 +658,7 @@ async function initializeBotTasks(client) {
     }
 }
 
-client.once('ready', async () => {
+client.once(Events.ClientReady, async () => {
     console.log('Bot is online!');
     console.log(`Logged in as ${client.user.tag}`);
 
@@ -669,6 +715,11 @@ client.on('messageCreate', async message => {
 
                 try {
                     await handleManagerWork(user, userId);
+                    const refreshedUser = await getUser(userId);
+                    const liveUser = refreshedUser || user;
+                    const idleCashField = getIdleCashField(currentMine.mine_number);
+                    const cashField = getCashField(currentMine.mine_number);
+                    const cashLabel = getCashLabelByField(cashField);
                     
                     // Check automation status for informative message
                     const autoStatus = getManagerAutomationStatus(currentMine);
@@ -676,8 +727,9 @@ client.on('messageCreate', async message => {
                     const bottleneck = currentMine._lastBottleneck;
                     
                     let replyMessage;
-                    if (user.idle_cash > 0) {
-                        replyMessage = `💰 You have collected **${numberFormat(user.idle_cash)}** cash from your idle workers!`;
+                    const idleCashAmount = liveUser[idleCashField] || 0;
+                    if (idleCashAmount > 0) {
+                        replyMessage = `💰 You have collected **${numberFormat(idleCashAmount)}** ${cashLabel} from your idle workers!`;
                         
                         // Show bottleneck info if available
                         if (bottleneck && bottleneck.efficiency < 1) {
@@ -717,8 +769,8 @@ client.on('messageCreate', async message => {
                             return;
                         }
 
-                        collectUser.cash += collectUser.idle_cash || 0;
-                        collectUser.idle_cash = 0;
+                        collectUser[cashField] = (collectUser[cashField] || 0) + (collectUser[idleCashField] || 0);
+                        collectUser[idleCashField] = 0;
                         collectUser.last_idle = currentTime;
                         await updateUser(userId, collectUser);
                     });
@@ -761,7 +813,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isCommand()) {
         const command = client.slashCommands.get(interaction.commandName);
         if (!command) {
-            console.error(`No command matching ${interaction.commandName} was found.`);
+            console.warn(`No command matching ${interaction.commandName} was found.`);
             return;
         }
 
@@ -769,11 +821,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await command.execute(interaction);
         } catch (error) {
             logError('slashCommand:execute', error, { commandName: interaction?.commandName, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            if (!interaction.replied) {
-                await safeReply(interaction, { content: 'There was an error executing this command!', ephemeral: true });
-            } else {
-                await safeReply(interaction, { content: 'There was an error executing this command!', ephemeral: true });
-            }
+            await safeReply(interaction, { content: 'There was an error executing this command!', ephemeral: true });
         } finally {
             await markUserAsActive(interaction?.user?.id);
         }
@@ -813,16 +861,61 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 		
     } else {
-        console.error('Received an unhandled interaction type.');
+        console.warn('Received an unhandled interaction type.');
     }
 });
 
 // Centralized Error Handler
 function handleInteractionError(interaction, errorMessage) {
-    if (!interaction.replied) {
-        safeReply(interaction, { content: errorMessage, ephemeral: true });
-    } else {
-        safeReply(interaction, { content: errorMessage, ephemeral: true });
+    safeReply(interaction, { content: errorMessage, ephemeral: true });
+}
+
+async function handleDuplicateManagerPurge(client) {
+    const allUsers = await getAllUsers();
+    for (const user of allUsers) {
+        await withUserLock(user.user_id, async () => {
+            const freshUser = await getUser(user.user_id);
+            if (!freshUser) {
+                return;
+            }
+
+            let updated = false;
+            const dmLines = [];
+
+            for (const mine of freshUser.mines || []) {
+                const result = purgeDuplicateManagersFromMine(freshUser, mine);
+                if (!result) {
+                    continue;
+                }
+
+                updated = true;
+                const summary = result.compensationEvents
+                    .map(event => `- ${mine.mine_name} | ${event.area}: ${event.managerName} (${event.managerDisplayId}) -> ${numberFormat(event.compensation)} ${event.walletLabel}`)
+                    .join('\n');
+                dmLines.push(summary);
+            }
+
+            if (!updated) {
+                return;
+            }
+
+            await updateUser(freshUser.user_id, {
+                cash: freshUser.cash,
+                ice_cash: freshUser.ice_cash,
+                fire_cash: freshUser.fire_cash,
+                dawn_cash: freshUser.dawn_cash,
+                mines: freshUser.mines
+            });
+
+            if (dmLines.length > 0 && client?.users?.fetch) {
+                try {
+                    const discordUser = await client.users.fetch(freshUser.user_id);
+                    await discordUser.send(`Duplicate managers were purged automatically and compensated:\n${dmLines.join('\n')}`);
+                } catch (error) {
+                    logError('handleDuplicateManagerPurge:dm', error, { userId: freshUser.user_id });
+                }
+            }
+        });
     }
 }
 
@@ -836,7 +929,7 @@ async function handleSelectMenuInteraction(interaction) {
         // Handle selection menu interactions
     } catch (error) {
         handleInteractionError(interaction, 'There was an error trying to process the selection menu!');
-        console.error('Error executing select menu interaction:', error);
+        logError('selectMenu:execute', error, { customId, userId });
     }
 }
 
@@ -850,7 +943,7 @@ async function handleButtonInteraction(interaction) {
         // Handle button interactions
     } catch (error) {
         handleInteractionError(interaction, 'There was an error trying to process that button!');
-        console.error('Error executing button interaction:', error);
+        logError('button:execute', error, { customId, userId });
     }
 }
 
@@ -864,16 +957,18 @@ async function handleModalFormInteraction(interaction) {
         // Handle modal form interactions
     } catch (error) {
         handleInteractionError(interaction, 'There was an error trying to submit this form!');
-        console.error('Error executing modal form interaction:', error);  
+        logError('modal:execute', error, { customId, userId });  
     }
 }
 
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
+    logError('process:uncaughtException', error);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    logError('process:unhandledRejection', reason instanceof Error ? reason : new Error(String(reason)), {
+        promise: String(promise)
+    });
 });
 
 console.log(' Starting Idle Miner Bot...');
@@ -885,6 +980,8 @@ if (!dbStatus.allReady) {
     console.warn('  Warning: Database tables may be missing. Some features may not work correctly.');
     console.warn('   Run the SQL shown above in your Supabase dashboard to create missing tables.');
 }
+
+await startPremiumPaymentServer(client);
 
 // Log in to Discord
 client.login(token);

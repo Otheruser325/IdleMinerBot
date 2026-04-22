@@ -1,7 +1,9 @@
+import { logError } from './errorHandling.js';
+
 export default async function guildDM(user, message) {
     try {
         await user.send(message);
     } catch (error) {
-        console.error(`Failed to send DM to ${user.tag}:`, error);
+        logError('guildDM', error, { userId: user?.id, tag: user?.tag });
     }
 }

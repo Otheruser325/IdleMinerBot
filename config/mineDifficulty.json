@@ -1,0 +1,124 @@
+{
+  "mineDifficulty": [
+    {
+      "MineId": 1,
+      "ContinentId": 0,
+      "Difficulty": 1,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 2,
+      "ContinentId": 0,
+      "Difficulty": 1,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 3,
+      "ContinentId": 0,
+      "Difficulty": 1,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 4,
+      "ContinentId": 0,
+      "Difficulty": 1,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 5,
+      "ContinentId": 0,
+      "Difficulty": 1,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 6,
+      "ContinentId": 1,
+      "Difficulty": 1.2,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 7,
+      "ContinentId": 1,
+      "Difficulty": 1.2,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 8,
+      "ContinentId": 1,
+      "Difficulty": 1.2,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 9,
+      "ContinentId": 1,
+      "Difficulty": 1.2,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 10,
+      "ContinentId": 1,
+      "Difficulty": 1.2,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 11,
+      "ContinentId": 2,
+      "Difficulty": 1.5,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 12,
+      "ContinentId": 2,
+      "Difficulty": 1.5,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 13,
+      "ContinentId": 2,
+      "Difficulty": 1.5,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 14,
+      "ContinentId": 2,
+      "Difficulty": 1.5,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 15,
+      "ContinentId": 2,
+      "Difficulty": 1.5,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 16,
+      "ContinentId": 3,
+      "Difficulty": 30,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 17,
+      "ContinentId": 3,
+      "Difficulty": 30,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 18,
+      "ContinentId": 3,
+      "Difficulty": 30,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 19,
+      "ContinentId": 3,
+      "Difficulty": 30,
+      "TimeDiff": 1
+    },
+    {
+      "MineId": 20,
+      "ContinentId": 3,
+      "Difficulty": 30,
+      "TimeDiff": 1
+    }
+  ]
+}

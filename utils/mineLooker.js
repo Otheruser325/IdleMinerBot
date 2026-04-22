@@ -18,7 +18,12 @@ const MINE_NAMES = {
     12: 'Sunstone Mine',
     13: 'Topaz Mine',
     14: 'Platinum Mine',
-    15: 'Obsidian Mine'
+    15: 'Obsidian Mine',
+    16: 'Heliodor Mine',
+    17: 'Realgar Mine',
+    18: 'Alexandrite Mine',
+    19: 'Celestine Mine',
+    20: 'Titanite Mine'
 };
 
 function normalizeLookupValue(value) {
@@ -58,7 +63,8 @@ export function getMinesByContinent(continentName) {
     const ranges = {
         'Start Continent': [1, 2, 3, 4, 5],
         'Ice Continent': [6, 7, 8, 9, 10],
-        'Fire Continent': [11, 12, 13, 14, 15]
+        'Fire Continent': [11, 12, 13, 14, 15],
+        'Dawn Continent': [16, 17, 18, 19, 20]
     };
 
     const mineNumbers = ranges[continentName] || [];

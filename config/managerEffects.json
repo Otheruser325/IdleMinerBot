@@ -1,0 +1,116 @@
+{
+  "managerEffects": [
+    {
+      "EffectID": 1,
+      "EffectName": "Walking Speed Boost",
+      "StringId": "GroundWalkingSpeedMultiplier",
+      "Area": "Ground",
+      "EffectDescription": "Erhöht Laufgeschwindigkeit der Transportereinheiten um x"
+    },
+    {
+      "EffectID": 2,
+      "EffectName": "Income Multiplier",
+      "StringId": "GroundIncomeMultiplier",
+      "Area": "Ground",
+      "EffectDescription": "10 % Chance, die abgeladene Menge zu ver-x-fachen"
+    },
+    {
+      "EffectID": 3,
+      "EffectName": "Upgrade Cost",
+      "StringId": "GroundUpgradeCostReduction",
+      "Area": "Ground",
+      "EffectDescription": "Reduziert Upgradekosten für Ground"
+    },
+    {
+      "EffectID": 4,
+      "EffectName": "Loading Speed Boost",
+      "StringId": "GroundLoadingPerSecondMultiplier",
+      "Area": "Ground",
+      "EffectDescription": "Verringert Auf- und Abladezeit der Transporteinheiten"
+    },
+    {
+      "EffectID": 5,
+      "EffectName": "Load Expansion",
+      "StringId": "GroundWorkerCapacityMultiplier",
+      "Area": "Ground",
+      "EffectDescription": "Erhöht Capacity der GroundWorker"
+    },
+    {
+      "EffectID": 6,
+      "EffectName": "Income Multiplier",
+      "StringId": "CorridorIncomeMultiplier",
+      "Area": "Corridor",
+      "EffectDescription": "10 % Chance, die abgeladene Menge zu ver-x-fachen"
+    },
+    {
+      "EffectID": 7,
+      "EffectName": "Income Beam",
+      "StringId": "CorridorInstantMoney",
+      "Area": "Corridor",
+      "EffectDescription": "Sofortiges Erhalten von Geld wenn Mineralien am Schachtspeicher abgeliefert werden (Gilt für Gang dem der Manager zugeordnet wurde)"
+    },
+    {
+      "EffectID": 8,
+      "EffectName": "Mining Speed Boost",
+      "StringId": "CorridorWorkerGainMultiplier",
+      "Area": "Corridor",
+      "EffectDescription": "Erhöht Abbaugeschwindigkeit der Miner"
+    },
+    {
+      "EffectID": 9,
+      "EffectName": "Walking Speed Boost",
+      "StringId": "CorridorWorkerWalkingSpeedMultiplier",
+      "Area": "Corridor",
+      "EffectDescription": "Erhöht Laufgeschwindigkeit der Miner"
+    },
+    {
+      "EffectID": 10,
+      "EffectName": "Upgrade Cost",
+      "StringId": "CorridorUpgradeCostReduction",
+      "Area": "Corridor",
+      "EffectDescription": "'Reduzieren von Upgradekosten '"
+    },
+    {
+      "EffectID": 11,
+      "EffectName": "Movement Speed Boost",
+      "StringId": "ElevatorTiersPerSecondMultiplier",
+      "Area": "Elevator",
+      "EffectDescription": "'Erhöht Geschwindigkeit des Aufzugs '"
+    },
+    {
+      "EffectID": 12,
+      "EffectName": "Load Expansion",
+      "StringId": "ElevatorCapacityMultiplier",
+      "Area": "Elevator",
+      "EffectDescription": "Erhöht Kapazität des Aufzugs"
+    },
+    {
+      "EffectID": 13,
+      "EffectName": "Loading Speed Boost",
+      "StringId": "ElevatorLoadingPerSecondMultiplier",
+      "Area": "Elevator",
+      "EffectDescription": "Erhöht Lade- und Entladegeschwindigkeit"
+    },
+    {
+      "EffectID": 14,
+      "EffectName": "Income Beam",
+      "StringId": "MineInstantMoney",
+      "Area": "Elevator",
+      "EffectDescription": "Jede x-te Abladung erhöht direkt, ohne noch zum Groundgebäude oben rechts gebracht werden zu müssen, die Geldanzahl des Spielers"
+    },
+    {
+      "EffectID": 15,
+      "EffectName": "Income Multiplier",
+      "StringId": "ElevatorIncomeMultiplier",
+      "Area": "Elevator",
+      "EffectDescription": "10 % Chance, die abgeladene Menge zu ver-x-fachen"
+    },
+    {
+      "EffectID": 16,
+      "EffectName": "Upgrade Cost",
+      "StringId": "ElevatorUpgradeCostReduction",
+      "Area": "Elevator",
+      "EffectDescription": "'Reduzieren von Upgradekosten '"
+    }
+  ]
+}

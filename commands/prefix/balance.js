@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
 import { getUser } from '../../dataManager.js';
+import { logError } from '../../utils/errorHandling.js';
 
 const wealthDescriptions = [
     { minCash: 1e33, description: 'Decillionaire!' },
@@ -77,6 +78,7 @@ export default {
             const cash = user.cash || 0;
             const iceCash = user.ice_cash || 0;
             const fireCash = user.fire_cash || 0;
+            const dawnCash = user.dawn_cash || 0;
             const superCash = user.super_cash || 0;
 
             // Determine user's wealth status
@@ -101,6 +103,7 @@ export default {
                     { name: 'Cash', value: `${numberFormat(cash)} Cash`, inline: true },
                     { name: 'Ice Cash', value: `${numberFormat(iceCash)} Ice Cash`, inline: true },
                     { name: 'Fire Cash', value: `${numberFormat(fireCash)} Fire Cash`, inline: true },
+                    { name: 'Dawn Cash', value: `${numberFormat(dawnCash)} Dawn Cash`, inline: true },
                     { name: 'Super Cash', value: `${numberFormat(superCash)} Super Cash`, inline: true },
                     { name: 'Wealth Status', value: description, inline: false }
                 )
@@ -109,7 +112,7 @@ export default {
 
             return message.reply({ embeds: [embed] });
         } catch (error) {
-            console.error('Error in balance command:', error);
+            logError('balance:execute', error, { userId: message?.author?.id, target: args?.[0] });
             message.reply('There was an error executing the balance command.');
         }
     }

@@ -1,10 +1,34 @@
 import { getUser, updateUser, withUserLock } from '../../dataManager.js';
 import shopDataJson from '../../config/shopData.json' with { type: 'json' };
 import numberFormat from '../../utils/numberFormat.js';
-import sendPremiumDM from '../../utils/sendPremiumDM.js';
 import { isShopUnlocked } from '../../utils/progression.js';
+import { logError } from '../../utils/errorHandling.js';
+import {
+  createPremiumCheckoutSession,
+  getPremiumPassDisplayPrice,
+  isPremiumPassItem,
+  isPremiumPaymentsConfigured
+} from '../../utils/premiumPayments.js';
 
 const shopData = shopDataJson.items;
+
+function normalizeShopLookupValue(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findShopItem(itemInput) {
+  const numericId = parseInt(itemInput, 10);
+  if (!Number.isNaN(numericId)) {
+    return shopData.find(item => item.id === numericId) || null;
+  }
+
+  const normalizedInput = normalizeShopLookupValue(itemInput);
+  return shopData.find(item => normalizeShopLookupValue(item.ItemName) === normalizedInput) || null;
+}
 
 export default {
   name: 'buy',
@@ -13,7 +37,7 @@ export default {
     const userId = message.author.id;
     return withUserLock(userId, async () => {
       const user = await getUser(userId);
-      const itemId = parseInt(args[0], 10);
+      const itemInput = args.join(' ');
 
       if (!user) {
         return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
@@ -23,53 +47,48 @@ export default {
         return message.reply('Shop purchases unlock after you buy Shaft Tier 3 on Coal Mine for the first time.');
       }
 
-      const item = shopData.find(i => i.id === itemId);
+      if (!itemInput) {
+        return message.reply('Please provide a valid shop item ID or name.');
+      }
+
+      const item = findShopItem(itemInput);
 
       if (!item) {
         return message.reply('That item does not exist in the shop.');
       }
 
-      if (user.super_cash < item.SuperCashCost) {
-        return message.reply('You do not have enough Super Cash to purchase this item.');
-      }
-	
 	  // Handle Premium Pass Purchase
-      if (item.ItemName === 'Premium Pass') {
+      if (isPremiumPassItem(item)) {
 	    if (user.has_premium) {
           return message.reply('You`ve already purchased the premium pass.');
         }
 
-        const updatedInventory = structuredClone(user.inventory || {});
-
-        if (!updatedInventory.boosters) {
-          updatedInventory.boosters = [];
+        if (!isPremiumPaymentsConfigured()) {
+          return message.reply('Premium Pass payments are not configured yet. Set up Stripe first, then try again.');
         }
 
-        updatedInventory.boosters.push(
-          {
-            item_id: 2,
-            item_name: 'Long x2 Boost',
-            active_time: 43200,
-            income_factor: 2,
-            stock: 1
-          },
-          {
-            item_id: 3,
-            item_name: 'x10 Boost',
-            active_time: 3600,
-            income_factor: 10,
-            stock: 1
+        try {
+          const checkoutResult = await createPremiumCheckoutSession(message.author);
+          if (!checkoutResult.ok || !checkoutResult.session?.url) {
+            return message.reply('Premium Pass checkout is currently unavailable. Please try again later.');
           }
-        );
 
-        await updateUser(userId, {
-          super_cash: (user.super_cash || 0) - item.SuperCashCost + 1000,
-          has_premium: true,
-          inventory: updatedInventory
-        });
+          await message.author.send(
+            `Purchase your Premium Pass securely here:\n${checkoutResult.session.url}\n\nPrice: ${item.PriceDisplay || getPremiumPassDisplayPrice()}`
+          );
+          return message.reply('I sent you a secure Premium Pass checkout link in your DMs.');
+        } catch (error) {
+          if (error?.code === 50007 || error?.code === '50007') {
+            return message.reply('I could not DM your Premium Pass checkout link because your DMs are closed. Please open your DMs and try again.');
+          }
 
-        await sendPremiumDM(message.author);
-        return message.reply('Congratulations! You have purchased the Premium Pass and received your rewards!');
+          logError('buy:premiumCheckout', error, { userId, itemInput, itemId: item.id });
+          return message.reply('I could not create your Premium Pass checkout right now. Please try again later.');
+        }
+      }
+
+      if (user.super_cash < item.SuperCashCost) {
+        return message.reply('You do not have enough Super Cash to purchase this item.');
       }
 
       const updatedInventory = structuredClone(user.inventory || {});
@@ -105,7 +124,7 @@ export default {
         });
         return message.reply(`You have successfully purchased ${item.ItemName} for ${numberFormat(item.SuperCashCost)} Super Cash!`);
       } catch (error) {
-        console.error(`Error updating user: ${error.message}`);
+        logError('buy:execute', error, { userId, itemInput, itemId: item.id });
         return message.reply('An error occurred while processing your purchase.');
       }
     });

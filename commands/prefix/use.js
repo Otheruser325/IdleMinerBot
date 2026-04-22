@@ -1,5 +1,6 @@
 import { getUser, updateUser, withUserLock } from '../../dataManager.js';
 import numberFormat from '../../utils/numberFormat.js';
+import { logError } from '../../utils/errorHandling.js';
 
 export default {
     name: 'use',
@@ -56,7 +57,7 @@ export default {
                 await updateUser(userId, user);
                 return message.reply(`You have successfully used the ${booster.item_name}!`);
             } catch (error) {
-			    console.error('Error using boosts:', error);
+			    logError('use:execute', error, { userId, itemId });
                 return message.reply('An error occurred while using the booster.');
             }
         });

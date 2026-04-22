@@ -6,6 +6,22 @@ function normalizeReplyPayload(payload) {
     return payload ? { ...payload } : {};
 }
 
+async function resolveInteractionChannel(interaction) {
+    if (interaction.channel && typeof interaction.channel.send === 'function') {
+        return interaction.channel;
+    }
+
+    if (!interaction.channelId || !interaction.client?.channels?.fetch) {
+        return null;
+    }
+
+    try {
+        return await interaction.client.channels.fetch(interaction.channelId);
+    } catch {
+        return null;
+    }
+}
+
 async function acknowledgeInteraction(interaction) {
     if (interaction.deferred || interaction.replied) {
         return;
@@ -38,7 +54,14 @@ function createInteractionChannel(interaction, state) {
     return {
         id: interaction.channelId,
         isDMBased: () => !interaction.guildId,
-        send: (payload) => replyFromInteraction(interaction, payload, state)
+        send: async (payload) => {
+            const channel = await resolveInteractionChannel(interaction);
+            if (channel && typeof channel.send === 'function') {
+                return channel.send(normalizeReplyPayload(payload));
+            }
+
+            return replyFromInteraction(interaction, payload, state);
+        }
     };
 }
 

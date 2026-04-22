@@ -1,3 +1,5 @@
+import { logError } from './errorHandling.js';
+
 export default async function sendPremiumDM(user) {
   const premiumMessage = `
     **Congratulations for going Premium!**
@@ -14,6 +16,6 @@ export default async function sendPremiumDM(user) {
   try {
     await user.send(premiumMessage);
   } catch (error) {
-    console.error('Error sending DM:', error);
+    logError('sendPremiumDM', error, { userId: user?.id, tag: user?.tag });
   }
 };

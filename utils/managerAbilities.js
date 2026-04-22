@@ -4,8 +4,69 @@
  */
 
 import managerDataJson from '../config/managers.json' with { type: 'json' };
+import managerEffectsJson from '../config/managerEffects.json' with { type: 'json' };
 
 const managerData = managerDataJson.managers;
+const managerEffects = managerEffectsJson.managerEffects || [];
+
+function normalizeEffectArea(area) {
+    const normalizedArea = String(area || '').toLowerCase();
+    if (normalizedArea === 'ground' || normalizedArea === 'warehouse') return 'warehouse';
+    if (normalizedArea === 'corridor' || normalizedArea === 'shaft' || normalizedArea === 'mineshaft') return 'shaft';
+    if (normalizedArea === 'elevator') return 'elevator';
+    return normalizedArea;
+}
+
+function getEffectMetadata(effectId) {
+    return managerEffects.find(effect => effect.EffectID === Number(effectId)) || null;
+}
+
+export function formatAreaLabel(area) {
+    const normalizedArea = normalizeEffectArea(area);
+    if (normalizedArea === 'shaft') return 'Shaft';
+    if (normalizedArea === 'elevator') return 'Elevator';
+    if (normalizedArea === 'warehouse') return 'Warehouse';
+    return normalizedArea ? normalizedArea.charAt(0).toUpperCase() + normalizedArea.slice(1) : 'Unknown';
+}
+
+function inferAbilityType(effectMetadata, fallbackAbility) {
+    const stringId = String(effectMetadata?.StringId || '').toLowerCase();
+    const effectName = String(effectMetadata?.EffectName || '').toLowerCase();
+
+    if (stringId.includes('instantmoney')) return 'income_beam';
+    if (stringId.includes('upgradecost')) return 'cost_reduction';
+    if (stringId.includes('loadingpersecond')) return 'loading_speed';
+    if (stringId.includes('capacity')) return 'capacity';
+    if (stringId.includes('walking') || stringId.includes('tierspersecond')) return 'speed';
+    if (stringId.includes('workergainmultiplier')) return 'mining_speed';
+    if (stringId.includes('income')) return 'income_multiplier';
+
+    if (effectName.includes('beam')) return 'income_beam';
+    if (effectName.includes('cost')) return 'cost_reduction';
+    if (effectName.includes('loading')) return 'loading_speed';
+    if (effectName.includes('capacity') || effectName.includes('load expansion')) return 'capacity';
+    if (effectName.includes('walking') || effectName.includes('movement')) return 'speed';
+    if (effectName.includes('mining')) return 'mining_speed';
+    if (effectName.includes('income')) return 'income_multiplier';
+
+    return fallbackAbility?.type || 'none';
+}
+
+function getEffectDescriptor(effectId) {
+    const fallbackAbility = ABILITY_EFFECTS[effectId] || null;
+    const effectMetadata = getEffectMetadata(effectId);
+    const target = normalizeEffectArea(effectMetadata?.Area) || fallbackAbility?.target || 'none';
+    const type = inferAbilityType(effectMetadata, fallbackAbility);
+
+    return {
+        effectId: Number(effectId),
+        name: effectMetadata?.EffectName || fallbackAbility?.name || 'Unknown',
+        description: fallbackAbility?.description || effectMetadata?.EffectDescription || 'No ability data available',
+        type,
+        target,
+        applyEffect: fallbackAbility?.applyEffect || ((baseValue) => baseValue)
+    };
+}
 
 // Effect ID to ability mapping with real gameplay effects
 // ValueX scales by rarity: Junior (0.6), Senior (~0.8), Executive (higher)
@@ -133,7 +194,7 @@ const ABILITY_EFFECTS = {
  * @returns {Object|null} - Ability details
  */
 export function getAbilityByEffectId(effectId) {
-    return ABILITY_EFFECTS[effectId] || null;
+    return getEffectDescriptor(effectId);
 }
 
 /**
@@ -169,10 +230,10 @@ export function getActiveEffects(currentMine) {
             }
 
             const effectId = manager.effect_id || manager.EffectID;
-            const ability = ABILITY_EFFECTS[effectId];
+            const ability = getEffectDescriptor(effectId);
             const valueX = manager.value_x || manager.ValueX || 1;
 
-            if (!ability) return;
+            if (!ability || ability.type === 'none') return;
 
             // Apply effect based on type
             switch (ability.type) {
@@ -437,8 +498,72 @@ export function formatActiveAreaAbilities(currentMine, area, options = {}) {
     }
 
     return abilities
-        .map(ability => `${ability.managerName}: ${ability.abilityName} (${ability.remainingLabel} left)`)
+        .map(ability => {
+            const tierLabel = area === 'shaft' && options.tier !== null && options.tier !== undefined
+                ? `Shaft Tier ${options.tier} | `
+                : '';
+            return `${tierLabel}${ability.managerName}: ${ability.abilityName} (${ability.remainingLabel} left)`;
+        })
         .join('\n');
+}
+
+export function formatAbilityAllEffects(currentMine) {
+    const now = Date.now();
+    const groupedAbilities = new Map();
+
+    ['shaft', 'elevator', 'warehouse'].forEach(area => {
+        const managers = currentMine?.managers?.[area] || [];
+        for (const manager of managers) {
+            if (!manager.assigned || !manager.ability_state?.active || manager.ability_state.expires_at <= now) {
+                continue;
+            }
+
+            const ability = getManagerAbilityInfo(manager);
+            const areaLabel = formatAreaLabel(area);
+            const tierLabel = area === 'shaft' && manager.assigned_tier ? `Tier ${manager.assigned_tier}` : null;
+            const groupKey = area === 'shaft' && ability.type !== 'income_multiplier'
+                ? `${area}:${ability.type}`
+                : `${area}:${ability.type}:${manager.assigned_tier || 'all'}`;
+
+            if (!groupedAbilities.has(groupKey)) {
+                groupedAbilities.set(groupKey, {
+                    area,
+                    areaLabel,
+                    abilityName: ability.name,
+                    type: ability.type,
+                    tiers: new Set(),
+                    values: []
+                });
+            }
+
+            const groupedAbility = groupedAbilities.get(groupKey);
+            if (tierLabel) {
+                groupedAbility.tiers.add(tierLabel);
+            }
+            groupedAbility.values.push(Number(ability.valueX || 1));
+        }
+    });
+
+    if (groupedAbilities.size === 0) {
+        return 'No active effects';
+    }
+
+    return Array.from(groupedAbilities.values()).map(group => {
+        if (group.area === 'shaft' && group.type !== 'income_multiplier') {
+            const tierSummary = group.tiers.size > 0 ? ` (${Array.from(group.tiers).join(', ')})` : '';
+            return `${group.areaLabel} ${group.abilityName}${tierSummary}`;
+        }
+
+        if (group.type === 'income_multiplier') {
+            const totalMultiplier = group.values.reduce((total, value) => total * value, 1);
+            const tierSummary = group.tiers.size > 0 ? ` (${Array.from(group.tiers).join(', ')})` : '';
+            return `${group.areaLabel} ${group.abilityName}: ${totalMultiplier.toFixed(2)}x${tierSummary}`;
+        }
+
+        const peakValue = group.values.reduce((maxValue, value) => Math.max(maxValue, value), 1);
+        const tierSummary = group.tiers.size > 0 ? ` (${Array.from(group.tiers).join(', ')})` : '';
+        return `${group.areaLabel} ${group.abilityName}: ${peakValue.toFixed(2)}x${tierSummary}`;
+    }).join('\n');
 }
 
 /**
@@ -686,6 +811,8 @@ export default {
     applyLoadingSpeedBoost,
     applyCostReduction,
     formatActiveEffects,
+    formatAbilityAllEffects,
+    formatAreaLabel,
     getMineWideIncomeMultiplier,
     getActiveAreaAbilities,
     formatActiveAreaAbilities,

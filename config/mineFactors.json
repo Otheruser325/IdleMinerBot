@@ -1,484 +1,1824 @@
 {
-    "mines": [
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 1,
-            "MineName": "Coal Mine",
-            "Cost": 0,
-            "Factor": 1,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 2,
-            "MineName": "Gold Mine",
-            "Cost": 7.68e+19,
-            "Factor": 3,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 3,
-            "MineName": "Ruby Mine",
-            "Cost": 6.1399999999999999e+24,
-            "Factor": 6,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 4,
-            "MineName": "Diamond Mine",
-            "Cost": 2.4500000000000001e+29,
-            "Factor": 10,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 5,
-            "MineName": "Emerald Mine",
-            "Cost": 2.4500000000000001e+35,
-            "Factor": 14,
-            "SuperCashGained": 0
-        },
-		{
-            "PrestigeCount": 0,
-            "MineNumber": 6,
-            "MineName": "Amethyst Mine",
-            "Cost": 0,
-            "Factor": 1,
-            "SuperCashGained": 0
-        },
-		{
-            "PrestigeCount": 0,
-            "MineNumber": 7,
-            "MineName": "Moonstone Mine",
-            "Cost": 7.68e+19,
-            "Factor": 3,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 8,
-            "MineName": "Sapphire Mine",
-            "Cost": 6.1399999999999999e+24,
-            "Factor": 6,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 9,
-            "MineName": "Crystal Mine",
-            "Cost": 2.4500000000000001e+29,
-            "Factor": 10,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 10,
-            "MineName": "Jade Mine",
-            "Cost": 2.4500000000000001e+35,
-            "Factor": 14,
-            "SuperCashGained": 0
-        },
-		{
-            "PrestigeCount": 0,
-            "MineNumber": 11,
-            "MineName": "Amber Mine",
-            "Cost": 0,
-            "Factor": 1,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 12,
-            "MineName": "Sunstone Mine",
-            "Cost": 7.68e+19,
-            "Factor": 3,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 13,
-            "MineName": "Topaz Mine",
-            "Cost": 6.1399999999999999e+24,
-            "Factor": 6,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 14,
-            "MineName": "Platinum Mine",
-            "Cost": 2.4500000000000001e+29,
-            "Factor": 10,
-            "SuperCashGained": 0
-        },
-        {
-            "PrestigeCount": 0,
-            "MineNumber": 15,
-            "MineName": "Obsidian Mine",
-            "Cost": 2.4500000000000001e+35,
-            "Factor": 14,
-            "SuperCashGained": 0
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 1,
-            "MineName": "Coal Mine",
-            "Cost": 2.3299999999999999e+22,
-            "Factor": 4,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 2,
-            "MineName": "Gold Mine",
-            "Cost": 1.42e+26,
-            "Factor": 8,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 3,
-            "MineName": "Ruby Mine",
-            "Cost": 5.8000000000000005e+33,
-            "Factor": 12,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 4,
-            "MineName": "Diamond Mine",
-            "Cost": 2.4000000000000002e+41,
-            "Factor": 17,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 5,
-            "MineName": "Emerald Mine",
-            "Cost": 9.8000000000000003e+55,
-            "Factor": 24,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 6,
-            "MineName": "Amethyst Mine",
-            "Cost": 2.3299999999999999e+22,
-            "Factor": 4,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 7,
-            "MineName": "Moonstone Mine",
-            "Cost": 1.42e+26,
-            "Factor": 8,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 8,
-            "MineName": "Sapphire Mine",
-            "Cost": 5.8000000000000005e+33,
-            "Factor": 12,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 9,
-            "MineName": "Crystal Mine",
-            "Cost": 2.4000000000000002e+41,
-            "Factor": 17,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 10,
-            "MineName": "Jade Mine",
-            "Cost": 9.8000000000000003e+55,
-            "Factor": 24,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 1,
-            "MineNumber": 11,
-            "MineName": "Amber Mine",
-            "Cost": 6.99e+22,
-            "Factor": 4,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 12,
-            "MineName": "Sunstone Mine",
-            "Cost": 4.26e+26,
-            "Factor": 8,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 13,
-            "MineName": "Topaz Mine",
-            "Cost": 1.74e+34,
-            "Factor": 12,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 14,
-            "MineName": "Platinum Mine",
-            "Cost": 7.2e+41,
-            "Factor": 17,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 1,
-            "MineNumber": 15,
-            "MineName": "Obsidian Mine",
-            "Cost": 2.94e+54,
-            "Factor": 24,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 1,
-            "MineName": "Coal Mine",
-            "Cost": 5.76e+46,
-            "Factor": 20,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 2,
-            "MineName": "Gold Mine",
-            "Cost": 6.89e+58,
-            "Factor": 28,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 3,
-            "MineName": "Ruby Mine",
-            "Cost": 3.32e+66,
-            "Factor": 33,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 4,
-            "MineName": "Diamond Mine",
-            "Cost": 1.66e+71,
-            "Factor": 38,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 5,
-            "MineName": "Emerald Mine",
-            "Cost": 8.81e+76,
-            "Factor": 48,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 6,
-            "MineName": "Amethyst Mine",
-            "Cost": 6.91e+46,
-            "Factor": 20,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 7,
-            "MineName": "Moonstone Mine",
-            "Cost": 8.26e+58,
-            "Factor": 28,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 8,
-            "MineName": "Sapphire Mine",
-            "Cost": 3.98e+66,
-            "Factor": 33,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 9,
-            "MineName": "Crystal Mine",
-            "Cost": 1.99e+71,
-            "Factor": 38,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 10,
-            "MineName": "Jade Mine",
-            "Cost": 1.05e+77,
-            "Factor": 48,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 2,
-            "MineNumber": 11,
-            "MineName": "Amber Mine",
-            "Cost": 8.64e+46,
-            "Factor": 20,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 12,
-            "MineName": "Sunstone Mine",
-            "Cost": 1.03e+59,
-            "Factor": 28,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 13,
-            "MineName": "Topaz Mine",
-            "Cost": 4.98e+66,
-            "Factor": 33,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 14,
-            "MineName": "Platinum Mine",
-            "Cost": 2.49e+71,
-            "Factor": 38,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 2,
-            "MineNumber": 15,
-            "MineName": "Obsidian Mine",
-            "Cost": 1.32e+77,
-            "Factor": 48,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 1,
-            "MineName": "Coal Mine",
-            "Cost": 9.13e+62,
-            "Factor": 30,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 2,
-            "MineName": "Gold Mine",
-            "Cost": 1.32e+73,
-            "Factor": 42,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 3,
-            "MineName": "Ruby Mine",
-            "Cost": 4.62e+78,
-            "Factor": 52,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 4,
-            "MineName": "Diamond Mine",
-            "Cost": 9.54e+79,
-            "Factor": 57,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 5,
-            "MineName": "Emerald Mine",
-            "Cost": 3.24e+83,
-            "Factor": 70,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 6,
-            "MineName": "Amethyst Mine",
-            "Cost": 1.09e+63,
-            "Factor": 30,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 7,
-            "MineName": "Moonstone Mine",
-            "Cost": 1.58e+73,
-            "Factor": 42,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 8,
-            "MineName": "Sapphire Mine",
-            "Cost": 5.54e+78,
-            "Factor": 52,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 9,
-            "MineName": "Crystal Mine",
-            "Cost": 1.14e+80,
-            "Factor": 57,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 10,
-            "MineName": "Jade Mine",
-            "Cost": 3.88e+83,
-            "Factor": 70,
-            "SuperCashGained": 200
-        },
-		{
-            "PrestigeCount": 3,
-            "MineNumber": 11,
-            "MineName": "Amber Mine",
-            "Cost": 1.36e+63,
-            "Factor": 30,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 12,
-            "MineName": "Sunstone Mine",
-            "Cost": 1.98e+73,
-            "Factor": 42,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 13,
-            "MineName": "Topaz Mine",
-            "Cost": 6.93e+78,
-            "Factor": 52,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 14,
-            "MineName": "Platinum Mine",
-            "Cost": 1.43e+80,
-            "Factor": 57,
-            "SuperCashGained": 200
-        },
-        {
-            "PrestigeCount": 3,
-            "MineNumber": 15,
-            "MineName": "Obsidian Mine",
-            "Cost": 4.86e+83,
-            "Factor": 70,
-            "SuperCashGained": 200
-        }
-    ]
+  "mines": [
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 1,
+      "Cost": -1,
+      "Factor": 1,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 2,
+      "Cost": 76800000000000000000,
+      "Factor": 3,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 3,
+      "Cost": 6.14e+24,
+      "Factor": 6,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 4,
+      "Cost": 3.68e+29,
+      "Factor": 10,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 5,
+      "Cost": 4.91e+35,
+      "Factor": 14,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 6,
+      "Cost": 7.37e+36,
+      "Factor": 1,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 7,
+      "Cost": 460000000000000000000,
+      "Factor": 3,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 8,
+      "Cost": 5.89e+25,
+      "Factor": 6,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 9,
+      "Cost": 3.24e+30,
+      "Factor": 10,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 10,
+      "Cost": 4.12e+36,
+      "Factor": 14,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 11,
+      "Cost": 1.59e+38,
+      "Factor": 1,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 12,
+      "Cost": 1.72e+21,
+      "Factor": 3,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 13,
+      "Cost": 1.47e+26,
+      "Factor": 6,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 14,
+      "Cost": 6.45e+30,
+      "Factor": 10,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 15,
+      "Cost": 7.37e+36,
+      "Factor": 14,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 16,
+      "Cost": 2.75e+38,
+      "Factor": 1,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 17,
+      "Cost": 2.3e+21,
+      "Factor": 3,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 18,
+      "Cost": 1.84e+26,
+      "Factor": 6,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 19,
+      "Cost": 7.37e+30,
+      "Factor": 10,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 0,
+      "MineNumber": 20,
+      "Cost": 7.37e+36,
+      "Factor": 14,
+      "SuperCashGained": 0
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 1,
+      "Cost": 2.33e+22,
+      "Factor": 4,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 2,
+      "Cost": 1.42e+26,
+      "Factor": 8,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 3,
+      "Cost": 5.8e+33,
+      "Factor": 12,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 4,
+      "Cost": 2.4e+41,
+      "Factor": 17,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 5,
+      "Cost": 9.8e+53,
+      "Factor": 24,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 6,
+      "Cost": 2.79e+22,
+      "Factor": 4,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 7,
+      "Cost": 1.7e+26,
+      "Factor": 8,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 8,
+      "Cost": 6.96e+33,
+      "Factor": 12,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 9,
+      "Cost": 2.88e+41,
+      "Factor": 17,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 10,
+      "Cost": 1.17e+54,
+      "Factor": 24,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 11,
+      "Cost": 6.99e+22,
+      "Factor": 4,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 12,
+      "Cost": 4.26e+26,
+      "Factor": 8,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 13,
+      "Cost": 1.74e+34,
+      "Factor": 12,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 14,
+      "Cost": 7.2e+41,
+      "Factor": 17,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 15,
+      "Cost": 2.94e+54,
+      "Factor": 24,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 16,
+      "Cost": 6.99e+23,
+      "Factor": 4,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 17,
+      "Cost": 4.26e+27,
+      "Factor": 8,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 18,
+      "Cost": 1.74e+35,
+      "Factor": 12,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 19,
+      "Cost": 7.2e+42,
+      "Factor": 17,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 1,
+      "MineNumber": 20,
+      "Cost": 2.94e+55,
+      "Factor": 24,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 1,
+      "Cost": 5.76e+46,
+      "Factor": 20,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 2,
+      "Cost": 6.89e+58,
+      "Factor": 28,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 3,
+      "Cost": 3.32e+66,
+      "Factor": 33,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 4,
+      "Cost": 1.66e+71,
+      "Factor": 38,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 5,
+      "Cost": 8.81e+76,
+      "Factor": 48,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 6,
+      "Cost": 6.91e+46,
+      "Factor": 20,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 7,
+      "Cost": 8.26e+58,
+      "Factor": 28,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 8,
+      "Cost": 3.98e+66,
+      "Factor": 33,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 9,
+      "Cost": 1.99e+71,
+      "Factor": 38,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 10,
+      "Cost": 1.05e+77,
+      "Factor": 48,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 11,
+      "Cost": 8.64e+46,
+      "Factor": 20,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 12,
+      "Cost": 1.03e+59,
+      "Factor": 28,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 13,
+      "Cost": 4.98e+66,
+      "Factor": 33,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 14,
+      "Cost": 2.49e+71,
+      "Factor": 38,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 15,
+      "Cost": 1.32e+77,
+      "Factor": 48,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 16,
+      "Cost": 1.72e+48,
+      "Factor": 20,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 17,
+      "Cost": 2.06e+60,
+      "Factor": 28,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 18,
+      "Cost": 9.96e+67,
+      "Factor": 33,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 19,
+      "Cost": 4.98e+72,
+      "Factor": 38,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 2,
+      "MineNumber": 20,
+      "Cost": 2.64e+78,
+      "Factor": 48,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 1,
+      "Cost": 9.13e+62,
+      "Factor": 30,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 2,
+      "Cost": 1.32e+73,
+      "Factor": 42,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 3,
+      "Cost": 4.62e+78,
+      "Factor": 52,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 4,
+      "Cost": 9.54e+79,
+      "Factor": 57,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 5,
+      "Cost": 3.24e+83,
+      "Factor": 70,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 6,
+      "Cost": 1.09e+63,
+      "Factor": 30,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 7,
+      "Cost": 1.58e+73,
+      "Factor": 42,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 8,
+      "Cost": 5.54e+78,
+      "Factor": 52,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 9,
+      "Cost": 1.14e+80,
+      "Factor": 57,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 10,
+      "Cost": 3.88e+83,
+      "Factor": 70,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 11,
+      "Cost": 1.36e+63,
+      "Factor": 30,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 12,
+      "Cost": 1.98e+73,
+      "Factor": 42,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 13,
+      "Cost": 6.93e+78,
+      "Factor": 52,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 14,
+      "Cost": 1.43e+80,
+      "Factor": 57,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 15,
+      "Cost": 4.86e+83,
+      "Factor": 70,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 16,
+      "Cost": 2.73e+64,
+      "Factor": 30,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 17,
+      "Cost": 3.96e+74,
+      "Factor": 42,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 18,
+      "Cost": 1.38e+80,
+      "Factor": 52,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 19,
+      "Cost": 2.86e+81,
+      "Factor": 57,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 3,
+      "MineNumber": 20,
+      "Cost": 9.72e+84,
+      "Factor": 70,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 1,
+      "Cost": 7.02e+74,
+      "Factor": 45,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 2,
+      "Cost": 4.2e+81,
+      "Factor": 63,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 3,
+      "Cost": 3.21e+85,
+      "Factor": 76,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 4,
+      "Cost": 4.56e+88,
+      "Factor": 84,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 5,
+      "Cost": 3.14e+93,
+      "Factor": 100,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 6,
+      "Cost": 8.42e+74,
+      "Factor": 45,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 7,
+      "Cost": 5.04e+81,
+      "Factor": 63,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 8,
+      "Cost": 3.85e+85,
+      "Factor": 76,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 9,
+      "Cost": 5.47e+88,
+      "Factor": 84,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 10,
+      "Cost": 3.76e+93,
+      "Factor": 100,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 11,
+      "Cost": 1.05e+75,
+      "Factor": 45,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 12,
+      "Cost": 6.3e+81,
+      "Factor": 63,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 13,
+      "Cost": 4.81e+85,
+      "Factor": 76,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 14,
+      "Cost": 6.84e+88,
+      "Factor": 84,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 15,
+      "Cost": 4.71e+93,
+      "Factor": 100,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 16,
+      "Cost": 2.1e+76,
+      "Factor": 45,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 17,
+      "Cost": 1.26e+83,
+      "Factor": 63,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 18,
+      "Cost": 9.63e+86,
+      "Factor": 76,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 19,
+      "Cost": 1.36e+90,
+      "Factor": 84,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 4,
+      "MineNumber": 20,
+      "Cost": 9.42e+94,
+      "Factor": 100,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 1,
+      "Cost": 1.1e+80,
+      "Factor": 60,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 2,
+      "Cost": 8e+91,
+      "Factor": 90,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 3,
+      "Cost": 2.7e+86,
+      "Factor": 80,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 4,
+      "Cost": 1.1e+96,
+      "Factor": 120,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 5,
+      "Cost": 1.5e+100,
+      "Factor": 140,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 6,
+      "Cost": 1.32e+80,
+      "Factor": 60,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 7,
+      "Cost": 9.6e+91,
+      "Factor": 90,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 8,
+      "Cost": 3.24e+86,
+      "Factor": 80,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 9,
+      "Cost": 1.32e+96,
+      "Factor": 120,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 10,
+      "Cost": 1.8e+100,
+      "Factor": 140,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 11,
+      "Cost": 1.8e+80,
+      "Factor": 60,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 12,
+      "Cost": 1.65e+87,
+      "Factor": 80,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 13,
+      "Cost": 1.53e+90,
+      "Factor": 90,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 14,
+      "Cost": 3.3e+96,
+      "Factor": 105,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 15,
+      "Cost": 4.8e+99,
+      "Factor": 110,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 16,
+      "Cost": 3.6e+81,
+      "Factor": 60,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 17,
+      "Cost": 3.3e+88,
+      "Factor": 80,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 18,
+      "Cost": 3.06e+91,
+      "Factor": 90,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 19,
+      "Cost": 6.6e+97,
+      "Factor": 105,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 5,
+      "MineNumber": 20,
+      "Cost": 9.6e+100,
+      "Factor": 110,
+      "SuperCashGained": 100
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 1,
+      "Cost": 3.3e+100,
+      "Factor": 100,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 2,
+      "Cost": 6.6e+102,
+      "Factor": 125,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 3,
+      "Cost": 9.9e+104,
+      "Factor": 150,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 4,
+      "Cost": 1.88e+107,
+      "Factor": 175,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 5,
+      "Cost": 3.66e+109,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 6,
+      "Cost": 3.3e+100,
+      "Factor": 100,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 7,
+      "Cost": 6.6e+102,
+      "Factor": 125,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 8,
+      "Cost": 9.9e+104,
+      "Factor": 150,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 9,
+      "Cost": 1.88e+107,
+      "Factor": 175,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 10,
+      "Cost": 3.66e+109,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 11,
+      "Cost": 3.3e+100,
+      "Factor": 100,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 12,
+      "Cost": 6.6e+102,
+      "Factor": 125,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 13,
+      "Cost": 9.9e+104,
+      "Factor": 150,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 14,
+      "Cost": 1.88e+107,
+      "Factor": 175,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 15,
+      "Cost": 3.66e+109,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 16,
+      "Cost": 3.3e+100,
+      "Factor": 100,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 17,
+      "Cost": 6.6e+102,
+      "Factor": 125,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 18,
+      "Cost": 9.9e+104,
+      "Factor": 150,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 19,
+      "Cost": 1.88e+107,
+      "Factor": 175,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 6,
+      "MineNumber": 20,
+      "Cost": 3.66e+109,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 1,
+      "Cost": 5.75e+107,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 2,
+      "Cost": 8.375e+109,
+      "Factor": 250,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 3,
+      "Cost": 2.112e+112,
+      "Factor": 300,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 4,
+      "Cost": 4.894e+114,
+      "Factor": 350,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 5,
+      "Cost": 9.393e+116,
+      "Factor": 400,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 6,
+      "Cost": 5.75e+107,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 7,
+      "Cost": 8.375e+109,
+      "Factor": 250,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 8,
+      "Cost": 2.112e+112,
+      "Factor": 300,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 9,
+      "Cost": 4.894e+114,
+      "Factor": 350,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 10,
+      "Cost": 9.393e+116,
+      "Factor": 400,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 11,
+      "Cost": 5.75e+107,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 12,
+      "Cost": 8.375e+109,
+      "Factor": 250,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 13,
+      "Cost": 2.112e+112,
+      "Factor": 300,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 14,
+      "Cost": 4.894e+114,
+      "Factor": 350,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 15,
+      "Cost": 9.393e+116,
+      "Factor": 400,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 16,
+      "Cost": 5.75e+107,
+      "Factor": 200,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 17,
+      "Cost": 8.375e+109,
+      "Factor": 250,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 18,
+      "Cost": 2.112e+112,
+      "Factor": 300,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 19,
+      "Cost": 4.894e+114,
+      "Factor": 350,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 7,
+      "MineNumber": 20,
+      "Cost": 9.393e+116,
+      "Factor": 400,
+      "SuperCashGained": 200
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 1,
+      "Cost": 2.888e+114,
+      "Factor": 300,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 2,
+      "Cost": 4.444e+116,
+      "Factor": 375,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 3,
+      "Cost": 7.777e+118,
+      "Factor": 450,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 4,
+      "Cost": 1.111e+121,
+      "Factor": 525,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 5,
+      "Cost": 3.555e+123,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 6,
+      "Cost": 2.888e+114,
+      "Factor": 300,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 7,
+      "Cost": 4.444e+116,
+      "Factor": 375,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 8,
+      "Cost": 7.777e+118,
+      "Factor": 450,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 9,
+      "Cost": 1.111e+121,
+      "Factor": 525,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 10,
+      "Cost": 3.555e+123,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 11,
+      "Cost": 2.888e+114,
+      "Factor": 300,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 12,
+      "Cost": 4.444e+116,
+      "Factor": 375,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 13,
+      "Cost": 7.777e+118,
+      "Factor": 450,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 14,
+      "Cost": 1.111e+121,
+      "Factor": 525,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 15,
+      "Cost": 3.555e+123,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 16,
+      "Cost": 2.888e+114,
+      "Factor": 300,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 17,
+      "Cost": 4.444e+116,
+      "Factor": 375,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 18,
+      "Cost": 7.777e+118,
+      "Factor": 450,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 19,
+      "Cost": 1.111e+121,
+      "Factor": 525,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 8,
+      "MineNumber": 20,
+      "Cost": 3.555e+123,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 1,
+      "Cost": 6.75e+121,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 2,
+      "Cost": 2.375e+123,
+      "Factor": 750,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 3,
+      "Cost": 4.75e+125,
+      "Factor": 900,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 4,
+      "Cost": 9e+127,
+      "Factor": 1050,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 5,
+      "Cost": 1.8e+130,
+      "Factor": 1200,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 6,
+      "Cost": 6.75e+121,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 7,
+      "Cost": 2.375e+123,
+      "Factor": 750,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 8,
+      "Cost": 4.75e+125,
+      "Factor": 900,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 9,
+      "Cost": 9e+127,
+      "Factor": 1050,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 10,
+      "Cost": 1.8e+130,
+      "Factor": 1200,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 11,
+      "Cost": 6.75e+121,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 12,
+      "Cost": 2.375e+123,
+      "Factor": 750,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 13,
+      "Cost": 4.75e+125,
+      "Factor": 900,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 14,
+      "Cost": 9e+127,
+      "Factor": 1050,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 15,
+      "Cost": 1.8e+130,
+      "Factor": 1200,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 16,
+      "Cost": 6.75e+121,
+      "Factor": 600,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 17,
+      "Cost": 2.375e+123,
+      "Factor": 750,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 18,
+      "Cost": 4.75e+125,
+      "Factor": 900,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 19,
+      "Cost": 9e+127,
+      "Factor": 1050,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 9,
+      "MineNumber": 20,
+      "Cost": 1.8e+130,
+      "Factor": 1200,
+      "SuperCashGained": 300
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 1,
+      "Cost": 2.5e+137,
+      "Factor": 1800,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 2,
+      "Cost": 3.525e+139,
+      "Factor": 2250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 3,
+      "Cost": 5.335e+141,
+      "Factor": 2700,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 4,
+      "Cost": 7.897e+143,
+      "Factor": 3150,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 5,
+      "Cost": 1.234e+146,
+      "Factor": 3600,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 6,
+      "Cost": 2.5e+137,
+      "Factor": 1800,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 7,
+      "Cost": 3.525e+139,
+      "Factor": 2250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 8,
+      "Cost": 5.335e+141,
+      "Factor": 2700,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 9,
+      "Cost": 7.897e+143,
+      "Factor": 3150,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 10,
+      "Cost": 1.234e+146,
+      "Factor": 3600,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 11,
+      "Cost": 2.5e+137,
+      "Factor": 1800,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 12,
+      "Cost": 3.525e+139,
+      "Factor": 2250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 13,
+      "Cost": 5.335e+141,
+      "Factor": 2700,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 14,
+      "Cost": 7.897e+143,
+      "Factor": 3150,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 15,
+      "Cost": 1.234e+146,
+      "Factor": 3600,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 16,
+      "Cost": 2.5e+137,
+      "Factor": 1800,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 17,
+      "Cost": 3.525e+139,
+      "Factor": 2250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 18,
+      "Cost": 5.335e+141,
+      "Factor": 2700,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 19,
+      "Cost": 7.897e+143,
+      "Factor": 3150,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 10,
+      "MineNumber": 20,
+      "Cost": 1.234e+146,
+      "Factor": 3600,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 1,
+      "Cost": 4.44e+153,
+      "Factor": 3500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 2,
+      "Cost": 8.88e+155,
+      "Factor": 4250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 3,
+      "Cost": 7.44e+158,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 4,
+      "Cost": 5.88e+161,
+      "Factor": 5750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 5,
+      "Cost": 1.44e+164,
+      "Factor": 6500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 6,
+      "Cost": 4.44e+153,
+      "Factor": 3500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 7,
+      "Cost": 8.88e+155,
+      "Factor": 4250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 8,
+      "Cost": 7.44e+158,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 9,
+      "Cost": 5.88e+161,
+      "Factor": 5750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 10,
+      "Cost": 1.44e+164,
+      "Factor": 6500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 11,
+      "Cost": 4.44e+153,
+      "Factor": 3500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 12,
+      "Cost": 8.88e+155,
+      "Factor": 4250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 13,
+      "Cost": 7.44e+158,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 14,
+      "Cost": 5.88e+161,
+      "Factor": 5750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 15,
+      "Cost": 1.44e+164,
+      "Factor": 6500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 16,
+      "Cost": 4.44e+153,
+      "Factor": 3500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 17,
+      "Cost": 8.88e+155,
+      "Factor": 4250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 18,
+      "Cost": 7.44e+158,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 19,
+      "Cost": 5.88e+161,
+      "Factor": 5750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 11,
+      "MineNumber": 20,
+      "Cost": 1.44e+164,
+      "Factor": 6500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 1,
+      "Cost": 6.75e+170,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 2,
+      "Cost": 7.733e+172,
+      "Factor": 6250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 3,
+      "Cost": 9.696e+174,
+      "Factor": 7500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 4,
+      "Cost": 2.0575e+177,
+      "Factor": 8750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 5,
+      "Cost": 4.1324e+179,
+      "Factor": 10000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 6,
+      "Cost": 6.75e+170,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 7,
+      "Cost": 7.733e+172,
+      "Factor": 6250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 8,
+      "Cost": 9.696e+174,
+      "Factor": 7500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 9,
+      "Cost": 2.0575e+177,
+      "Factor": 8750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 10,
+      "Cost": 4.1324e+179,
+      "Factor": 10000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 11,
+      "Cost": 6.75e+170,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 12,
+      "Cost": 7.733e+172,
+      "Factor": 6250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 13,
+      "Cost": 9.696e+174,
+      "Factor": 7500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 14,
+      "Cost": 2.0575e+177,
+      "Factor": 8750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 15,
+      "Cost": 4.1324e+179,
+      "Factor": 10000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 16,
+      "Cost": 6.75e+170,
+      "Factor": 5000,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 17,
+      "Cost": 7.733e+172,
+      "Factor": 6250,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 18,
+      "Cost": 9.696e+174,
+      "Factor": 7500,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 19,
+      "Cost": 2.0575e+177,
+      "Factor": 8750,
+      "SuperCashGained": 500
+    },
+    {
+      "PrestigeCount": 12,
+      "MineNumber": 20,
+      "Cost": 4.1324e+179,
+      "Factor": 10000,
+      "SuperCashGained": 500
+    }
+  ]
 }

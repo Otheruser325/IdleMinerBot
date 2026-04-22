@@ -83,7 +83,8 @@
 	{
       "id": 9,
       "ItemName": "Premium Pass",
-      "SuperCashCost": 5000,
+      "SuperCashCost": 0,
+      "PriceDisplay": "USD 4.99",
       "Category": "premium",
       "CanBeBoughtInItemShop": true
     }
