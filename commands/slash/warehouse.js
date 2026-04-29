@@ -14,7 +14,7 @@ export default {
                 .setName('upgrade')
                 .setDescription('Upgrade your warehouse.')
                 .addIntegerOption(option =>
-                    option.setName('upgrade_count').setDescription('Number of upgrades to buy.').setRequired(false)
+                    option.setName('upgrade_count').setDescription('Number of upgrades to buy (-1 = MAX).').setRequired(false).setMinValue(-1)
                 )
         ),
     async execute(interaction) {

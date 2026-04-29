@@ -150,7 +150,7 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
             return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse any further right now.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
@@ -158,7 +158,7 @@ async function handleWarehouseUpgrade(message, user, warehouse, currentMine, arg
             return message.reply(`The warehouse cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the warehouse ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     // Apply upgrades
