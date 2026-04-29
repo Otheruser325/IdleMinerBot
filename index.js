@@ -24,6 +24,7 @@ import {
     getShaftTravelTimeMs,
     getWarehouseTravelTimeMs
 } from './utils/movementTimes.js';
+import { getMineIdleCashPerSecond } from './utils/mineOverview.js';
 import mineRegionsJson from './config/mineRegions.json' with { type: 'json' };
 import continentDataJson from './config/continentData.json' with { type: 'json' };
 import {
@@ -42,6 +43,7 @@ const continentData = continentDataJson.continents;
 import { EventEmitter } from 'events';
 import { classifyDiscordError, safeReply, logError } from './utils/errorHandling.js';
 import { initializeDatabase, isDatabaseReady } from './utils/dbInit.js';
+import { normalizeUserPreferences } from './utils/userPreferences.js';
 
 EventEmitter.defaultMaxListeners = 20;
 
@@ -413,7 +415,8 @@ async function handleManagerWork(user, userId) {
         const autoStatus = getManagerAutomationStatus(currentMine);
         const managedTiers = getManagedShaftTiers(currentMine);
         const currentTime = Date.now();
-        const isIdle = currentTime - freshUser.last_idle > 10 * 60 * 1000;
+        const idleThresholdMinutes = Math.max(1, Math.min(60, Number(freshUser.preferences?.idle_time_minutes || 10)));
+        const isIdle = currentTime - freshUser.last_idle > idleThresholdMinutes * 60 * 1000;
         const idleEfficiency = freshUser.has_premium ? 0.2 : 0.1;
         const cashField = getCashField(currentMine.mine_number);
         const idleCashField = getIdleCashField(currentMine.mine_number);
@@ -427,7 +430,11 @@ async function handleManagerWork(user, userId) {
         };
 
         try {
-            if (managedTiers.length > 0) {
+            if (isIdle) {
+                const idleSeconds = Math.max(0, (currentTime - freshUser.last_idle) / 1000);
+                const idleCashPerSecond = getMineIdleCashPerSecond(currentMine, freshUser.has_premium);
+                totalCashGenerated += idleCashPerSecond * idleSeconds;
+            } else if (managedTiers.length > 0) {
                 automateShaftWork(currentMine, managedTiers);
 
                 currentMine.mineshafts.forEach(shaft => {
@@ -704,7 +711,9 @@ client.on('messageCreate', async message => {
         }
         if (user) {
             const currentTime = Date.now();
-            const isIdle = currentTime - user.last_idle > 10 * 60 * 1000;
+            const userPreferences = normalizeUserPreferences(user.preferences, user.has_premium);
+            const idleThresholdSeconds = userPreferences.idle_time_minutes * 60;
+            const isIdle = currentTime - user.last_idle > idleThresholdSeconds * 1000;
 
             if (isIdle) {
                 const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
@@ -729,7 +738,14 @@ client.on('messageCreate', async message => {
                     let replyMessage;
                     const idleCashAmount = liveUser[idleCashField] || 0;
                     if (idleCashAmount > 0) {
+                        const timeAwayMs = Math.max(0, currentTime - (user.last_idle || currentTime));
+                        const awayMinutes = Math.floor(timeAwayMs / 60000);
+                        const awayHours = Math.floor(awayMinutes / 60);
+                        const remainingMinutes = awayMinutes % 60;
+                        const awayTimeLabel = awayHours > 0 ? `${awayHours}h ${remainingMinutes}m` : `${awayMinutes}m`;
                         replyMessage = `💰 You have collected **${numberFormat(idleCashAmount)}** ${cashLabel} from your idle workers!`;
+                        replyMessage += `
+🕒 You have been away for **${awayTimeLabel}**. You got **${numberFormat(idleCashAmount)}** idle ${cashLabel}!`;
                         
                         // Show bottleneck info if available
                         if (bottleneck && bottleneck.efficiency < 1) {
@@ -779,11 +795,11 @@ client.on('messageCreate', async message => {
                 }
             } else {
                 const timeSinceLastActive = Math.floor((currentTime - user.last_idle) / 1000);
-                const remainingIdleTime = Math.max(0, 600 - timeSinceLastActive);
+                const remainingIdleTime = Math.max(0, idleThresholdSeconds - timeSinceLastActive);
                 const minutes = Math.floor(remainingIdleTime / 60);
                 const seconds = remainingIdleTime % 60;
                 
-                await safeReply(message, `⏳ You need to be idle for **10 minutes** to collect idle cash.\nTime remaining: ${minutes}m ${seconds}s`);
+                await safeReply(message, `⏳ You need to be idle for **${Math.floor(idleThresholdSeconds / 60)} minutes** to collect idle cash.\nTime remaining: ${minutes}m ${seconds}s`);
             }
         } else {
             await safeReply(message, 'User data not found.');

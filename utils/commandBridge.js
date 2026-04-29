@@ -27,7 +27,11 @@ async function acknowledgeInteraction(interaction) {
         return;
     }
 
-    await interaction.deferReply();
+    try {
+        await interaction.deferReply();
+    } catch {
+        // Discord may return Unknown interaction when acknowledgements timeout.
+    }
 }
 
 async function replyFromInteraction(interaction, payload, state) {

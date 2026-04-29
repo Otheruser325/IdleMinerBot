@@ -19,12 +19,12 @@ export function parsePurchaseAmount(token, options = {}) {
     }
 
     const normalized = normalizeAmountToken(token);
-    if (allowMax && normalized === 'MAX') {
+    if (allowMax && (normalized === 'MAX' || normalized === '-1')) {
         return {
             ok: true,
             isMax: true,
             amount: Infinity,
-            label: 'MAX'
+            label: normalized === '-1' ? 'MAX (-1)' : 'MAX'
         };
     }
 
@@ -32,7 +32,7 @@ export function parsePurchaseAmount(token, options = {}) {
     if (!Number.isInteger(numericAmount) || !allowedAmounts.includes(numericAmount)) {
         return {
             ok: false,
-            message: `Please provide a valid buy amount: ${allowedAmounts.join(', ')}${allowMax ? ', or MAX' : ''}.`
+            message: `Please provide a valid buy amount: ${allowedAmounts.join(', ')}${allowMax ? ', -1 (MAX), or MAX' : ''}.`
         };
     }
 

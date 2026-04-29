@@ -4,6 +4,7 @@ import { isDatabaseReady, safeDbOperation } from './utils/dbInit.js';
 import mineRegionsJson from './config/mineRegions.json' with { type: 'json' };
 import continentDataJson from './config/continentData.json' with { type: 'json' };
 import { normalizeOwnedContinents } from './utils/continentLooker.js';
+import { normalizeUserPreferences } from './utils/userPreferences.js';
 
 const mineRegions = mineRegionsJson.regions;
 const continentData = continentDataJson.continents;
@@ -110,7 +111,8 @@ async function initializeUser(userId, username) {
                     last_monthly: 0,
                     has_premium: false,
                     active_boosts: [],
-                    inventory: {}
+                    inventory: {},
+                    preferences: normalizeUserPreferences(null, false)
                 }]);
 
             if (insertError) {

@@ -18,6 +18,7 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
+import { getShaftProductionPerSecond } from '../../utils/mineOverview.js';
 
 const shaftData = shaftDataJson.shaftData;
 
@@ -143,7 +144,7 @@ async function handleAllShaftOverview(message, currentMine) {
         .setTitle(`All Shafts in ${currentMine.mine_name}`)
         .setDescription(currentMine.mineshafts
             .sort((left, right) => left.tier - right.tier)
-            .map(shaft => `Tier ${shaft.tier}: Level ${shaft.level} | Workers ${shaft.number_of_workers} | Deposit ${numberFormat(shaft.total_deposit || 0)}`)
+            .map(shaft => { const productionPerSecond = getShaftProductionPerSecond(shaft, currentMine); return `Tier ${shaft.tier}: Level ${shaft.level} | Workers ${shaft.number_of_workers} | Prod ${numberFormat(productionPerSecond)}/s | Deposit ${numberFormat(shaft.total_deposit || 0)}`; })
             .join('\n'))
         .setTimestamp();
 
@@ -316,7 +317,7 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
             return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} any further right now.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade this shaft ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade this shaft ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
@@ -324,7 +325,7 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
             return message.reply(`Shaft Tier ${tier} cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     // Apply upgrades

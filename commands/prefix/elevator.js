@@ -150,7 +150,7 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, args,
             return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator any further right now.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
@@ -158,7 +158,7 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, args,
             return message.reply(`The elevator cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
         }
 
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
     }
 
     // Apply upgrades
