@@ -119,44 +119,52 @@ for (const file of slashCommandFiles) {
     client.slashCommands.set(command.data.name, command);
 }
 
+const scheduledCronTasks = [];
+let cronJobsInitialized = false;
+
 // Schedule updates regularly
 async function scheduleNextUpdate(client) {
-    cron.schedule('*/5 * * * *', async () => {
+    if (cronJobsInitialized) {
+        return;
+    }
+    cronJobsInitialized = true;
+
+    scheduledCronTasks.push(cron.schedule('*/5 * * * *', async () => {
         try {
             await updateBotStatus(client);
         } catch (error) {
             logError('cron:updateBotStatus', error);
         }
-    });
+    }));
 
-    cron.schedule('*/10 * * * * *', async () => {
+    scheduledCronTasks.push(cron.schedule('*/10 * * * * *', async () => {
         try {
             await handleMissingData();
         } catch (error) {
             logError('cron:handleMissingData', error);
         }
-    });
+    }));
 	
 	// Check barrier unlock time every 10 seconds
-    cron.schedule('*/10 * * * * *', async () => {
+    scheduledCronTasks.push(cron.schedule('*/10 * * * * *', async () => {
         try {
             await handleBarrierUnlockTime();
         } catch (error) {
             logError('cron:handleBarrierUnlockTime', error);
         }
-    });
+    }));
 	
 	// Schedule boost timer updates every 30 seconds
-    cron.schedule('*/30 * * * * *', async () => {
+    scheduledCronTasks.push(cron.schedule('*/30 * * * * *', async () => {
         try {
             await handleBoostTimers();
         } catch (error) {
             logError('cron:handleBoostTimers', error);
         }
-    });
+    }));
 	
 	// Schedule manager work for all users every minute
-    cron.schedule('*/60 * * * * *', async () => {
+    scheduledCronTasks.push(cron.schedule('*/60 * * * * *', async () => {
         try {
             const allUsers = await getAllUsers();
             for (const user of allUsers) {
@@ -171,15 +179,15 @@ async function scheduleNextUpdate(client) {
         } catch (error) {
             logError('cron:handleManagerWork', error);
         }
-    });
+    }));
 
-    cron.schedule('*/60 * * * * *', async () => {
+    scheduledCronTasks.push(cron.schedule('*/60 * * * * *', async () => {
         try {
             await handleDuplicateManagerPurge(client);
         } catch (error) {
             logError('cron:handleDuplicateManagerPurge', error);
         }
-    });
+    }));
 }
 
 // Function to simulate shaft work by managers (per tier)
@@ -837,7 +845,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await command.execute(interaction);
         } catch (error) {
             logError('slashCommand:execute', error, { commandName: interaction?.commandName, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error executing this command!', ephemeral: true });
+            await safeReply(interaction, { content: 'There was an error executing this command!', flags: 64 });
         } finally {
             await markUserAsActive(interaction?.user?.id);
         }
@@ -849,7 +857,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await handleSelectMenuInteraction(interaction);
         } catch (error) {
             logError('selectMenu:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to process the selection menu!', ephemeral: true });
+            await safeReply(interaction, { content: 'There was an error trying to process the selection menu!', flags: 64 });
         } finally {
             await markUserAsActive(interaction?.user?.id);
         }
@@ -860,7 +868,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await handleButtonInteraction(interaction);
         } catch (error) {
             logError('button:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to process that button!', ephemeral: true });
+            await safeReply(interaction, { content: 'There was an error trying to process that button!', flags: 64 });
         } finally {
             await markUserAsActive(interaction?.user?.id);
         }
@@ -871,7 +879,7 @@ client.on(Events.InteractionCreate, async interaction => {
             await handleModalFormInteraction(interaction);
         } catch (error) {
             logError('modal:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to submit this form!', ephemeral: true });
+            await safeReply(interaction, { content: 'There was an error trying to submit this form!', flags: 64 });
         } finally {
             await markUserAsActive(interaction?.user?.id);
         }
@@ -883,7 +891,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Centralized Error Handler
 function handleInteractionError(interaction, errorMessage) {
-    safeReply(interaction, { content: errorMessage, ephemeral: true });
+    safeReply(interaction, { content: errorMessage, flags: 64 });
 }
 
 async function handleDuplicateManagerPurge(client) {
