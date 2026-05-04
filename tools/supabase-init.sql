@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS public.users (
     active_boosts JSONB DEFAULT '[]'::jsonb,
     inventory JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    preferences JSONB DEFAULT '{}'::jsonb
 );
 
 ALTER TABLE public.users
@@ -59,7 +60,8 @@ ALTER TABLE public.users
     ADD COLUMN IF NOT EXISTS active_boosts JSONB DEFAULT '[]'::jsonb,
     ADD COLUMN IF NOT EXISTS inventory JSONB DEFAULT '{}'::jsonb,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb;
 
 ALTER TABLE public.users
     ALTER COLUMN username SET DEFAULT '',
@@ -84,7 +86,35 @@ ALTER TABLE public.users
     ALTER COLUMN active_boosts SET DEFAULT '[]'::jsonb,
     ALTER COLUMN inventory SET DEFAULT '{}'::jsonb,
     ALTER COLUMN created_at SET DEFAULT NOW(),
-    ALTER COLUMN updated_at SET DEFAULT NOW();
+    ALTER COLUMN updated_at SET DEFAULT NOW(),
+    ALTER COLUMN preferences SET DEFAULT '{}'::jsonb;
+
+UPDATE public.users
+SET
+    username = COALESCE(username, ''),
+    continents = COALESCE(continents, '[]'::jsonb),
+    current_continent = COALESCE(current_continent, 'Start Continent'),
+    current_mine = COALESCE(current_mine, 'Coal Mine'),
+    cash = COALESCE(cash, 10),
+    ice_cash = COALESCE(ice_cash, 0),
+    fire_cash = COALESCE(fire_cash, 0),
+    dawn_cash = COALESCE(dawn_cash, 0),
+    idle_cash = COALESCE(idle_cash, 0),
+    idle_ice_cash = COALESCE(idle_ice_cash, 0),
+    idle_fire_cash = COALESCE(idle_fire_cash, 0),
+    idle_dawn_cash = COALESCE(idle_dawn_cash, 0),
+    mines = COALESCE(mines, '[]'::jsonb),
+    super_cash = COALESCE(super_cash, 0),
+    streak = COALESCE(streak, 0),
+    last_daily = COALESCE(last_daily, 0),
+    last_idle = COALESCE(last_idle, 0),
+    last_monthly = COALESCE(last_monthly, 0),
+    has_premium = COALESCE(has_premium, FALSE),
+    active_boosts = COALESCE(active_boosts, '[]'::jsonb),
+    inventory = COALESCE(inventory, '{}'::jsonb),
+    created_at = COALESCE(created_at, NOW()),
+    updated_at = COALESCE(updated_at, NOW()),
+    preferences = COALESCE(preferences, '{}'::jsonb);
 
 -- Create index on user_id for faster lookups
 CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users(user_id);

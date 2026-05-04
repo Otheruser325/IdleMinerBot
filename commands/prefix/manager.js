@@ -11,6 +11,7 @@ import { getMineNumber } from '../../utils/mineLooker.js';
 const managerData = managerDataJson.managers;
 const managerCosts = managerCostsJson.managerCosts;
 const MANAGERS_PER_PAGE = 6;
+const MANAGER_RARITY_LABELS = { 1: 'Junior', 2: 'Senior', 3: 'Executive' };
 
 function normalizeManagerArea(area) {
     const normalizedArea = String(area || '').toLowerCase();
@@ -38,6 +39,11 @@ function getManagerDisplayId(manager) {
 function getManagerGenderEmoji(manager) {
     const genderId = manager.gender_id ?? manager.GenderId ?? 0;
     return genderId === 1 ? '👩' : '👨';
+}
+
+function getManagerRarityLabel(manager) {
+    const rarityId = Number(manager?.rarity_id ?? manager?.RarityID ?? 1);
+    return MANAGER_RARITY_LABELS[rarityId] || `Rarity ${rarityId}`;
 }
 
 function normalizeManagerIdentifier(value) {
@@ -146,7 +152,7 @@ function formatAssignedManagerLabel(manager, area, abilityName = null) {
     const areaLabel = formatAreaLabel(area);
     const tierLabel = area === 'shaft' && manager.assigned_tier ? ` Tier ${manager.assigned_tier}` : '';
     const abilityLabel = abilityName ? `: ${abilityName}` : '';
-    return `${manager.name} (${areaLabel}${tierLabel}${abilityLabel})`;
+    return `${manager.name} [${getManagerRarityLabel(manager)}] (${areaLabel}${tierLabel}${abilityLabel})`;
 }
 
 function clampFieldValue(lines) {
@@ -354,7 +360,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     try {
         await updateUser(userId, user);
         const displayId = getManagerDisplayId({ manager_id: newManager.ManagerID, gender_id: newManager.GenderId || 0 });
-        return message.reply(`Successfully hired ${newManager.Name} (${displayId}) for the ${area}.`);
+        return message.reply(`Successfully hired ${newManager.Name} (${displayId}) [${getManagerRarityLabel(newManager)}] for the ${area}.`);
     } catch (error) {
         logError('manager:hire', error, { userId, area });
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -388,7 +394,7 @@ async function handleManagerFire(message, user, currentMine, userId, managerIdOr
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully fired ${manager.name} (${getManagerDisplayId(manager)}).`);
+        return message.reply(`Successfully fired ${manager.name} (${getManagerDisplayId(manager)}) [${getManagerRarityLabel(manager)}].`);
     } catch (error) {
         logError('manager:fire', error, { userId, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -481,7 +487,7 @@ async function handleManagerAssign(message, user, currentMine, userId, managerId
     try {
         await updateUser(userId, user);
         const tierInfo = (area === 'shaft' && tier) ? ` (Tier ${tier})` : '';
-        return message.reply(`Successfully assigned manager ${manager.name} (${getManagerDisplayId(manager)}) to the ${area}${tierInfo}.`);
+        return message.reply(`Successfully assigned manager ${manager.name} (${getManagerDisplayId(manager)}) [${getManagerRarityLabel(manager)}] to the ${area}${tierInfo}.`);
     } catch (error) {
         logError('manager:assign', error, { userId, area, tier, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -531,7 +537,7 @@ async function handleManagerRemove(message, user, currentMine, userId, managerId
     // Update the user's data in the database
     try {
         await updateUser(userId, user);
-        return message.reply(`Successfully removed manager ${manager.name} (${getManagerDisplayId(manager)})${tierInfo} from the ${area}.`);
+        return message.reply(`Successfully removed manager ${manager.name} (${getManagerDisplayId(manager)}) [${getManagerRarityLabel(manager)}]${tierInfo} from the ${area}.`);
     } catch (error) {
         logError('manager:remove', error, { userId, area, manager: managerIdOrName });
         return message.reply('There was an error while updating your data. Please try again later.');
@@ -576,11 +582,14 @@ async function handleManagerOverview(message, user, currentMine, area) {
             const tierInfo = selectedArea === 'shaft' && manager.assigned_tier ? ` | Tier ${manager.assigned_tier}` : '';
             const genderLabel = (manager.gender_id ?? 0) === 1 ? 'Female' : 'Male';
             const status = manager.assigned ? 'Assigned' : 'Unassigned';
+            const managerLabel = manager.assigned ? `${status} (${manager.name})` : `${status} (Unassigned)`;
             const abilitySummary = manager.ability_status || 'No ability status available';
+            const abilityInfo = manager.ability_info || getManagerAbilityInfo(manager);
+            const abilityStats = `Duration: ${abilityInfo.activeTime}s | Cooldown: ${abilityInfo.cooldown}s | ValueX: ${abilityInfo.valueX}`;
 
             embed.addFields({
                 name: `${selectedArea.charAt(0).toUpperCase() + selectedArea.slice(1)} | ${manager.name}`,
-                value: `${getManagerGenderEmoji(manager)} ID: ${getManagerDisplayId(manager)} | ${genderLabel} | ${status}${tierInfo}\n${abilitySummary}`,
+                value: `${getManagerGenderEmoji(manager)} ID: ${getManagerDisplayId(manager)} | ${genderLabel} | ${managerLabel}${tierInfo}\nRarity: ${getManagerRarityLabel(manager)}\n${abilitySummary}\n${abilityStats}`,
                 inline: false
             });
         });
@@ -619,7 +628,8 @@ async function handleManagerOverview(message, user, currentMine, area) {
         filter: interaction =>
             interaction.user.id === message.author.id &&
             [previousId, nextId].includes(interaction.customId),
-        time: 60000
+        time: 60000,
+        idle: 20000
     });
 
     collector.on('collect', async interaction => {
@@ -658,16 +668,12 @@ async function handleAllManagerAbilities(message, user, currentMine, userId) {
     const activatedManagers = [];
     const skippedCooldown = [];
     const skippedActive = [];
-    const skippedUnassigned = [];
 
     ['shaft', 'elevator', 'warehouse'].forEach(area => {
         for (const manager of currentMine.managers[area] || []) {
             const abilityInfo = getManagerAbilityInfo(manager);
 
-            if (!manager.assigned) {
-                skippedUnassigned.push(formatAssignedManagerLabel(manager, area));
-                continue;
-            }
+            if (!manager.assigned) continue;
 
             if (manager.ability_state?.active) {
                 skippedActive.push(formatAssignedManagerLabel(manager, area));
@@ -688,7 +694,6 @@ async function handleAllManagerAbilities(message, user, currentMine, userId) {
     if (activatedManagers.length === 0) {
         const reasons = [];
         if (skippedCooldown.length > 0) reasons.push(`${skippedCooldown.length} on cooldown`);
-        if (skippedUnassigned.length > 0) reasons.push(`${skippedUnassigned.length} unassigned`);
         return message.reply(`No manager abilities could be activated right now${reasons.length ? ` (${reasons.join(', ')})` : ''}.`);
     }
 
@@ -709,10 +714,6 @@ async function handleAllManagerAbilities(message, user, currentMine, userId) {
 
         if (skippedActive.length > 0) {
             embed.addFields({ name: 'Skipped (Already Active)', value: clampFieldValue(skippedActive), inline: false });
-        }
-
-        if (skippedUnassigned.length > 0) {
-            embed.addFields({ name: 'Skipped (Unassigned)', value: clampFieldValue(skippedUnassigned), inline: false });
         }
 
         return message.reply({ embeds: [embed] });
