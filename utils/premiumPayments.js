@@ -4,6 +4,9 @@ import sendPremiumDM from './sendPremiumDM.js';
 import { logError } from './errorHandling.js';
 
 const PREMIUM_PASS_PRODUCT = 'premium_pass';
+const DEFAULT_WEBHOOK_BODY_LIMIT_BYTES = 1024 * 1024;
+const PAYMENT_SERVER_HEADERS_TIMEOUT_MS = 10_000;
+const PAYMENT_SERVER_REQUEST_TIMEOUT_MS = 15_000;
 let stripeClientPromise = null;
 let paymentServer = null;
 
@@ -24,6 +27,43 @@ function getPremiumPassDisplayPrice() {
     const amount = getPremiumPassAmountCents();
     const currency = getPremiumPassCurrency().toUpperCase();
     return `${currency} ${(amount / 100).toFixed(2)}`;
+}
+
+function getWebhookBodyLimitBytes() {
+    const configuredLimit = Number(process.env.PAYMENT_WEBHOOK_BODY_LIMIT_BYTES || 0);
+    return Number.isSafeInteger(configuredLimit) && configuredLimit > 0
+        ? configuredLimit
+        : DEFAULT_WEBHOOK_BODY_LIMIT_BYTES;
+}
+
+function getPaymentServerPort() {
+    const configuredPort = Number(process.env.PAYMENT_SERVER_PORT || 8787);
+    return Number.isInteger(configuredPort) && configuredPort > 0 && configuredPort <= 65535
+        ? configuredPort
+        : 8787;
+}
+
+class RequestBodyTooLargeError extends Error {
+    constructor(limitBytes) {
+        super(`Request body exceeded ${limitBytes} bytes.`);
+        this.name = 'RequestBodyTooLargeError';
+        this.limitBytes = limitBytes;
+    }
+}
+
+async function readRequestBodyWithLimit(request, limitBytes) {
+    const chunks = [];
+    let totalBytes = 0;
+
+    for await (const chunk of request) {
+        totalBytes += chunk.length;
+        if (totalBytes > limitBytes) {
+            throw new RequestBodyTooLargeError(limitBytes);
+        }
+        chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks, totalBytes);
 }
 
 async function getStripeClient() {
@@ -206,17 +246,13 @@ async function startPremiumPaymentServer(client) {
         return paymentServer;
     }
 
-    const port = Number(process.env.PAYMENT_SERVER_PORT || 8787);
+    const port = getPaymentServerPort();
+    const webhookBodyLimitBytes = getWebhookBodyLimitBytes();
 
     paymentServer = http.createServer(async (request, response) => {
         try {
             if (request.method === 'POST' && request.url === '/payments/stripe/webhook') {
-                const chunks = [];
-                for await (const chunk of request) {
-                    chunks.push(chunk);
-                }
-
-                const rawBody = Buffer.concat(chunks);
+                const rawBody = await readRequestBodyWithLimit(request, webhookBodyLimitBytes);
                 const signature = request.headers['stripe-signature'];
                 const result = await handleStripeWebhook(rawBody, signature, client);
                 response.writeHead(result.statusCode, { 'Content-Type': 'application/json' });
@@ -237,11 +273,21 @@ async function startPremiumPaymentServer(client) {
             response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             response.end('Not found');
         } catch (error) {
+            if (error instanceof RequestBodyTooLargeError) {
+                logError('premiumPayments:bodyLimit', error, { method: request.method, url: request.url, limitBytes: error.limitBytes });
+                response.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8', Connection: 'close' });
+                response.end('Payload too large');
+                return;
+            }
+
             logError('premiumPayments:server', error, { method: request.method, url: request.url });
             response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
             response.end('Internal server error');
         }
     });
+
+    paymentServer.headersTimeout = PAYMENT_SERVER_HEADERS_TIMEOUT_MS;
+    paymentServer.requestTimeout = PAYMENT_SERVER_REQUEST_TIMEOUT_MS;
 
     paymentServer.listen(port, () => {
         console.log(`Premium payment server listening on port ${port}.`);

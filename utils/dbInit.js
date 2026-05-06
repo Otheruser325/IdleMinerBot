@@ -6,6 +6,7 @@ import supabase from './supabaseClient.js';
  */
 
 const REQUIRED_TABLES = ['users', 'guilds'];
+const ALLOW_RUNTIME_SCHEMA_SYNC = process.env.ALLOW_RUNTIME_SCHEMA_SYNC === 'true';
 
 const USERS_SCHEMA_SYNC_SQL = `
 ALTER TABLE public.users
@@ -89,27 +90,32 @@ async function tableExists(tableName) {
     }
 }
 
-/**
- * Create the exec_sql RPC function if it doesn't exist
- * This allows running SQL statements from the client
- */
-async function createExecSQLFunction() {
-    const createFunctionSQL = `
-CREATE OR REPLACE FUNCTION exec_sql(sql text)
-RETURNS void AS $$
-BEGIN
-  EXECUTE sql;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-`;
+function printManualSql(label, sql) {
+    console.log(`\n=== REQUIRED SQL FOR ${label} ===`);
+    console.log(sql);
+    console.log('=== END SQL ===\n');
+}
+
+async function runSchemaSql(label, sql) {
+    if (!ALLOW_RUNTIME_SCHEMA_SYNC) {
+        console.warn(`Runtime schema changes are disabled. Set ALLOW_RUNTIME_SCHEMA_SYNC=true only during trusted maintenance to run ${label} automatically.`);
+        printManualSql(label, sql);
+        return false;
+    }
+
     try {
-        // Try to create via raw query - this requires service role
-        const { error } = await supabase.rpc('exec_sql', { sql: createFunctionSQL });
-        if (error?.message?.includes('function') || error?.message?.includes('does not exist')) {
-            return false; // Function doesn't exist and we can't create it
+        const { error } = await supabase.rpc('exec_sql', { sql });
+
+        if (error) {
+            console.error(`Failed to run ${label} via RPC:`, error.message);
+            printManualSql(label, sql);
+            return false;
         }
-        return !error;
-    } catch {
+
+        return true;
+    } catch (error) {
+        console.error(`Error running ${label}:`, error);
+        printManualSql(label, sql);
         return false;
     }
 }
@@ -154,50 +160,19 @@ CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users(user_id);
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 `;
 
-    try {
-        // Try to execute via RPC if available
-        const { error } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-        
-        if (error) {
-            console.error('Failed to create users table via RPC:', error.message);
-            console.log('\n=== REQUIRED SQL FOR users TABLE ===');
-            console.log(createTableSQL);
-            console.log('=== END SQL ===\n');
-            return false;
-        }
-        
+    const created = await runSchemaSql('users TABLE', createTableSQL);
+    if (created) {
         console.log('✓ Users table created successfully');
-        return true;
-    } catch (error) {
-        console.error('Error creating users table:', error);
-        console.log('\n=== REQUIRED SQL FOR users TABLE ===');
-        console.log(createTableSQL);
-        console.log('=== END SQL ===\n');
-        return false;
     }
+    return created;
 }
 
 async function syncUsersTableSchema() {
-    try {
-        const { error } = await supabase.rpc('exec_sql', { sql: USERS_SCHEMA_SYNC_SQL });
-
-        if (error) {
-            console.error('Failed to sync users table schema via RPC:', error.message);
-            console.log('\n=== REQUIRED SQL FOR USERS SCHEMA SYNC ===');
-            console.log(USERS_SCHEMA_SYNC_SQL);
-            console.log('=== END SQL ===\n');
-            return false;
-        }
-
+    const synced = await runSchemaSql('USERS SCHEMA SYNC', USERS_SCHEMA_SYNC_SQL);
+    if (synced) {
         console.log('✓ Users table schema synced successfully');
-        return true;
-    } catch (error) {
-        console.error('Error syncing users table schema:', error);
-        console.log('\n=== REQUIRED SQL FOR USERS SCHEMA SYNC ===');
-        console.log(USERS_SCHEMA_SYNC_SQL);
-        console.log('=== END SQL ===\n');
-        return false;
     }
+    return synced;
 }
 
 /**
@@ -224,26 +199,11 @@ CREATE INDEX IF NOT EXISTS idx_guilds_guild_id ON public.guilds(guild_id);
 ALTER TABLE public.guilds ENABLE ROW LEVEL SECURITY;
 `;
 
-    try {
-        const { error } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-        
-        if (error) {
-            console.error('Failed to create guilds table via RPC:', error.message);
-            console.log('\n=== REQUIRED SQL FOR guilds TABLE ===');
-            console.log(createTableSQL);
-            console.log('=== END SQL ===\n');
-            return false;
-        }
-        
+    const created = await runSchemaSql('guilds TABLE', createTableSQL);
+    if (created) {
         console.log('✓ Guilds table created successfully');
-        return true;
-    } catch (error) {
-        console.error('Error creating guilds table:', error);
-        console.log('\n=== REQUIRED SQL FOR guilds TABLE ===');
-        console.log(createTableSQL);
-        console.log('=== END SQL ===\n');
-        return false;
     }
+    return created;
 }
 
 /**
@@ -261,19 +221,19 @@ export async function initializeDatabase() {
     // Check users table
     const usersExists = await tableExists('users');
     if (!usersExists) {
-        console.log('⚠ Users table not found. Attempting to create...');
-        // Try to create exec_sql function first
-        const hasExecSQL = await createExecSQLFunction();
-        if (!hasExecSQL) {
-            console.log('ℹ Note: exec_sql RPC not available. Will try direct creation...');
-        }
+        console.log('⚠ Users table not found. Manual setup is required unless runtime schema sync is explicitly enabled.');
         results.users = await createUsersTable();
         if (results.users) {
             results.users = await syncUsersTableSchema();
         }
     } else {
         console.log('✓ Users table exists');
-        results.users = await syncUsersTableSchema();
+        if (ALLOW_RUNTIME_SCHEMA_SYNC) {
+            results.users = await syncUsersTableSchema();
+        } else {
+            console.log('ℹ Runtime users schema sync skipped (ALLOW_RUNTIME_SCHEMA_SYNC is not true).');
+            results.users = true;
+        }
     }
 
     // Check guilds table
