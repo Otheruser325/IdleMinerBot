@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "sanity": "node tools/sanity-check.mjs",
+    "test": "npm run sanity"
   },
   "keywords": [],
   "author": "",
