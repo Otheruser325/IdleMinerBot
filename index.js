@@ -105,6 +105,10 @@ const prefixCommandFiles = fs.readdirSync(path.join(__dirname, 'commands/prefix'
 for (const file of prefixCommandFiles) {
     const commandPath = path.join(__dirname, 'commands/prefix', file);
     const command = await importCommandModule(commandPath);
+    if (!command?.name || typeof command.execute !== 'function') {
+        logError('startup:prefixCommandValidation', new Error('Invalid prefix command module shape'), { file });
+        continue;
+    }
     client.commands.set(command.name, command);
     if (command.aliases) {
         command.aliases.forEach(alias => client.commands.set(alias, command));
@@ -116,6 +120,10 @@ const slashCommandFiles = fs.readdirSync(path.join(__dirname, 'commands/slash'))
 for (const file of slashCommandFiles) {
     const commandPath = path.join(__dirname, 'commands/slash', file);
     const command = await importCommandModule(commandPath);
+    if (!command?.data?.name || typeof command.execute !== 'function') {
+        logError('startup:slashCommandValidation', new Error('Invalid slash command module shape'), { file });
+        continue;
+    }
     client.slashCommands.set(command.data.name, command);
 }
 
