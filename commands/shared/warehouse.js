@@ -16,7 +16,7 @@ import { getCashField, getCashLabelByField } from '../../utils/continentLooker.j
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 
-const warehouseData = warehouseDataJson.warehouseData;
+const warehouseData = warehouseDataJson.warehouses || [];
 
 export default {
     name: 'warehouse',

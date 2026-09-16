@@ -8,6 +8,7 @@ import {
     applyShaftIncomeBeam,
     applyElevatorIncomeBeam,
     applyMiningSpeedBoost,
+    applyCapacityBoost,
     applyLoadingSpeedBoost,
     isManagerAssigned,
     isShaftTierManaged
@@ -20,9 +21,9 @@ import {
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { logError, safeEditMessage } from '../../utils/errorHandling.js';
 
-const shaftData = shaftDataJson.shaftData;
-const elevatorData = elevatorDataJson.elevatorData;
-const warehouseData = warehouseDataJson.warehouseData;
+const shaftData = shaftDataJson.shafts || [];
+const elevatorData = elevatorDataJson.elevators || [];
+const warehouseData = warehouseDataJson.warehouses || [];
 
 const activeWorkSessions = new Map();
 const areaCooldowns = new Map();
@@ -345,7 +346,8 @@ async function handleElevatorWork(message, user, currentMine, userId) {
         await safeEditMessage(statusMessage, `Arriving at Shaft Tier ${shaft.tier}...`);
         await delay(travelTime);
 
-        const remainingCapacity = elevator.capacity - (elevator.total_deposit || 0);
+        const boostedCapacity = applyCapacityBoost(elevator.capacity, 'elevator', currentMine);
+        const remainingCapacity = boostedCapacity - (elevator.total_deposit || 0);
         if (remainingCapacity <= 0) {
             break;
         }
@@ -361,7 +363,7 @@ async function handleElevatorWork(message, user, currentMine, userId) {
         elevator.total_deposit = (elevator.total_deposit || 0) + beamResult.remainingDeposit;
         totalDeposit += amountToExtract;
 
-        if (elevator.total_deposit >= elevator.capacity) {
+        if (elevator.total_deposit >= applyCapacityBoost(elevator.capacity, 'elevator', currentMine)) {
             await safeEditMessage(statusMessage, 'Elevator is full. Returning to base...');
             break;
         }
@@ -420,7 +422,11 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
     const walletLabel = getCashLabelByField(walletField);
 
     const now = Date.now();
-    const totalWorkerCapacity = warehouseInfo.CapacityPerWorker * warehouseInfo.NumberOfWorkers;
+    const totalWorkerCapacity = applyCapacityBoost(
+        warehouseInfo.CapacityPerWorker * warehouseInfo.NumberOfWorkers,
+        'warehouse',
+        currentMine
+    );
     const extractableAmount = Math.min(elevator.total_deposit || 0, totalWorkerCapacity);
     const boostedLoadingRate = applyLoadingSpeedBoost(warehouseInfo.LoadingPerSecond, 'warehouse', currentMine);
     const loadingTime = (extractableAmount / boostedLoadingRate) * 1000;

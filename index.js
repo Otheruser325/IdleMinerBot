@@ -19,6 +19,7 @@ import {
     applyShaftIncomeBeam,
     applyElevatorIncomeBeam,
     applyMiningSpeedBoost,
+    applyCapacityBoost,
     applyLoadingSpeedBoost
 } from './utils/managerAbilities.js';
 import {
@@ -289,7 +290,7 @@ function automateElevatorWork(currentMine) {
     if (!elevator) return null;
     const now = Date.now();
     const loadingRate = applyLoadingSpeedBoost(elevator.loading_per_second || 150, 'elevator', currentMine);
-    const capacity = elevator.capacity || 600;
+    const capacity = applyCapacityBoost(elevator.capacity || 600, 'elevator', currentMine);
     const travelTime = getElevatorSegmentTravelTimeMs(elevator.speed || 0.5, currentMine);
     const managedTiers = getManagedShaftTiers(currentMine);
     const shaftCount = Math.max(1, managedTiers.length);
@@ -332,7 +333,8 @@ function automateWarehouseWork(currentMine) {
     if (!warehouse || !elevator) return 0;
     const workerCount = warehouse.number_of_workers || 1;
     const workerCapacity = warehouse.capacity_per_worker || 1000;
-    const extractable = Math.min(elevator.total_deposit || 0, workerCapacity * workerCount);
+    const totalWorkerCapacity = applyCapacityBoost(workerCapacity * workerCount, 'warehouse', currentMine);
+    const extractable = Math.min(elevator.total_deposit || 0, totalWorkerCapacity);
     if (extractable <= 0) return 0;
     const loadingRate = applyLoadingSpeedBoost(warehouse.loading_per_second || 250, 'warehouse', currentMine);
     const walkingTime = getWarehouseTravelTimeMs(warehouse.worker_walking_speed_per_second, currentMine);

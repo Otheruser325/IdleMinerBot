@@ -1,6 +1,7 @@
 import mineFactorsJson from '../config/mineFactors.json' with { type: 'json' };
 import {
     applyIncomeMultiplier,
+    applyCapacityBoost,
     applyLoadingSpeedBoost,
     applyMiningSpeedBoost,
     getManagerAutomationStatus,
@@ -53,7 +54,7 @@ function getElevatorThroughputPerSecond(currentMine, managedTiers) {
     }
 
     const loadingPerSecond = applyLoadingSpeedBoost(elevator.loading_per_second || 150, 'elevator', currentMine);
-    const elevatorCapacity = elevator.capacity || 0;
+    const elevatorCapacity = applyCapacityBoost(elevator.capacity || 0, 'elevator', currentMine);
     const travelTime = getElevatorSegmentTravelTimeMs(elevator.speed || 0.5, currentMine);
     const cycleTimeSeconds = ((travelTime * managedTiers.length * 2) + ((elevatorCapacity / Math.max(loadingPerSecond, 1)) * 1000 * 2)) / 1000;
 
@@ -70,7 +71,11 @@ function getWarehouseCashPerSecond(currentMine) {
         return 0;
     }
 
-    const totalWorkerCapacity = (warehouse.capacity_per_worker || 0) * (warehouse.number_of_workers || 0);
+    const totalWorkerCapacity = applyCapacityBoost(
+        (warehouse.capacity_per_worker || 0) * (warehouse.number_of_workers || 0),
+        'warehouse',
+        currentMine
+    );
     if (totalWorkerCapacity <= 0) {
         return 0;
     }

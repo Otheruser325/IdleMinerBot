@@ -16,7 +16,7 @@ import { getCashField, getCashLabelByField } from '../../utils/continentLooker.j
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 
-const elevatorData = elevatorDataJson.elevatorData;
+const elevatorData = elevatorDataJson.elevators || [];
 
 export default {
     name: 'elevator',

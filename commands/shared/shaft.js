@@ -20,7 +20,20 @@ import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 import { getShaftProductionPerSecond } from '../../utils/mineOverview.js';
 
-const shaftData = shaftDataJson.shaftData;
+const shaftData = shaftDataJson.shafts || [];
+
+function barrierTier(barrier, key) {
+    return Number(barrier?.[key === 'from' ? 'FromTier' : 'ToTier'] ?? 0);
+}
+
+export function isTierBlockedByBarrier(tier, barrier) {
+    return Boolean(
+        barrier &&
+        !barrier.unlocked &&
+        tier >= barrierTier(barrier, 'from') &&
+        tier <= barrierTier(barrier, 'to')
+    );
+}
 
 export default {
     name: 'shaft',
@@ -167,9 +180,9 @@ async function handleBuy(message, user, currentMine, args, userId) {
     }
 
     // Check if there is a locked barrier preventing further shaft unlocks
-    const barrierBlocking = currentMine.barriers.find(barrier => !barrier.unlocked && tier > barrier.from_tier && tier <= barrier.to_tier);
+    const barrierBlocking = currentMine.barriers.find(barrier => isTierBlockedByBarrier(tier, barrier));
     if (barrierBlocking) {
-        return message.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierBlocking.from_tier} to Tier ${barrierBlocking.to_tier} first.`);
+        return message.reply(`Shaft Tier ${tier} is blocked by a barrier. Unlock the barrier from Tier ${barrierTier(barrierBlocking, 'from')} to Tier ${barrierTier(barrierBlocking, 'to')} first.`);
     }
 
     // Check if user has tier 1 shaft at level 10 before buying additional shafts

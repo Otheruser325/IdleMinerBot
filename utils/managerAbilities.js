@@ -52,6 +52,16 @@ function inferAbilityType(effectMetadata, fallbackAbility) {
     return fallbackAbility?.type || 'none';
 }
 
+const ENGLISH_EFFECT_DESCRIPTIONS = {
+    speed: 'Increases {area} movement speed to {valueX}x for {activeTime}s.',
+    income_multiplier: 'Multiplies {area} income by {valueX}x for {activeTime}s.',
+    cost_reduction: 'Reduces {area} upgrade costs by {discount}% for {activeTime}s.',
+    loading_speed: 'Increases {area} loading speed to {valueX}x for {activeTime}s.',
+    capacity: 'Increases {area} capacity to {valueX}x for {activeTime}s.',
+    mining_speed: 'Increases mineshaft mining speed to {valueX}x for {activeTime}s.',
+    income_beam: 'Converts {valueX}% of {area} resources directly into cash for {activeTime}s.'
+};
+
 function getEffectDescriptor(effectId) {
     const fallbackAbility = ABILITY_EFFECTS[effectId] || null;
     const effectMetadata = getEffectMetadata(effectId);
@@ -61,7 +71,7 @@ function getEffectDescriptor(effectId) {
     return {
         effectId: Number(effectId),
         name: effectMetadata?.EffectName || fallbackAbility?.name || 'Unknown',
-        description: fallbackAbility?.description || effectMetadata?.EffectDescription || 'No ability data available',
+        description: ENGLISH_EFFECT_DESCRIPTIONS[type] || fallbackAbility?.description || 'No ability data available',
         type,
         target,
         applyEffect: fallbackAbility?.applyEffect || ((baseValue) => baseValue)
@@ -627,19 +637,40 @@ export function getManagerAutomationStatus(currentMine) {
  * @param {Object} manager - Manager object with effect_id, value_x, active_time
  * @returns {string} - Formatted description
  */
+function getNumericManagerValue(manager, key, fallback) {
+    const aliases = {
+        value_x: ['value_x', 'ValueX'],
+        active_time: ['active_time', 'ActiveTime']
+    };
+    const candidates = aliases[key] || [key, key.charAt(0).toUpperCase() + key.slice(1)];
+    const value = Number(candidates.map(candidate => manager?.[candidate]).find(candidate => candidate !== undefined) ?? fallback);
+    return Number.isFinite(value) ? value : fallback;
+}
+
+function formatAbilityMultiplier(value) {
+    return Number(value).toFixed(2).replace(/\.00$/, '');
+}
+
 export function getAbilityDescription(manager) {
-    const effectId = manager.effect_id || manager.EffectID;
+    const effectId = manager?.effect_id ?? manager?.EffectID;
     const ability = getAbilityByEffectId(effectId);
-    
+
     if (!ability) {
         return 'Unknown Ability';
     }
-    
-    const valueX = manager.value_x || manager.ValueX || 1;
-    const activeTime = manager.active_time || manager.ActiveTime || 60;
-    
+
+    const valueX = getNumericManagerValue(manager, 'value_x', 1);
+    const activeTime = getNumericManagerValue(manager, 'active_time', 60);
+    const area = formatAreaLabel(ability.target).toLowerCase();
+    const multiplier = formatAbilityMultiplier(valueX);
+    const discount = Math.max(0, Math.round((1 - valueX) * 100));
+    const percentage = Math.max(0, Math.round(valueX * 100));
+
     return ability.description
-        .replace('{valueX}', valueX)
+        .replace('{area}', area)
+        .replace(/\{valueX\}%/g, `${percentage}%`)
+        .replace('{valueX}', multiplier)
+        .replace('{discount}', discount)
         .replace('{activeTime}', activeTime);
 }
 
@@ -671,8 +702,8 @@ export function getManagerAbilityInfo(manager) {
         type: ability.type,
         target: ability.target,
         cooldown: manager.cooldown || manager.Cooldown || 300,
-        activeTime: manager.active_time || manager.ActiveTime || 60,
-        valueX: manager.value_x || manager.ValueX || 1
+        activeTime: getNumericManagerValue(manager, 'active_time', 60),
+        valueX: getNumericManagerValue(manager, 'value_x', 1)
     };
 }
 

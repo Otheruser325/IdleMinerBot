@@ -41,6 +41,14 @@ export default {
     }
 };
 
+function barrierCost(barrier) {
+    return Number(barrier?.Cost ?? 0);
+}
+
+function barrierBuildTimeSeconds(barrier) {
+    return Number(barrier?.BuildTimeInSeconds ?? 0);
+}
+
 async function handleUnlock(message, user, currentMine, args, userId) {
     const barrierOrder = parseInt(args[1], 10);
 
@@ -74,16 +82,19 @@ async function handleUnlock(message, user, currentMine, args, userId) {
         return message.reply(`Barrier ${barrierOrder} is already being removed.`);
     }
 
-    if (user.cash < barrier.cost) {
-        return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(barrier.cost)}`);
+    const cost = barrierCost(barrier);
+    const buildTimeSeconds = barrierBuildTimeSeconds(barrier);
+
+    if (user.cash < cost) {
+        return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(cost)}`);
     }
 
-    user.cash -= barrier.cost;
-    barrier.unlock_time = Date.now() + (barrier.build_time_in_seconds || 0) * 1000;
+    user.cash -= cost;
+    barrier.unlock_time = Date.now() + buildTimeSeconds * 1000;
 
     await commitUserSnapshot(userId, user);
 
-    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${barrier.build_time_in_seconds} seconds.`);
+    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${buildTimeSeconds} seconds.`);
 }
 
 async function handleOverview(message, currentMine) {
@@ -100,7 +111,8 @@ async function handleOverview(message, currentMine) {
             const secondsRemaining = Math.max(0, Math.floor((barrier.unlock_time - Date.now()) / 1000));
             status = `Unlocking in ${secondsRemaining}s`;
         } else {
-            status = barrier.cost > 0 ? `Locked (${numberFormat(barrier.cost)} Cash)` : 'Locked';
+            const cost = barrierCost(barrier);
+            status = cost > 0 ? `Locked (${numberFormat(cost)} Cash)` : 'Locked';
         }
 
         embed.addFields({ name: `Barrier ${index + 1}`, value: status, inline: true });

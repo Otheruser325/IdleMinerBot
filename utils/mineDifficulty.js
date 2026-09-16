@@ -1,7 +1,7 @@
 import mineDifficultyJson from '../config/mineDifficulty.json' with { type: 'json' };
 import { getMineNumber } from './mineLooker.js';
 
-const difficultyEntries = mineDifficultyJson.mineDifficulty || [];
+const difficultyEntries = mineDifficultyJson.mineDifficulties || [];
 
 function resolveMineNumber(mineInput) {
     if (typeof mineInput === 'object' && mineInput) {

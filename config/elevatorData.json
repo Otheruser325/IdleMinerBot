@@ -1,5 +1,5 @@
 {
-  "elevatorData": [
+  "elevators": [
   {
     "Level": 1,
     "Cost": 400,

@@ -4,6 +4,7 @@ import { sanitizeMetadata, classifyDiscordError, safeEditMessage, wrapAsync } fr
 import { persistenceUnavailable } from '../utils/interactionSessions.js';
 import { normalizeMineData } from '../utils/continentLooker.js';
 import { scheduleAutomatedTasks, resetAutomatedTasksForTests } from '../utils/automatedTasks.js';
+import { getAbilityDescription } from '../utils/managerAbilities.js';
 
 test('sanitizes secrets and non-serializable objects from error metadata', () => {
     const details = sanitizeMetadata({
@@ -56,6 +57,30 @@ test('malformed mine documents repair to a safe Coal Mine baseline', () => {
         continent_name: 'Start Continent'
     });
     assert.equal(normalizeMineData({ mine_number: 'bad' }).mine_number, 1);
+});
+
+test('manager ability descriptions are English and scale by manager rarity values', () => {
+    const junior = getAbilityDescription({ EffectID: 1, ValueX: 3, ActiveTime: 60 });
+    const executive = getAbilityDescription({ EffectID: 1, ValueX: 7, ActiveTime: 60 });
+
+    assert.match(junior, /English|movement speed|warehouse/i);
+    assert.match(junior, /3x/);
+    assert.match(executive, /7x/);
+    assert.notEqual(junior, executive);
+});
+
+test('renamed configuration collections are consumed through their canonical keys', async () => {
+    const [difficulty, shaft, warehouse, elevator] = await Promise.all([
+        import('../config/mineDifficulty.json', { with: { type: 'json' } }),
+        import('../config/shaftData.json', { with: { type: 'json' } }),
+        import('../config/warehouseData.json', { with: { type: 'json' } }),
+        import('../config/elevatorData.json', { with: { type: 'json' } })
+    ]);
+
+    assert.ok(Array.isArray(difficulty.default.mineDifficulties));
+    assert.ok(Array.isArray(shaft.default.shafts));
+    assert.ok(Array.isArray(warehouse.default.warehouses));
+    assert.ok(Array.isArray(elevator.default.elevators));
 });
 
 test('scheduler rejects invalid cron definitions without leaving partial jobs running', () => {
