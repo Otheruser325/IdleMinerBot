@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
-import prefixCommand from '../prefix/use.js';
-import { executePrefixCommandFromInteraction } from '../../utils/commandBridge.js';
+import sharedCommand from '../shared/use.js';
+import { executeSharedCommand } from '../../utils/commandBridge.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -13,9 +13,9 @@ export default {
                 .setRequired(true)
         ),
     async execute(interaction) {
-        return executePrefixCommandFromInteraction(
+        return executeSharedCommand(
             interaction,
-            prefixCommand,
+            sharedCommand,
             [String(interaction.options.getInteger('itemid'))]
         );
     }

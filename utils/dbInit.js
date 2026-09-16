@@ -1,300 +1,113 @@
-import supabase from './supabaseClient.js';
+'use strict';
 
-/**
- * Database initialization utility for Supabase
- * Ensures required tables exist before bot operations
- */
+import { getSupabaseClient } from '../supabase.js';
 
-const REQUIRED_TABLES = ['users', 'guilds'];
-const ALLOW_RUNTIME_SCHEMA_SYNC = process.env.ALLOW_RUNTIME_SCHEMA_SYNC === 'true';
+const DB_CHECK_TIMEOUT_MS = 8_000;
 
-const USERS_SCHEMA_SYNC_SQL = `
-ALTER TABLE public.users
-    ADD COLUMN IF NOT EXISTS username TEXT DEFAULT '',
-    ADD COLUMN IF NOT EXISTS continents JSONB DEFAULT '[]'::jsonb,
-    ADD COLUMN IF NOT EXISTS current_continent TEXT DEFAULT 'Start Continent',
-    ADD COLUMN IF NOT EXISTS current_mine TEXT DEFAULT 'Coal Mine',
-    ADD COLUMN IF NOT EXISTS cash NUMERIC DEFAULT 10,
-    ADD COLUMN IF NOT EXISTS ice_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS fire_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS dawn_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS idle_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS idle_ice_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS idle_fire_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS idle_dawn_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS mines JSONB DEFAULT '[]'::jsonb,
-    ADD COLUMN IF NOT EXISTS super_cash NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS last_daily BIGINT DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS last_idle BIGINT DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS last_monthly BIGINT DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS has_premium BOOLEAN DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS active_boosts JSONB DEFAULT '[]'::jsonb,
-    ADD COLUMN IF NOT EXISTS inventory JSONB DEFAULT '{}'::jsonb,
-    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+export const REQUIRED_TABLES = [
+    { name: 'users', columns: 'id,data,version' },
+    { name: 'interaction_sessions', columns: 'id,data' }
+];
 
-ALTER TABLE public.users
-    ALTER COLUMN username SET DEFAULT '',
-    ALTER COLUMN continents SET DEFAULT '[]'::jsonb,
-    ALTER COLUMN current_continent SET DEFAULT 'Start Continent',
-    ALTER COLUMN current_mine SET DEFAULT 'Coal Mine',
-    ALTER COLUMN cash SET DEFAULT 10,
-    ALTER COLUMN ice_cash SET DEFAULT 0,
-    ALTER COLUMN fire_cash SET DEFAULT 0,
-    ALTER COLUMN dawn_cash SET DEFAULT 0,
-    ALTER COLUMN idle_cash SET DEFAULT 0,
-    ALTER COLUMN idle_ice_cash SET DEFAULT 0,
-    ALTER COLUMN idle_fire_cash SET DEFAULT 0,
-    ALTER COLUMN idle_dawn_cash SET DEFAULT 0,
-    ALTER COLUMN mines SET DEFAULT '[]'::jsonb,
-    ALTER COLUMN super_cash SET DEFAULT 0,
-    ALTER COLUMN streak SET DEFAULT 0,
-    ALTER COLUMN last_daily SET DEFAULT 0,
-    ALTER COLUMN last_idle SET DEFAULT 0,
-    ALTER COLUMN last_monthly SET DEFAULT 0,
-    ALTER COLUMN has_premium SET DEFAULT FALSE,
-    ALTER COLUMN active_boosts SET DEFAULT '[]'::jsonb,
-    ALTER COLUMN inventory SET DEFAULT '{}'::jsonb,
-    ALTER COLUMN created_at SET DEFAULT NOW(),
-    ALTER COLUMN updated_at SET DEFAULT NOW();
+export const OPTIONAL_TABLES = [];
 
-CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users(user_id);
-`;
+export function isMissingTableError(error) {
+    return ['42P01', 'PGRST204', 'PGRST205'].includes(error?.code)
+        || /relation|does not exist|schema cache/i.test(String(error?.message || ''));
+}
 
-/**
- * Check if a table exists in the database
- */
-async function tableExists(tableName) {
+async function withTimeout(request, message) {
+    let timer;
     try {
-        // Direct query approach - most reliable for Supabase
-        const { error } = await supabase
-            .from(tableName)
-            .select('*', { count: 'exact', head: true })
-            .limit(1);
-        
-        // 42P01 = table does not exist
-        if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
-            return false;
-        }
-        
-        // Any other error means table exists (but we might have permission/other issues)
-        return true;
-    } catch (error) {
-        // If error mentions relation/tables, table likely doesn't exist
-        if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
-            return false;
-        }
-        console.error(`Error checking if table ${tableName} exists:`, error);
-        return false;
+        return await Promise.race([
+            Promise.resolve(request),
+            new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new Error(message)), DB_CHECK_TIMEOUT_MS);
+            })
+        ]);
+    } finally {
+        clearTimeout(timer);
     }
 }
 
-function printManualSql(label, sql) {
-    console.log(`\n=== REQUIRED SQL FOR ${label} ===`);
-    console.log(sql);
-    console.log('=== END SQL ===\n');
-}
-
-async function runSchemaSql(label, sql) {
-    if (!ALLOW_RUNTIME_SCHEMA_SYNC) {
-        console.warn(`Runtime schema changes are disabled. Set ALLOW_RUNTIME_SCHEMA_SYNC=true only during trusted maintenance to run ${label} automatically.`);
-        printManualSql(label, sql);
-        return false;
-    }
-
+async function checkTable({ name, columns }) {
     try {
-        const { error } = await supabase.rpc('exec_sql', { sql });
+        const client = getSupabaseClient();
+        const { error: existsError } = await withTimeout(
+            client
+                .from(name)
+                .select('*', { count: 'exact', head: true })
+                .limit(1),
+            `Database table check timed out for ${name}.`
+        );
+        if (existsError) return { name, ok: false, error: existsError };
 
-        if (error) {
-            console.error(`Failed to run ${label} via RPC:`, error.message);
-            printManualSql(label, sql);
-            return false;
-        }
-
-        return true;
+        const { error: columnsError } = await withTimeout(
+            client.from(name).select(columns).limit(1),
+            `Database column check timed out for ${name}.`
+        );
+        return { name, ok: !columnsError, error: columnsError || null };
     } catch (error) {
-        console.error(`Error running ${label}:`, error);
-        printManualSql(label, sql);
-        return false;
+        return { name, ok: false, error };
     }
 }
 
-/**
- * Create the users table
- */
-async function createUsersTable() {
-    const createTableSQL = `
-CREATE TABLE IF NOT EXISTS public.users (
-    id SERIAL PRIMARY KEY,
-    user_id TEXT UNIQUE NOT NULL,
-    username TEXT DEFAULT '',
-    continents JSONB DEFAULT '[]'::jsonb,
-    current_continent TEXT DEFAULT 'Start Continent',
-    current_mine TEXT DEFAULT 'Coal Mine',
-    cash NUMERIC DEFAULT 10,
-    ice_cash NUMERIC DEFAULT 0,
-    fire_cash NUMERIC DEFAULT 0,
-    dawn_cash NUMERIC DEFAULT 0,
-    idle_cash NUMERIC DEFAULT 0,
-    idle_ice_cash NUMERIC DEFAULT 0,
-    idle_fire_cash NUMERIC DEFAULT 0,
-    idle_dawn_cash NUMERIC DEFAULT 0,
-    mines JSONB DEFAULT '[]'::jsonb,
-    super_cash NUMERIC DEFAULT 0,
-    streak INTEGER DEFAULT 0,
-    last_daily BIGINT DEFAULT 0,
-    last_idle BIGINT DEFAULT 0,
-    last_monthly BIGINT DEFAULT 0,
-    has_premium BOOLEAN DEFAULT FALSE,
-    active_boosts JSONB DEFAULT '[]'::jsonb,
-    inventory JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create index on user_id for faster lookups
-CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users(user_id);
-
--- Enable RLS (Row Level Security)
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-`;
-
-    const created = await runSchemaSql('users TABLE', createTableSQL);
-    if (created) {
-        console.log('✓ Users table created successfully');
-    }
-    return created;
+function printManualSql() {
+    console.log('\nDatabase setup is required. Run tools/supabase-init.sql in Supabase, then reload the PostgREST schema cache:');
+    console.log("NOTIFY pgrst, 'reload schema';\n");
 }
 
-async function syncUsersTableSchema() {
-    const synced = await runSchemaSql('USERS SCHEMA SYNC', USERS_SCHEMA_SYNC_SQL);
-    if (synced) {
-        console.log('✓ Users table schema synced successfully');
-    }
-    return synced;
-}
-
-/**
- * Create the guilds table
- */
-async function createGuildsTable() {
-    const createTableSQL = `
-CREATE TABLE IF NOT EXISTS public.guilds (
-    id SERIAL PRIMARY KEY,
-    guild_id TEXT UNIQUE NOT NULL,
-    name TEXT DEFAULT '',
-    owner_id TEXT DEFAULT '',
-    members JSONB DEFAULT '[]'::jsonb,
-    users JSONB DEFAULT '{}'::jsonb,
-    settings JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create index on guild_id for faster lookups
-CREATE INDEX IF NOT EXISTS idx_guilds_guild_id ON public.guilds(guild_id);
-
--- Enable RLS (Row Level Security)
-ALTER TABLE public.guilds ENABLE ROW LEVEL SECURITY;
-`;
-
-    const created = await runSchemaSql('guilds TABLE', createTableSQL);
-    if (created) {
-        console.log('✓ Guilds table created successfully');
-    }
-    return created;
-}
-
-/**
- * Initialize database - check and create missing tables
- */
 export async function initializeDatabase() {
-    console.log('🔍 Checking database tables...');
-    
-    const results = {
-        users: false,
-        guilds: false,
-        allReady: false
-    };
+    const results = Object.fromEntries([
+        ...REQUIRED_TABLES,
+        ...OPTIONAL_TABLES
+    ].map(({ name }) => [name, false]));
 
-    // Check users table
-    const usersExists = await tableExists('users');
-    if (!usersExists) {
-        console.log('⚠ Users table not found. Manual setup is required unless runtime schema sync is explicitly enabled.');
-        results.users = await createUsersTable();
-        if (results.users) {
-            results.users = await syncUsersTableSchema();
-        }
-    } else {
-        console.log('✓ Users table exists');
-        if (ALLOW_RUNTIME_SCHEMA_SYNC) {
-            results.users = await syncUsersTableSchema();
+    // Run checks concurrently so an unavailable Supabase endpoint cannot hold
+    // bot startup open once per table. Each request is still bounded above.
+    const [requiredResults, optionalResults] = await Promise.all([
+        Promise.all(REQUIRED_TABLES.map(checkTable)),
+        Promise.all(OPTIONAL_TABLES.map(checkTable))
+    ]);
+
+    let allReady = true;
+    for (const [index, table] of REQUIRED_TABLES.entries()) {
+        const result = requiredResults[index];
+        if (!result.ok) {
+            allReady = false;
+            console.warn(`Database table is missing or incompatible: ${table.name} (${result.error?.message || result.error || 'unknown error'})`);
         } else {
-            console.log('ℹ Runtime users schema sync skipped (ALLOW_RUNTIME_SCHEMA_SYNC is not true).');
-            results.users = true;
+            results[table.name] = true;
         }
     }
 
-    // Check guilds table
-    const guildsExists = await tableExists('guilds');
-    if (!guildsExists) {
-        console.log('⚠ Guilds table not found. Attempting to create...');
-        results.guilds = await createGuildsTable();
-    } else {
-        console.log('✓ Guilds table exists');
-        results.guilds = true;
+    for (const [index, table] of OPTIONAL_TABLES.entries()) {
+        const result = optionalResults[index];
+        results[table.name] = result.ok;
+        if (!result.ok && !isMissingTableError(result.error)) {
+            console.warn(`Optional database table is unavailable: ${table.name} (${result.error?.message || result.error || 'unknown error'})`);
+        }
     }
 
-    results.allReady = results.users && results.guilds;
-
-    if (results.allReady) {
-        console.log('✅ Database initialization complete - all tables ready');
+    results.allReady = allReady;
+    if (allReady) {
+        console.log('Database initialization check passed - all required tables are ready.');
     } else {
-        console.error('❌ Database initialization incomplete - some tables are missing');
-        console.log('\n📋 MANUAL SETUP REQUIRED:');
-        console.log('The bot cannot auto-create tables. Please run the SQL script manually:');
-        console.log('1. Open supabase-init.sql in this project folder');
-        console.log('2. Copy the SQL content');
-        console.log('3. Go to https://app.supabase.com/project/_/sql');
-        console.log('   (replace _ with your project ref from SUPABASE_URL)');
-        console.log('4. Paste and run the SQL\n');
+        console.warn('Database initialization check failed - some required tables are missing or incompatible.');
+        printManualSql();
     }
-
     return results;
 }
 
-/**
- * Quick check if database is ready (for runtime guards)
- */
 export async function isDatabaseReady() {
-    const usersExists = await tableExists('users');
-    const guildsExists = await tableExists('guilds');
-    return usersExists && guildsExists;
+    return (await initializeDatabase()).allReady;
 }
 
-/**
- * Safe wrapper for database operations - retries after init if needed
- */
 export async function safeDbOperation(operation, fallback = null) {
     try {
         return await operation();
     } catch (error) {
-        // If table doesn't exist, try to initialize and retry once
-        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
-            console.log('Table missing, attempting emergency initialization...');
-            await initializeDatabase();
-            
-            // Retry once
-            try {
-                return await operation();
-            } catch (retryError) {
-                console.error('Operation failed after initialization attempt:', retryError);
-                return fallback;
-            }
-        }
-        
-        console.error('Database operation failed:', error);
+        console.error('Database operation failed:', error?.message || error);
         return fallback;
     }
 }

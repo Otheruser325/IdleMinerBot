@@ -1,21 +1,16 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+'use strict';
 
-dotenv.config();
+import { getSupabaseClient } from '../supabase.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+// Backwards-compatible facade for modules that still import `supabase`.
+// The actual client is created lazily by supabase.js.
+const supabase = new Proxy({}, {
+    get(_target, property) {
+        const client = getSupabaseClient();
+        const value = client[property];
+        return typeof value === 'function' ? value.bind(client) : value;
+    }
+});
 
-if (!supabaseUrl) {
-    throw new Error('Missing SUPABASE_URL in environment');
-}
-
-if (!supabaseKey) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY (preferred) or SUPABASE_ANON_KEY in environment');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
+export { getSupabaseClient };
 export default supabase;

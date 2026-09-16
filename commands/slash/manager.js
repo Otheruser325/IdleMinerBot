@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
-import prefixCommand from '../prefix/manager.js';
-import { executePrefixCommandFromInteraction } from '../../utils/commandBridge.js';
+import sharedCommand from '../shared/manager.js';
+import { executeSharedCommand } from '../../utils/commandBridge.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -132,6 +132,6 @@ export default {
                 break;
         }
 
-        return executePrefixCommandFromInteraction(interaction, prefixCommand, args);
+        return executeSharedCommand(interaction, sharedCommand, args);
     }
 };

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "sanity": "node tools/sanity-check.mjs",
-    "test": "npm run sanity"
+    "test:unit": "node --test --experimental-loader ./tests/loader.mjs tests/*.test.mjs",
+    "test": "npm run test:unit && npm run sanity"
   },
   "keywords": [],
   "author": "",

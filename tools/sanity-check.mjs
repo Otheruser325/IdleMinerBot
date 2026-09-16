@@ -40,7 +40,31 @@ const slashFailures = await validateCommands(
   }
 );
 
-const failures = [...prefixFailures.map(v => `prefix/${v}`), ...slashFailures.map(v => `slash/${v}`)];
+const sharedFailures = await validateCommands(
+  path.resolve('commands/shared'),
+  (command) => {
+    if (['context', 'transactions'].includes(command?.name)) return null;
+    const handler = Object.values(command || {}).find(value => typeof value === 'function');
+    if (!handler) return 'missing a shared command handler function.';
+    return null;
+  }
+);
+
+const interactionFailures = await validateCommands(
+  path.resolve('commands/interactions'),
+  (handler) => {
+    if (!handler?.customId) return 'missing `customId`.';
+    if (typeof handler.execute !== 'function') return 'missing `execute(interaction)` function.';
+    return null;
+  }
+);
+
+const failures = [
+  ...prefixFailures.map(v => `prefix/${v}`),
+  ...slashFailures.map(v => `slash/${v}`),
+  ...sharedFailures.map(v => `shared/${v}`),
+  ...interactionFailures.map(v => `interactions/${v}`)
+];
 
 if (failures.length > 0) {
   console.error('Sanity check failed:');
@@ -50,4 +74,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Sanity checks passed (${prefixFailures.length + slashFailures.length === 0 ? 'all command modules valid' : 'no failures'}).`);
+console.log(`Sanity checks passed (${prefixFailures.length + slashFailures.length + sharedFailures.length + interactionFailures.length === 0 ? 'all command modules and interaction handlers valid' : 'no failures'}).`);

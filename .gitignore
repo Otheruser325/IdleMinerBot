@@ -33,6 +33,9 @@ pids/
 # Output of 'npm pack'
 *.tgz
 
+# Codebuff / Freebuff local metadata
+.freebuff/
+
 # IDE files
 .vscode/
 .idea/

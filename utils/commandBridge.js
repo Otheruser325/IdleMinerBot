@@ -1,69 +1,67 @@
 function normalizeReplyPayload(payload) {
-    if (typeof payload === 'string') {
-        return { content: payload };
-    }
+    if (typeof payload === 'string') return { content: payload };
 
-    return payload ? { ...payload } : {};
-}
-
-async function resolveInteractionChannel(interaction) {
-    if (interaction.channel && typeof interaction.channel.send === 'function') {
-        return interaction.channel;
-    }
-
-    if (!interaction.channelId || !interaction.client?.channels?.fetch) {
-        return null;
-    }
-
-    try {
-        return await interaction.client.channels.fetch(interaction.channelId);
-    } catch {
-        return null;
-    }
+    const normalized = payload ? { ...payload } : {};
+    delete normalized.fetchReply;
+    return normalized;
 }
 
 async function acknowledgeInteraction(interaction) {
-    if (interaction.deferred || interaction.replied) {
-        return;
-    }
+    if (!interaction || interaction.deferred || interaction.replied) return true;
+    if (typeof interaction.deferReply !== 'function') return false;
 
     try {
         await interaction.deferReply();
+        return true;
     } catch {
-        // Discord may return Unknown interaction when acknowledgements timeout.
+        return Boolean(interaction.deferred || interaction.replied);
     }
+}
+
+async function fetchInteractionReply(interaction, fallback) {
+    if (typeof interaction?.fetchReply === 'function') {
+        try {
+            return await interaction.fetchReply();
+        } catch {
+            // The interaction can still be usable even when the reply fetch
+            // races Discord's acknowledgement endpoint.
+        }
+    }
+    return fallback || interaction;
 }
 
 async function replyFromInteraction(interaction, payload, state) {
-    const normalized = {
-        ...normalizeReplyPayload(payload)
-    };
+    const normalized = normalizeReplyPayload(payload);
 
-    if (interaction.deferred && !state.initialResponseSent) {
-        state.initialResponseSent = true;
-        await interaction.editReply(normalized);
-        return interaction.fetchReply();
+    if (state.initialResponseSent || interaction.replied) {
+        if (typeof interaction.followUp === 'function') return interaction.followUp(normalized);
+        if (typeof interaction.editReply === 'function') return interaction.editReply(normalized);
+        throw new TypeError('Interaction cannot send a follow-up response.');
     }
 
-    if (!interaction.deferred && !interaction.replied) {
-        state.initialResponseSent = true;
-        await interaction.reply(normalized);
-        return interaction.fetchReply();
+    state.initialResponseSent = true;
+    if (interaction.deferred && typeof interaction.editReply === 'function') {
+        return interaction.editReply(normalized);
+    }
+    if (typeof interaction.reply !== 'function') {
+        throw new TypeError('Interaction cannot send a response.');
     }
 
-    return interaction.followUp(normalized);
+    const response = await interaction.reply(normalized);
+    return fetchInteractionReply(interaction, response);
 }
 
 function createInteractionChannel(interaction, state) {
+    const channel = interaction.channel;
     return {
-        id: interaction.channelId,
+        ...(channel || {}),
+        id: interaction.channelId || channel?.id,
+        guild: interaction.guild,
+        guildId: interaction.guildId,
         isDMBased: () => !interaction.guildId,
-        send: async (payload) => {
-            const channel = await resolveInteractionChannel(interaction);
-            if (channel && typeof channel.send === 'function') {
-                return channel.send(normalizeReplyPayload(payload));
-            }
-
+        send: payload => {
+            // Prefix commands use channel.send for public follow-up messages;
+            // interactions use the acknowledged response as that channel.
             return replyFromInteraction(interaction, payload, state);
         }
     };
@@ -71,25 +69,58 @@ function createInteractionChannel(interaction, state) {
 
 function createMessageAdapter(interaction) {
     const state = { initialResponseSent: false };
+    const channel = createInteractionChannel(interaction, state);
 
     return {
+        id: interaction.id,
+        __interactionAdapter: true,
+        channelId: interaction.channelId,
+        guildId: interaction.guildId,
         author: interaction.user,
         member: interaction.member,
         guild: interaction.guild,
-        channel: createInteractionChannel(interaction, state),
+        channel,
         client: interaction.client,
-        reply: (payload) => replyFromInteraction(interaction, payload, state)
+        createdTimestamp: interaction.createdTimestamp,
+        reply: payload => replyFromInteraction(interaction, payload, state),
+        // Shared long-running commands use message.edit for progress updates.
+        // Map that operation directly to the deferred interaction response when
+        // Discord does not return a fetchable Message object.
+        edit: payload => {
+            if (typeof interaction.editReply !== 'function') {
+                throw new TypeError('Interaction cannot edit its response.');
+            }
+            return interaction.editReply(normalizeReplyPayload(payload));
+        }
     };
 }
 
+async function executeSharedCommand(interaction, command, args = []) {
+    if (!interaction || !command || typeof command.execute !== 'function') {
+        throw new TypeError('An interaction and executable command are required.');
+    }
+
+    // Slash commands and prefix commands now share one execution boundary. The
+    // command receives the same message-shaped context in both paths, while
+    // Discord's one-response acknowledgement is handled exactly once here.
+    const acknowledged = await acknowledgeInteraction(interaction);
+    if (!acknowledged && !interaction.deferred && !interaction.replied) {
+        throw new Error('Unable to acknowledge the interaction.');
+    }
+
+    const normalizedArgs = Array.isArray(args)
+        ? args.filter(value => value !== undefined && value !== null).map(String)
+        : [];
+    return command.execute(createMessageAdapter(interaction), normalizedArgs);
+}
+
 async function executePrefixCommandFromInteraction(interaction, prefixCommand, args = []) {
-    await acknowledgeInteraction(interaction);
-    const message = createMessageAdapter(interaction);
-    return prefixCommand.execute(message, args);
+    return executeSharedCommand(interaction, prefixCommand, args);
 }
 
 export {
     acknowledgeInteraction,
     createMessageAdapter,
+    executeSharedCommand,
     executePrefixCommandFromInteraction
 };

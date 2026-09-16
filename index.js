@@ -1,17 +1,19 @@
-import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
-import fs from 'fs';
-import path from 'path';
+'use strict';
+
+import { Client, GatewayIntentBits, Collection, Events, PermissionsBitField } from 'discord.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import dotenv from 'dotenv';
-import cron from 'node-cron';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { EventEmitter } from 'node:events';
 
 import { deployCommands } from './deploy-commands.js';
-import { getUser, getAllUsers, updateUser, withUserLock } from './dataManager.js';
+import { getUser, getAllUsers, updateUser, updateUserTransaction, withUserLock, removeTestUsers } from './dataManager.js';
 import { updateBotStatus } from './utils/botStatus.js';
 import numberFormat from './utils/numberFormat.js';
 import guildDM from './utils/guildDM.js';
-import { 
-    getManagerAutomationStatus, 
+import {
+    getManagerAutomationStatus,
     getManagedShaftTiers,
     applyIncomeMultiplier,
     applyShaftIncomeBeam,
@@ -36,48 +38,41 @@ import {
 } from './utils/continentLooker.js';
 import { startPremiumPaymentServer } from './utils/premiumPayments.js';
 import { purgeDuplicateManagersFromMine } from './utils/managerDuplicates.js';
-
-const mineRegions = mineRegionsJson.regions;
-const continentData = continentDataJson.continents;
-
-import { EventEmitter } from 'events';
-import { classifyDiscordError, safeReply, logError } from './utils/errorHandling.js';
-import { initializeDatabase, isDatabaseReady } from './utils/dbInit.js';
+import {
+    getInteractionContext,
+    installGlobalErrorHandlers,
+    safelyReplyToInteraction,
+    safelyReplyToMessage,
+    logError,
+    wrapAsync,
+    wrapCommand
+} from './utils/errorHandling.js';
+import { registerInteraction, getStandaloneHandler } from './utils/interactionDispatcher.js';
+import {
+    acknowledgeComponent,
+    claimComponentAction,
+    hasActiveComponentCollector,
+    getComponentCollectorOwner,
+    trackComponentCollector,
+    cleanupComponentMessages
+} from './utils/interactionSessions.js';
+import automatedTasks from './utils/automatedTasks.js';
+import { initializeDatabase } from './utils/dbInit.js';
 import { normalizeUserPreferences } from './utils/userPreferences.js';
 
 EventEmitter.defaultMaxListeners = 20;
+installGlobalErrorHandlers();
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Load environment variables from .env file
-dotenv.config();
-
-// Introduce a delay between updates to avoid hitting rate limits
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function markUserAsActive(userId) {
-    if (!userId) {
-        return;
-    }
-
-    try {
-        await withUserLock(userId, async () => {
-            const activeUser = await getUser(userId);
-            if (!activeUser) {
-                return;
-            }
-
-            await updateUser(userId, { last_idle: Date.now() });
-        });
-    } catch (error) {
-        logError('markUserAsActive', error, { userId });
-    }
-}
-
 const token = process.env.TOKEN;
 const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID; // Optional: for guild-specific commands
 const prefixes = ['im!', 'IM!', 'Im!'];
+const mineRegions = mineRegionsJson.regions || [];
+const continentData = continentDataJson.continents || [];
 
 const client = new Client({
     intents: [
@@ -86,934 +81,675 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildMessageTyping // Ensure this intent is included if you use message typing events
+        GatewayIntentBits.GuildMessageTyping
     ]
 });
 
 client.commands = new Collection();
 client.slashCommands = new Collection();
 client.interactions = new Collection();
+installGlobalErrorHandlers(client);
 
-async function importCommandModule(absolutePath) {
-    const fileUrl = pathToFileURL(absolutePath).href;
-    const mod = await import(fileUrl);
-    return mod?.default || mod;
+async function importModule(absolutePath) {
+    const module = await import(pathToFileURL(absolutePath).href);
+    return module?.default || module;
 }
 
-// Load prefix commands
-const prefixCommandFiles = fs.readdirSync(path.join(__dirname, 'commands/prefix')).filter(file => file.endsWith('.js'));
-for (const file of prefixCommandFiles) {
-    const commandPath = path.join(__dirname, 'commands/prefix', file);
-    const command = await importCommandModule(commandPath);
+async function checkPermissions(target, permissions = []) {
+    if (!target?.guild || !Array.isArray(permissions) || permissions.length === 0) return true;
+    try {
+        const member = target.member || await target.guild.members.fetch(
+            target.user?.id || target.author?.id
+        );
+        const missing = permissions.filter(permission => {
+            const flag = PermissionsBitField.Flags[permission] || permission;
+            return !member?.permissions?.has(flag);
+        });
+        if (!missing.length) return true;
+        const text = `You don't have the necessary permissions to use this command: ${missing.map(value => `\`${value}\``).join(', ')}`;
+        if (target.isRepliable?.()) await safelyReplyToInteraction(target, text);
+        else await safelyReplyToMessage(target, text);
+        return false;
+    } catch (error) {
+        logError('permissions.user', error, getInteractionContext(target));
+        return false;
+    }
+}
+
+async function checkBotPermissions(target, permissions = []) {
+    if (!target?.guild || !Array.isArray(permissions) || permissions.length === 0) return true;
+    try {
+        const botMember = target.guild.members.me || await target.guild.members.fetchMe();
+        const permissionSet = botMember?.permissionsIn?.(target.channel) || botMember?.permissions;
+        const missing = permissions.filter(permission => {
+            const flag = PermissionsBitField.Flags[permission] || permission;
+            return !permissionSet?.has(flag);
+        });
+        if (!missing.length) return true;
+        const text = `I am missing the following permissions to execute this command: ${missing.map(value => `\`${value}\``).join(', ')}`;
+        if (target.isRepliable?.()) await safelyReplyToInteraction(target, text);
+        else await safelyReplyToMessage(target, text);
+        return false;
+    } catch (error) {
+        logError('permissions.bot', error, getInteractionContext(target));
+        return false;
+    }
+}
+
+for (const file of fs.readdirSync(path.join(__dirname, 'commands/interactions')).filter(file => file.endsWith('.js'))) {
+    const handler = await importModule(path.join(__dirname, 'commands/interactions', file));
+    // Empty placeholder modules are valid during development; only report a
+    // malformed module when it actually exports an interaction-like value.
+    if (!handler?.customId && typeof handler?.execute !== 'function') continue;
+    if (!registerInteraction(client.interactions, handler)) {
+        logError('startup:interactionValidation', new Error('Invalid interaction module shape'), { file });
+    }
+}
+
+for (const file of fs.readdirSync(path.join(__dirname, 'commands/prefix')).filter(file => file.endsWith('.js'))) {
+    const command = await importModule(path.join(__dirname, 'commands/prefix', file));
     if (!command?.name || typeof command.execute !== 'function') {
         logError('startup:prefixCommandValidation', new Error('Invalid prefix command module shape'), { file });
         continue;
     }
-    client.commands.set(command.name, command);
-    if (command.aliases) {
-        command.aliases.forEach(alias => client.commands.set(alias, command));
-    }
+    const safeCommand = wrapCommand(command, 'prefix');
+    client.commands.set(command.name, safeCommand);
+    for (const alias of command.aliases || []) client.commands.set(alias, safeCommand);
 }
 
-// Load slash commands
-const slashCommandFiles = fs.readdirSync(path.join(__dirname, 'commands/slash')).filter(file => file.endsWith('.js'));
-for (const file of slashCommandFiles) {
-    const commandPath = path.join(__dirname, 'commands/slash', file);
-    const command = await importCommandModule(commandPath);
+for (const file of fs.readdirSync(path.join(__dirname, 'commands/slash')).filter(file => file.endsWith('.js'))) {
+    const command = await importModule(path.join(__dirname, 'commands/slash', file));
     if (!command?.data?.name || typeof command.execute !== 'function') {
         logError('startup:slashCommandValidation', new Error('Invalid slash command module shape'), { file });
         continue;
     }
-    client.slashCommands.set(command.data.name, command);
+    client.slashCommands.set(command.data.name, wrapCommand(command, 'slash'));
 }
 
-const scheduledCronTasks = [];
-let cronJobsInitialized = false;
-
-// Schedule updates regularly
-async function scheduleNextUpdate(client) {
-    if (cronJobsInitialized) {
-        return;
-    }
-    cronJobsInitialized = true;
-
-    scheduledCronTasks.push(cron.schedule('*/5 * * * *', async () => {
-        try {
-            await updateBotStatus(client);
-        } catch (error) {
-            logError('cron:updateBotStatus', error);
-        }
-    }));
-
-    scheduledCronTasks.push(cron.schedule('*/10 * * * * *', async () => {
-        try {
-            await handleMissingData();
-        } catch (error) {
-            logError('cron:handleMissingData', error);
-        }
-    }));
-	
-	// Check barrier unlock time every 10 seconds
-    scheduledCronTasks.push(cron.schedule('*/10 * * * * *', async () => {
-        try {
-            await handleBarrierUnlockTime();
-        } catch (error) {
-            logError('cron:handleBarrierUnlockTime', error);
-        }
-    }));
-	
-	// Schedule boost timer updates every 30 seconds
-    scheduledCronTasks.push(cron.schedule('*/30 * * * * *', async () => {
-        try {
-            await handleBoostTimers();
-        } catch (error) {
-            logError('cron:handleBoostTimers', error);
-        }
-    }));
-	
-	// Schedule manager work for all users every minute
-    scheduledCronTasks.push(cron.schedule('*/60 * * * * *', async () => {
-        try {
-            const allUsers = await getAllUsers();
-            for (const user of allUsers) {
-                try {
-                    await handleManagerWork(user, user.user_id);
-					await delay(100);
-                } catch (userError) {
-                    logError('cron:handleManagerWork:user', userError, { userId: user?.user_id });
-                    continue;
-                }
+async function markUserAsActive(userId) {
+    if (!userId) return;
+    try {
+        await withUserLock(userId, async () => {
+            if (await getUser(userId)) {
+                const now = Date.now();
+                await updateUser(userId, {
+                    last_idle: now,
+                    last_idle_accrued_at: now
+                });
             }
-        } catch (error) {
-            logError('cron:handleManagerWork', error);
-        }
-    }));
-
-    scheduledCronTasks.push(cron.schedule('*/60 * * * * *', async () => {
-        try {
-            await handleDuplicateManagerPurge(client);
-        } catch (error) {
-            logError('cron:handleDuplicateManagerPurge', error);
-        }
-    }));
+        });
+    } catch (error) {
+        logError('markUserAsActive', error, { userId });
+    }
 }
 
-// Function to simulate shaft work by managers (per tier)
-function automateShaftWork(currentMine, managedTiers) {
-    const FOUR_SECONDS = 4000;
-    
-    currentMine.mineshafts.forEach(shaft => {
-        // Only automate shafts that have a manager assigned
-        if (!managedTiers.includes(shaft.tier)) return;
-        
-        const now = Date.now();
-        
-        // Apply speed boosts - mining time
-        const miningTime = applyMiningSpeedBoost(FOUR_SECONDS, currentMine);
-        
-        const walkingTime = getShaftTravelTimeMs(shaft.worker_walking_speed_per_second, currentMine);
-        
-        // Total cycle time: walk to deposit + mine + walk back
-        const totalCycleTime = walkingTime + miningTime + walkingTime;
-        if (!Number.isFinite(totalCycleTime) || totalCycleTime <= 0) return;
-        
-        // Calculate how many mining cycles could have completed
-        const lastWorkTime = shaft.manager_last_worked || now;
-        if (!shaft.manager_last_worked) {
-            shaft.manager_last_worked = now;
+async function collectIdleCashForMention(message) {
+    const userId = message?.author?.id;
+    if (!userId) return false;
+
+    let response = null;
+    await withUserLock(userId, async () => {
+        const initialUser = await getUser(userId);
+        if (!initialUser) {
+            response = 'User data not found. Use `im!start` to begin playing.';
             return;
         }
 
-        const timeSinceLastWork = now - lastWorkTime;
-        const cyclesCompleted = Math.floor(timeSinceLastWork / totalCycleTime);
-        
-        if (cyclesCompleted < 1) return; // Not enough time for a cycle
-        
-        // Update last worked timestamp (keep remainder for partial progress)
-        shaft.manager_last_worked = now - (timeSinceLastWork % totalCycleTime);
-        
-        // Process completed cycles
-        for (let i = 0; i < cyclesCompleted; i++) {
-            // Calculate deposit per cycle (same as work command)
-            const depositPerCycle = (shaft.capacity_per_worker || 0) * (shaft.number_of_workers || 0);
-            
-            // Apply income beam
-            const beamResult = applyShaftIncomeBeam(depositPerCycle, currentMine);
-            
-            // Add beam cash directly to mine cash (instant)
-            if (beamResult.beamAmount > 0) {
-                currentMine._beamCash = (currentMine._beamCash || 0) + beamResult.beamAmount;
+        const now = Date.now();
+        const preferences = normalizeUserPreferences(initialUser.preferences, initialUser.has_premium);
+        const idleThresholdMs = preferences.idle_time_minutes * 60 * 1000;
+        const lastActive = Number(initialUser.last_idle || now);
+        if (now - lastActive < idleThresholdMs) {
+            const remainingMs = Math.max(0, idleThresholdMs - (now - lastActive));
+            const minutes = Math.floor(remainingMs / 60000);
+            const seconds = Math.floor((remainingMs % 60000) / 1000);
+            response = `⏳ You need to be idle for **${preferences.idle_time_minutes} minutes** to collect idle cash.\nTime remaining: ${minutes}m ${seconds}s`;
+            return;
+        }
+
+        await handleManagerWork(userId);
+        const user = await getUser(userId);
+        const currentMine = user?.mines?.find(mine =>
+            mine.mine_name?.toLowerCase() === user.current_mine?.toLowerCase()
+        );
+        if (!user || !currentMine) {
+            response = 'Current mine data not found.';
+            return;
+        }
+
+        const cashField = getCashField(currentMine.mine_number);
+        const idleCashField = getIdleCashField(currentMine.mine_number);
+        const idleCash = Number(user[idleCashField] || 0);
+        const cashLabel = getCashLabelByField(cashField);
+        const awayMinutes = Math.floor(Math.max(0, now - lastActive) / 60000);
+        const awayHours = Math.floor(awayMinutes / 60);
+        const awayTimeLabel = awayHours > 0
+            ? `${awayHours}h ${awayMinutes % 60}m`
+            : `${awayMinutes}m`;
+
+        user[cashField] = (user[cashField] || 0) + idleCash;
+        user[idleCashField] = 0;
+        user.last_idle = now;
+        user.last_idle_accrued_at = now;
+        await updateUser(userId, {
+            [cashField]: user[cashField],
+            [idleCashField]: 0,
+            last_idle: now,
+            last_idle_accrued_at: now
+        });
+
+        if (idleCash > 0) {
+            response = `💰 You collected **${numberFormat(idleCash)}** ${cashLabel} from your idle workers!\n🕒 You were away for **${awayTimeLabel}**.`;
+        } else {
+            const managedTiers = getManagedShaftTiers(currentMine);
+            const automation = getManagerAutomationStatus(currentMine);
+            if (managedTiers.length === 0) {
+                response = '⚠️ No idle cash generated. Assign a manager to at least one shaft tier first.';
+            } else if (!automation.elevator || !automation.warehouse) {
+                const missing = [];
+                if (!automation.elevator) missing.push('elevator');
+                if (!automation.warehouse) missing.push('warehouse');
+                response = `⚠️ No idle cash generated. Missing managers in: ${missing.join(', ')}.`;
+            } else {
+                response = '💤 Your managers are working, but no idle cash was accumulated yet.';
             }
-            
-            // Add remaining to shaft deposit
-            shaft.total_deposit = (shaft.total_deposit || 0) + beamResult.remainingDeposit;
         }
     });
+
+    return safelyReplyToMessage(message, response || 'Unable to collect idle cash right now.');
 }
 
-// Function to simulate elevator work by manager
+function automateShaftWork(currentMine, managedTiers) {
+    const now = Date.now();
+    for (const shaft of currentMine.mineshafts || []) {
+        if (!managedTiers.includes(shaft.tier)) continue;
+        const miningTime = applyMiningSpeedBoost(4000, currentMine);
+        const walkingTime = getShaftTravelTimeMs(shaft.worker_walking_speed_per_second, currentMine);
+        const totalCycleTime = walkingTime + miningTime + walkingTime;
+        if (!Number.isFinite(totalCycleTime) || totalCycleTime <= 0) continue;
+        const lastWorkTime = shaft.manager_last_worked || now;
+        if (!shaft.manager_last_worked) {
+            shaft.manager_last_worked = now;
+            continue;
+        }
+        const cyclesCompleted = Math.floor((now - lastWorkTime) / totalCycleTime);
+        if (cyclesCompleted < 1) continue;
+        shaft.manager_last_worked = now - ((now - lastWorkTime) % totalCycleTime);
+        for (let index = 0; index < cyclesCompleted; index += 1) {
+            const deposit = (shaft.capacity_per_worker || 0) * (shaft.number_of_workers || 0);
+            const beamResult = applyShaftIncomeBeam(deposit, currentMine);
+            if (beamResult.beamAmount > 0) currentMine._beamCash = (currentMine._beamCash || 0) + beamResult.beamAmount;
+            shaft.total_deposit = (shaft.total_deposit || 0) + beamResult.remainingDeposit;
+        }
+    }
+}
+
 function automateElevatorWork(currentMine) {
     const elevator = currentMine.elevator?.[0];
-    if (!elevator) return;
-    
+    if (!elevator) return null;
     const now = Date.now();
-    const LOADING_PER_SECOND = applyLoadingSpeedBoost(elevator.loading_per_second || 150, 'elevator', currentMine);
-    const elevatorCapacity = elevator.capacity || 600;
-    
-    // Time to visit all shafts
-    const elevatorSpeed = elevator.speed || 0.5;
-    const BASE_TRAVEL_TIME = getElevatorSegmentTravelTimeMs(elevatorSpeed, currentMine);
+    const loadingRate = applyLoadingSpeedBoost(elevator.loading_per_second || 150, 'elevator', currentMine);
+    const capacity = elevator.capacity || 600;
+    const travelTime = getElevatorSegmentTravelTimeMs(elevator.speed || 0.5, currentMine);
     const managedTiers = getManagedShaftTiers(currentMine);
     const shaftCount = Math.max(1, managedTiers.length);
-    const totalManagedDeposit = currentMine.mineshafts
+    const totalDeposit = (currentMine.mineshafts || [])
         .filter(shaft => managedTiers.includes(shaft.tier))
         .reduce((sum, shaft) => sum + (shaft.total_deposit || 0), 0);
-    const extractableThisCycle = Math.min(totalManagedDeposit, Math.max(0, elevatorCapacity - (elevator.total_deposit || 0)));
-    const loadingTime = extractableThisCycle > 0 ? (extractableThisCycle / LOADING_PER_SECOND) * 1000 : 0;
-    const cycleTime = (BASE_TRAVEL_TIME * shaftCount * 2) + (loadingTime * 2);
-    if (!Number.isFinite(cycleTime) || cycleTime <= 0) return;
-    
-    // Check if a cycle has completed
+    const extractable = Math.min(totalDeposit, Math.max(0, capacity - (elevator.total_deposit || 0)));
+    const loadingTime = extractable > 0 ? (extractable / loadingRate) * 1000 : 0;
+    const cycleTime = (travelTime * shaftCount * 2) + (loadingTime * 2);
+    if (!Number.isFinite(cycleTime) || cycleTime <= 0) return null;
     const lastWorkTime = elevator.manager_last_worked || now;
     if (!elevator.manager_last_worked) {
         elevator.manager_last_worked = now;
-        return;
+        return null;
     }
+    const cyclesCompleted = Math.floor((now - lastWorkTime) / cycleTime);
+    if (cyclesCompleted < 1) return null;
+    elevator.manager_last_worked = now - ((now - lastWorkTime) % cycleTime);
 
-    const timeSinceLastWork = now - lastWorkTime;
-    const cyclesCompleted = Math.floor(timeSinceLastWork / cycleTime);
-    
-    if (cyclesCompleted < 1) return;
-    
-    // Update last worked timestamp
-    elevator.manager_last_worked = now - (timeSinceLastWork % cycleTime);
-    
-    // Extract from managed shafts only
-    let totalExtracted = 0;
-    let totalBeamCash = 0;
-    
-    for (const shaft of currentMine.mineshafts) {
+    let extracted = 0;
+    let beamCash = 0;
+    for (const shaft of currentMine.mineshafts || []) {
         if (!managedTiers.includes(shaft.tier)) continue;
-        
-        const shaftDeposit = shaft.total_deposit || 0;
-        if (shaftDeposit === 0) continue;
-        
-        // How much can elevator load from this shaft
-        const remainingCapacity = elevatorCapacity - (elevator.total_deposit || 0);
+        const remainingCapacity = capacity - (elevator.total_deposit || 0);
         if (remainingCapacity <= 0) break;
-        
-        const amountToExtract = Math.min(shaftDeposit, remainingCapacity);
-        
-        // Apply income beam
-        const beamResult = applyElevatorIncomeBeam(amountToExtract, currentMine);
-        if (beamResult.beamAmount > 0) {
-            totalBeamCash += beamResult.beamAmount;
-        }
-        
-        // Update deposits
-        shaft.total_deposit -= amountToExtract;
+        const amount = Math.min(shaft.total_deposit || 0, remainingCapacity);
+        if (amount <= 0) continue;
+        const beamResult = applyElevatorIncomeBeam(amount, currentMine);
+        shaft.total_deposit -= amount;
         elevator.total_deposit = (elevator.total_deposit || 0) + beamResult.remainingDeposit;
-        totalExtracted += amountToExtract;
-        
-        if (elevator.total_deposit >= elevatorCapacity) break;
+        extracted += amount;
+        beamCash += beamResult.beamAmount || 0;
     }
-    
-    return { extracted: totalExtracted, beamCash: totalBeamCash };
+    return { extracted, beamCash };
 }
 
-// Function to simulate warehouse work by manager
-function automateWarehouseWork(currentMine, user) {
+function automateWarehouseWork(currentMine) {
     const warehouse = currentMine.warehouse?.[0];
     const elevator = currentMine.elevator?.[0];
-    if (!warehouse) return 0; // Warehouse manager needs warehouse to exist
-    if (!elevator) return 0; // Need elevator deposits to extract from
-    
-    const now = Date.now();
-    const LOADING_PER_SECOND = warehouse.loading_per_second || 250;
-    const NumberOfWorkers = warehouse.number_of_workers || 1;
-    const CapacityPerWorker = warehouse.capacity_per_worker || 1000;
-    
-    // Time to complete one cycle
-    const totalWorkerCapacity = CapacityPerWorker * NumberOfWorkers;
-    const extractableAmount = Math.min(elevator.total_deposit || 0, totalWorkerCapacity);
-    
-    if (extractableAmount <= 0) return 0; // Nothing to extract
-    
-    // Apply loading speed boost
-    const boostedLoadingRate = applyLoadingSpeedBoost(LOADING_PER_SECOND, 'warehouse', currentMine);
-    
-    // Apply walking speed boost
+    if (!warehouse || !elevator) return 0;
+    const workerCount = warehouse.number_of_workers || 1;
+    const workerCapacity = warehouse.capacity_per_worker || 1000;
+    const extractable = Math.min(elevator.total_deposit || 0, workerCapacity * workerCount);
+    if (extractable <= 0) return 0;
+    const loadingRate = applyLoadingSpeedBoost(warehouse.loading_per_second || 250, 'warehouse', currentMine);
     const walkingTime = getWarehouseTravelTimeMs(warehouse.worker_walking_speed_per_second, currentMine);
-
-    const LOADING_TIME = (extractableAmount / boostedLoadingRate) * 1000;
-    const cycleTime = LOADING_TIME + (walkingTime * 2);
+    const cycleTime = (extractable / loadingRate) * 1000 + (walkingTime * 2);
     if (!Number.isFinite(cycleTime) || cycleTime <= 0) return 0;
-    
-    // Check if a cycle has completed
+    const now = Date.now();
     const lastWorkTime = warehouse.manager_last_worked || now;
     if (!warehouse.manager_last_worked) {
         warehouse.manager_last_worked = now;
         return 0;
     }
-
-    const timeSinceLastWork = now - lastWorkTime;
-    const cyclesCompleted = Math.floor(timeSinceLastWork / cycleTime);
-    
+    const cyclesCompleted = Math.floor((now - lastWorkTime) / cycleTime);
     if (cyclesCompleted < 1) return 0;
-    
-    // Update last worked timestamp (keep remainder for partial progress)
-    warehouse.manager_last_worked = now - (timeSinceLastWork % cycleTime);
-    
-    // Process completed cycles
+    warehouse.manager_last_worked = now - ((now - lastWorkTime) % cycleTime);
+
     let totalCash = 0;
-    for (let i = 0; i < cyclesCompleted; i++) {
-        // Workers extract from elevator
-        let totalExtracted = 0;
-        for (let w = 0; w < NumberOfWorkers; w++) {
-            const workerExtracted = Math.min(CapacityPerWorker, extractableAmount - (CapacityPerWorker * w));
-            if (workerExtracted > 0 && elevator.total_deposit > 0) {
-                const actualExtract = Math.min(workerExtracted, elevator.total_deposit);
-                totalExtracted += actualExtract;
-                elevator.total_deposit -= actualExtract;
-            }
-        }
-        
-        // Convert extracted minerals to cash
-        if (totalExtracted > 0) {
-            const incomeResult = applyIncomeMultiplier(totalExtracted, currentMine);
-            totalCash += incomeResult.finalCash;
-        }
+    for (let index = 0; index < cyclesCompleted; index += 1) {
+        const extracted = Math.min(extractable, elevator.total_deposit || 0);
+        elevator.total_deposit = Math.max(0, (elevator.total_deposit || 0) - extracted);
+        totalCash += applyIncomeMultiplier(extracted, currentMine).finalCash;
     }
-    
     return totalCash;
 }
 
-// Function to start manager work
-async function handleManagerWork(user, userId) {
-    if (!userId) {
-        return;
-    }
+async function handleManagerWork(userId) {
+    if (!userId) return;
 
-    await withUserLock(userId, async () => {
-        const freshUser = await getUser(userId);
-        if (!freshUser) {
-            return;
-        }
+    await updateUserTransaction(userId, async user => {
+        if (!user) return undefined;
 
-        freshUser.mines = freshUser.mines || [];
-        freshUser.cash = freshUser.cash || 0;
-        freshUser.ice_cash = freshUser.ice_cash || 0;
-        freshUser.fire_cash = freshUser.fire_cash || 0;
-        freshUser.dawn_cash = freshUser.dawn_cash || 0;
-        freshUser.idle_cash = freshUser.idle_cash || 0;
-        freshUser.idle_ice_cash = freshUser.idle_ice_cash || 0;
-        freshUser.idle_fire_cash = freshUser.idle_fire_cash || 0;
-        freshUser.idle_dawn_cash = freshUser.idle_dawn_cash || 0;
-        freshUser.last_idle = freshUser.last_idle || Date.now();
-        freshUser.current_mine = freshUser.current_mine || (freshUser.mines.length > 0 ? freshUser.mines[0].mine_name : null);
-
-        const currentMine = freshUser.mines.find(mine =>
-            mine.mine_name.toLowerCase() === freshUser.current_mine.toLowerCase()
-        );
-        if (!currentMine) {
-            return;
-        }
-
+        user.mines = user.mines || [];
+        user.current_mine = user.current_mine || user.mines[0]?.mine_name;
+        const currentMine = user.mines.find(mine => mine.mine_name?.toLowerCase() === user.current_mine?.toLowerCase());
+        if (!currentMine) return undefined;
         currentMine.managers = currentMine.managers || { shaft: [], elevator: [], warehouse: [] };
         currentMine.mineshafts = currentMine.mineshafts || [];
         currentMine.elevator = currentMine.elevator || [];
         currentMine.warehouse = currentMine.warehouse || [];
 
-        if (currentMine.mineshafts.length === 0) {
-            return;
-        }
-
-        const autoStatus = getManagerAutomationStatus(currentMine);
-        const managedTiers = getManagedShaftTiers(currentMine);
         const currentTime = Date.now();
-        const idleThresholdMinutes = Math.max(1, Math.min(60, Number(freshUser.preferences?.idle_time_minutes || 10)));
-        const isIdle = currentTime - freshUser.last_idle > idleThresholdMinutes * 60 * 1000;
-        const idleEfficiency = freshUser.has_premium ? 0.2 : 0.1;
+        const idleMinutes = Math.max(1, Math.min(60, Number(user.preferences?.idle_time_minutes || 10)));
+        const isIdle = currentTime - (user.last_idle || currentTime) > idleMinutes * 60 * 1000;
         const cashField = getCashField(currentMine.mine_number);
         const idleCashField = getIdleCashField(currentMine.mine_number);
+        let generatedCash = 0;
 
-        let totalCashGenerated = 0;
-        const workflowStats = {
-            shaftDepositsAdded: 0,
-            elevatorExtracted: 0,
-            warehouseCash: 0,
-            elevatorBeamCash: 0
-        };
-
-        try {
-            if (isIdle) {
-                const idleSeconds = Math.max(0, (currentTime - freshUser.last_idle) / 1000);
-                const idleCashPerSecond = getMineIdleCashPerSecond(currentMine, freshUser.has_premium);
-                totalCashGenerated += idleCashPerSecond * idleSeconds;
-            } else if (managedTiers.length > 0) {
+        if (isIdle) {
+            const accrualStart = Number(user.last_idle_accrued_at || user.last_idle || currentTime);
+            const elapsedSeconds = Math.max(0, (currentTime - accrualStart) / 1000);
+            generatedCash = getMineIdleCashPerSecond(currentMine, user.has_premium) * elapsedSeconds;
+            user.last_idle_accrued_at = currentTime;
+        } else {
+            const managedTiers = getManagedShaftTiers(currentMine);
+            if (managedTiers.length > 0) {
                 automateShaftWork(currentMine, managedTiers);
-
-                currentMine.mineshafts.forEach(shaft => {
-                    if (managedTiers.includes(shaft.tier)) {
-                        workflowStats.shaftDepositsAdded = (workflowStats.shaftDepositsAdded || 0) + (shaft.total_deposit || 0);
-                    }
-                });
-
                 if (currentMine._beamCash > 0) {
-                    freshUser[cashField] = (freshUser[cashField] || 0) + currentMine._beamCash;
+                    user[cashField] = (user[cashField] || 0) + currentMine._beamCash;
                     currentMine._beamCash = 0;
                 }
             }
 
-            if (autoStatus.elevator) {
+            if (getManagerAutomationStatus(currentMine).elevator) {
                 const elevatorResult = automateElevatorWork(currentMine);
-                if (elevatorResult) {
-                    workflowStats.elevatorExtracted = elevatorResult.extracted;
-                    workflowStats.elevatorBeamCash = elevatorResult.beamCash;
-                    if (elevatorResult.beamCash > 0) {
-                        freshUser[cashField] = (freshUser[cashField] || 0) + elevatorResult.beamCash;
-                    }
-                }
+                if (elevatorResult?.beamCash > 0) user[cashField] = (user[cashField] || 0) + elevatorResult.beamCash;
             }
-
-            if (autoStatus.warehouse) {
-                const warehouseCash = automateWarehouseWork(currentMine, freshUser);
-                if (warehouseCash > 0) {
-                    workflowStats.warehouseCash = warehouseCash;
-                    totalCashGenerated += isIdle ? warehouseCash * idleEfficiency : warehouseCash;
-                }
-            }
-
-            if (totalCashGenerated > 0) {
-                if (isIdle) {
-                    freshUser[idleCashField] = (freshUser[idleCashField] || 0) + totalCashGenerated;
-                } else {
-                    freshUser[cashField] = (freshUser[cashField] || 0) + totalCashGenerated;
-                }
-            }
-
-            currentMine._managerWorkStats = workflowStats;
-        } catch (error) {
-            logError('handleManagerWork:automation', error, { userId, mineName: currentMine?.mine_name });
+            if (getManagerAutomationStatus(currentMine).warehouse) generatedCash = automateWarehouseWork(currentMine);
+            user.last_idle_accrued_at = currentTime;
         }
 
-        try {
-            await updateUser(userId, {
-                cash: freshUser.cash,
-                ice_cash: freshUser.ice_cash,
-                fire_cash: freshUser.fire_cash,
-                dawn_cash: freshUser.dawn_cash,
-                idle_cash: freshUser.idle_cash,
-                idle_ice_cash: freshUser.idle_ice_cash,
-                idle_fire_cash: freshUser.idle_fire_cash,
-                idle_dawn_cash: freshUser.idle_dawn_cash,
-                last_idle: freshUser.last_idle,
-                mines: freshUser.mines
-            });
-        } catch (error) {
-            logError('handleManagerWork:updateUser', error, { userId, mineName: currentMine?.mine_name });
-        }
+        if (generatedCash > 0) user[isIdle ? idleCashField : cashField] = (user[isIdle ? idleCashField : cashField] || 0) + generatedCash;
+        return user;
     });
 }
 
-// Function to handle missing data for all users
 async function handleMissingData() {
-    try {
-        const allUsers = await getAllUsers();
-        for (const user of allUsers) {
-            await withUserLock(user.user_id, async () => {
-                const freshUser = await getUser(user.user_id);
-                if (!freshUser) {
-                    return;
+    const allUsers = await getAllUsers();
+    for (const user of Object.values(allUsers)) {
+        const userId = user.user_id || user.userId;
+        if (!userId) continue;
+
+        try {
+            // Mutate the freshly read row inside the optimistic transaction. This
+            // mirrors VivacityAPI's backfill contract: maintenance may add
+            // missing structure, but it must never write a stale full snapshot
+            // over a command that committed concurrently.
+            await updateUserTransaction(userId, currentUser => {
+                if (!currentUser) return undefined;
+                let changed = false;
+
+                if (!currentUser.username) {
+                    currentUser.username = 'Unknown';
+                    changed = true;
+                }
+                if (!currentUser.user_id) {
+                    currentUser.user_id = currentUser.userId || userId;
+                    changed = true;
+                }
+                if (!currentUser.userId) {
+                    currentUser.userId = currentUser.user_id || userId;
+                    changed = true;
                 }
 
-                freshUser.username = freshUser.username || 'Unknown';
-                freshUser.user_id = freshUser.user_id || user.user_id;
-                freshUser.continents = normalizeOwnedContinents(freshUser.continents || [continentData[0].ContinentName]);
-                freshUser.mines = (freshUser.mines || []).map(normalizeMineData);
-                freshUser.cash = freshUser.cash || 0;
-                freshUser.ice_cash = freshUser.ice_cash || 0;
-                freshUser.fire_cash = freshUser.fire_cash || 0;
-                freshUser.dawn_cash = freshUser.dawn_cash || 0;
-                freshUser.idle_cash = freshUser.idle_cash || 0;
-                freshUser.idle_ice_cash = freshUser.idle_ice_cash || 0;
-                freshUser.idle_fire_cash = freshUser.idle_fire_cash || 0;
-                freshUser.idle_dawn_cash = freshUser.idle_dawn_cash || 0;
-                freshUser.super_cash = freshUser.super_cash || 0;
-                freshUser.streak = freshUser.streak || 0;
-                freshUser.last_daily = freshUser.last_daily || Date.now();
-                freshUser.last_idle = freshUser.last_idle || Date.now();
-			    freshUser.has_premium = freshUser.has_premium || false;
-                freshUser.current_continent = freshUser.current_continent || 'Start Continent';
-                freshUser.current_mine = freshUser.current_mine || (freshUser.mines.length > 0 ? freshUser.mines[0].mine_name : null);
+                const normalizedContinents = normalizeOwnedContinents(
+                    currentUser.continents || [continentData[0]?.ContinentName || 'Start Continent']
+                );
+                if (JSON.stringify(normalizedContinents) !== JSON.stringify(currentUser.continents)) {
+                    currentUser.continents = normalizedContinents;
+                    changed = true;
+                }
 
-                for (const mine of freshUser.mines) {
-                    mine.prestige_count = mine.prestige_count || 0;
-                    mine.mine_number = mine.mine_number || 1;
-                    mine.factor = mine.factor || 1;
-                    mine.mineshafts = mine.mineshafts || [];
-                    mine.elevator = mine.elevator || [];
-                    mine.warehouse = mine.warehouse || [];
-                    mine.managers = mine.managers || { shaft: [], elevator: [], warehouse: [] };
+                const sourceMines = Array.isArray(currentUser.mines) ? currentUser.mines : [];
+                const normalizedMines = sourceMines.map(sourceMine => {
+                    const mine = normalizeMineData(sourceMine);
+                    if (JSON.stringify(mine) !== JSON.stringify(sourceMine)) changed = true;
 
-                    if (!mine.barriers || mine.barriers.length < mineRegions.length) {
-                        mine.barriers = mine.barriers || [];
+                    for (const [field, fallback] of [
+                        ['mineshafts', []],
+                        ['elevator', []],
+                        ['warehouse', []],
+                        ['managers', { shaft: [], elevator: [], warehouse: [] }]
+                    ]) {
+                        if (mine[field] === undefined || mine[field] === null) {
+                            mine[field] = structuredClone(fallback);
+                            changed = true;
+                        }
+                    }
+
+                    if (!Array.isArray(mine.barriers) || mine.barriers.length < mineRegions.length) {
+                        const barriers = Array.isArray(mine.barriers) ? mine.barriers : [];
+                        mine.barriers = [...barriers];
                         mineRegions.forEach((region, index) => {
                             if (!mine.barriers[index]) {
-                                mine.barriers[index] = {
-                                    ...region,
-                                    unlocked: index === 0
-                                };
+                                mine.barriers[index] = { ...region, unlocked: index === 0 };
+                                changed = true;
                             }
                         });
                     }
+                    return mine;
+                });
+                if (!Array.isArray(currentUser.mines) || normalizedMines.length !== currentUser.mines.length) {
+                    changed = true;
+                }
+                currentUser.mines = normalizedMines;
+
+                if (!currentUser.current_continent) {
+                    currentUser.current_continent = 'Start Continent';
+                    changed = true;
+                }
+                if (!currentUser.current_mine) {
+                    currentUser.current_mine = currentUser.mines[0]?.mine_name || null;
+                    changed = true;
                 }
 
-                await updateUser(freshUser.user_id, freshUser);
+                return changed ? currentUser : undefined;
             });
+        } catch (error) {
+            logError('handleMissingData:user', error, { userId });
         }
-    } catch (error) {
-        logError('handleMissingData', error);
     }
 }
 
-// Function to handle barrier unlock time
 async function handleBarrierUnlockTime() {
-    try {
-        const allUsers = await getAllUsers();
-
-        for (const user of allUsers) {
-            await withUserLock(user.user_id, async () => {
-                const freshUser = await getUser(user.user_id);
-                if (!freshUser) {
-                    return;
-                }
-
-                freshUser.mines.forEach(mine => {
-                    if (!mine.barriers || mine.barriers.length < mineRegions.length) {
-                        mine.barriers = mine.barriers || [];
-                        mineRegions.forEach((region, index) => {
-                            if (!mine.barriers[index]) {
-                                mine.barriers[index] = {
-                                    ...region,
-                                    unlocked: index === 0
-                                };
-                            }
-                        });
-                    }
-
-                    mine.barriers.forEach(barrier => {
-                        if (barrier.unlock_time && Date.now() >= barrier.unlock_time) {
+    const allUsers = await getAllUsers();
+    for (const user of Object.values(allUsers)) {
+        const userId = user.user_id || user.userId;
+        if (!userId) continue;
+        try {
+            await updateUserTransaction(userId, currentUser => {
+                if (!currentUser) return undefined;
+                let changed = false;
+                for (const mine of Array.isArray(currentUser.mines) ? currentUser.mines : []) {
+                    for (const barrier of Array.isArray(mine?.barriers) ? mine.barriers : []) {
+                        if (barrier && barrier.unlock_time && Date.now() >= Number(barrier.unlock_time)) {
                             barrier.unlocked = true;
                             barrier.unlock_time = null;
+                            changed = true;
                         }
-                    });
-                });
-
-                await updateUser(freshUser.user_id, freshUser);
-            });
-        }
-    } catch (error) {
-        logError('handleBarrierUnlockTime', error);
-    }
-}
-
-// Function to handle boost timers
-async function handleBoostTimers() {
-    try {
-        const allUsers = await getAllUsers();
-
-        for (const user of allUsers) {
-            await withUserLock(user.user_id, async () => {
-                const freshUser = await getUser(user.user_id);
-                if (!freshUser) {
-                    return;
-                }
-
-                freshUser.active_boosts = freshUser.active_boosts || [];
-                freshUser.active_boosts = freshUser.active_boosts.filter(boost => boost.end_time > Date.now());
-                await updateUser(freshUser.user_id, freshUser);
-            });
-        }
-    } catch (error) {
-        logError('handleBoostTimers', error);
-    }
-}
-
-// Function to check if the bot is online based on the readyAt property
-async function isBotOnline(client) {
-    if (client.readyAt) {
-        return true; // Bot is online if readyAt is set
-    } else {
-        console.warn('Bot is not ready or offline.');
-        return false;
-    }
-}
-
-// Retry mechanism for status check
-async function retryOnlineCheck(client, retries = 5) {
-    let isOnline = await isBotOnline(client);
-    while (!isOnline && retries > 0) {
-        console.warn(`Retrying online check... (${retries} attempts remaining)`);
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
-        isOnline = await isBotOnline(client);
-        retries--;
-    }
-    return isOnline;
-}
-
-// Main function to initialize bot tasks when online
-async function initializeBotTasks(client) {
-    const isOnline = await retryOnlineCheck(client);
-    if (isOnline) {
-        console.log('Bot is confirmed to be online. Proceeding with updates.');
-		
-		// Updates the bot status
-        await updateBotStatus(client);
-
-        // Deploy slash commands on bot startup
-        await deployCommands(clientId, token, client.slashCommands);
-
-        // Load and initialize guild data
-        await scheduleNextUpdate(client);
-    } else {
-        console.error('Failed to confirm bot online status after multiple retries. Skipping updates.');
-    }
-}
-
-client.once(Events.ClientReady, async () => {
-    console.log('Bot is online!');
-    console.log(`Logged in as ${client.user.tag}`);
-
-    // Check if the bot is online and proceed with task initialization
-    await initializeBotTasks(client);
-});
-
-client.on('guildCreate', async (guild) => {
-    // Get the user who added the bot to the guild
-    let owner;
-    try {
-        owner = await guild.fetchOwner();
-    } catch (error) {
-        logError('guildCreate:fetchOwner', error, { guildId: guild?.id, guildName: guild?.name });
-        return;
-    }
-
-    try {
-        // Send a DM to the owner
-        await guildDM(owner.user, `Thank you for adding me to ${guild.name}! I'm here to help you manage your mining experience for your entire guild. Use im!help to see what I can do!`);
-    } catch (error) {
-        logError('guildCreate:dmOwner', error, { guildId: guild?.id, guildName: guild?.name, ownerId: owner?.id });
-    }
-});
-
-client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-
-    // Determine if message starts with a valid prefix or mentions the bot
-    let prefix = prefixes.find(p => message.content.startsWith(p));
-    const botMention = `<@${client.user.id}>`;
-    if (!prefix && !message.content.includes(botMention)) return;
-
-    // Handle idle cash collection if the user mentions the bot
-    if (message.content.includes(botMention)) {
-        const userId = message.author.id;
-        let user;
-        try {
-            user = await getUser(userId);
-        } catch (error) {
-            logError('messageCreate:getUser', error, { userId });
-            return;
-        }
-        if (user) {
-            const currentTime = Date.now();
-            const userPreferences = normalizeUserPreferences(user.preferences, user.has_premium);
-            const idleThresholdSeconds = userPreferences.idle_time_minutes * 60;
-            const isIdle = currentTime - user.last_idle > idleThresholdSeconds * 1000;
-
-            if (isIdle) {
-                const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
-                if (!currentMine) {
-                    await safeReply(message, 'Current mine data not found.');
-                    return;
-                }
-
-                try {
-                    await handleManagerWork(user, userId);
-                    const refreshedUser = await getUser(userId);
-                    const liveUser = refreshedUser || user;
-                    const idleCashField = getIdleCashField(currentMine.mine_number);
-                    const cashField = getCashField(currentMine.mine_number);
-                    const cashLabel = getCashLabelByField(cashField);
-                    
-                    // Check automation status for informative message
-                    const autoStatus = getManagerAutomationStatus(currentMine);
-                    const managedTiers = getManagedShaftTiers(currentMine);
-                    const bottleneck = currentMine._lastBottleneck;
-                    
-                    let replyMessage;
-                    const idleCashAmount = liveUser[idleCashField] || 0;
-                    if (idleCashAmount > 0) {
-                        const timeAwayMs = Math.max(0, currentTime - (user.last_idle || currentTime));
-                        const awayMinutes = Math.floor(timeAwayMs / 60000);
-                        const awayHours = Math.floor(awayMinutes / 60);
-                        const remainingMinutes = awayMinutes % 60;
-                        const awayTimeLabel = awayHours > 0 ? `${awayHours}h ${remainingMinutes}m` : `${awayMinutes}m`;
-                        replyMessage = `💰 You have collected **${numberFormat(idleCashAmount)}** ${cashLabel} from your idle workers!`;
-                        replyMessage += `
-🕒 You have been away for **${awayTimeLabel}**. You got **${numberFormat(idleCashAmount)}** idle ${cashLabel}!`;
-                        
-                        // Show bottleneck info if available
-                        if (bottleneck && bottleneck.efficiency < 1) {
-                            const limitingName = bottleneck.limitingFactor.replace('_', ' ');
-                            replyMessage += `\n⚠️ **Bottleneck:** ${limitingName} (${(bottleneck.efficiency * 100).toFixed(0)}% efficiency)`;
-                        }
-                        
-                        // Show workflow breakdown
-                        if (bottleneck && bottleneck.rates) {
-                            const shaftRate = bottleneck.rates.find(r => r.name === 'shaft_production');
-                            const elevatorRate = bottleneck.rates.find(r => r.name === 'elevator_extraction');
-                            const warehouseRate = bottleneck.rates.find(r => r.name === 'warehouse_transport');
-                            replyMessage += `\n\n📊 **Workflow Rates:**`;
-                            replyMessage += `\n⛏️ Shafts: ${numberFormat(shaftRate?.rate || 0)}/s (cap: ${numberFormat(shaftRate?.capacity || 0)})`;
-                            replyMessage += `\n🛗 Elevator: ${numberFormat(elevatorRate?.rate || 0)}/s (cap: ${numberFormat(elevatorRate?.capacity || 0)})`;
-                            replyMessage += `\n🏭 Warehouse: ${numberFormat(warehouseRate?.rate || 0)}/s (cap: ${numberFormat(warehouseRate?.capacity || 0)})`;
-                        }
-                    } else if (managedTiers.length === 0) {
-                        replyMessage = `⚠️ No idle cash generated. You need at least one shaft manager.`;
-                        replyMessage += `\n💡 Hire and assign a manager to any shaft tier to enable production.`;
-                    } else if (!autoStatus.elevator || !autoStatus.warehouse) {
-                        const missing = [];
-                        if (!autoStatus.elevator) missing.push('elevator');
-                        if (!autoStatus.warehouse) missing.push('warehouse');
-                        replyMessage = `⚠️ No idle cash generated. Missing managers in: ${missing.join(', ')}`;
-                        replyMessage += `\n💡 Hire and assign managers to elevator and warehouse to transport minerals.`;
-                    } else if (bottleneck && bottleneck.efficiency === 0) {
-                        replyMessage = `⚠️ Your mine is fully automated but production is stalled. Check that shafts have workers and all components have capacity.`;
-                    } else {
-                        replyMessage = `💤 Your managers are working, but no cash was accumulated yet. Check back later!`;
                     }
-                    
-                    await safeReply(message, replyMessage);
-                    await withUserLock(userId, async () => {
-                        const collectUser = await getUser(userId);
-                        if (!collectUser) {
-                            return;
-                        }
-
-                        collectUser[cashField] = (collectUser[cashField] || 0) + (collectUser[idleCashField] || 0);
-                        collectUser[idleCashField] = 0;
-                        collectUser.last_idle = currentTime;
-                        await updateUser(userId, collectUser);
-                    });
-                } catch (error) {
-                    logError('messageCreate:collectIdle', error, { userId });
                 }
-            } else {
-                const timeSinceLastActive = Math.floor((currentTime - user.last_idle) / 1000);
-                const remainingIdleTime = Math.max(0, idleThresholdSeconds - timeSinceLastActive);
-                const minutes = Math.floor(remainingIdleTime / 60);
-                const seconds = remainingIdleTime % 60;
-                
-                await safeReply(message, `⏳ You need to be idle for **${Math.floor(idleThresholdSeconds / 60)} minutes** to collect idle cash.\nTime remaining: ${minutes}m ${seconds}s`);
-            }
-        } else {
-            await safeReply(message, 'User data not found.');
+                return changed ? currentUser : undefined;
+            });
+        } catch (error) {
+            logError('handleBarrierUnlockTime:user', error, { userId });
         }
     }
-
-    // Handle commands
-    if (prefix) {
-        const args = message.content.slice(prefix.length).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
-
-        const command = client.commands.get(commandName);
-        if (!command) return;
-
-        try {
-            await command.execute(message, args);
-        } catch (error) {
-            logError('prefixCommand:execute', error, { commandName, userId: message?.author?.id, guildId: message?.guild?.id });
-            await safeReply(message, 'There was an error trying to execute that command!');
-        } finally {
-            await markUserAsActive(message?.author?.id);
-        }
-    }
-});
-
-client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.isCommand()) {
-        const command = client.slashCommands.get(interaction.commandName);
-        if (!command) {
-            console.warn(`No command matching ${interaction.commandName} was found.`);
-            return;
-        }
-
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            logError('slashCommand:execute', error, { commandName: interaction?.commandName, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error executing this command!', flags: 64 });
-        } finally {
-            await markUserAsActive(interaction?.user?.id);
-        }
-    } 
-	
-	// Handle Select Menus
-    else if (interaction.isStringSelectMenu()) {
-        try {
-            await handleSelectMenuInteraction(interaction);
-        } catch (error) {
-            logError('selectMenu:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to process the selection menu!', flags: 64 });
-        } finally {
-            await markUserAsActive(interaction?.user?.id);
-        }
-
-    // Handle Buttons
-    } else if (interaction.isButton()) {
-		try {
-            await handleButtonInteraction(interaction);
-        } catch (error) {
-            logError('button:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to process that button!', flags: 64 });
-        } finally {
-            await markUserAsActive(interaction?.user?.id);
-        }
-		
-	// Handle Modal Forms
-    } else if (interaction.isModalSubmit()) {
-		try {
-            await handleModalFormInteraction(interaction);
-        } catch (error) {
-            logError('modal:unhandled', error, { customId: interaction?.customId, userId: interaction?.user?.id, guildId: interaction?.guildId });
-            await safeReply(interaction, { content: 'There was an error trying to submit this form!', flags: 64 });
-        } finally {
-            await markUserAsActive(interaction?.user?.id);
-        }
-		
-    } else {
-        console.warn('Received an unhandled interaction type.');
-    }
-});
-
-// Centralized Error Handler
-function handleInteractionError(interaction, errorMessage) {
-    safeReply(interaction, { content: errorMessage, flags: 64 });
 }
 
-async function handleDuplicateManagerPurge(client) {
+async function handleBoostTimers() {
     const allUsers = await getAllUsers();
-    for (const user of allUsers) {
-        await withUserLock(user.user_id, async () => {
-            const freshUser = await getUser(user.user_id);
-            if (!freshUser) {
-                return;
-            }
-
-            let updated = false;
-            const dmLines = [];
-
-            for (const mine of freshUser.mines || []) {
-                const result = purgeDuplicateManagersFromMine(freshUser, mine);
-                if (!result) {
-                    continue;
-                }
-
-                updated = true;
-                const summary = result.compensationEvents
-                    .map(event => `- ${mine.mine_name} | ${event.area}: ${event.managerName} (${event.managerDisplayId}) -> ${numberFormat(event.compensation)} ${event.walletLabel}`)
-                    .join('\n');
-                dmLines.push(summary);
-            }
-
-            if (!updated) {
-                return;
-            }
-
-            await updateUser(freshUser.user_id, {
-                cash: freshUser.cash,
-                ice_cash: freshUser.ice_cash,
-                fire_cash: freshUser.fire_cash,
-                dawn_cash: freshUser.dawn_cash,
-                mines: freshUser.mines
+    for (const user of Object.values(allUsers)) {
+        const userId = user.user_id || user.userId;
+        if (!userId) continue;
+        try {
+            await updateUserTransaction(userId, currentUser => {
+                if (!currentUser) return undefined;
+                const activeBoosts = Array.isArray(currentUser.active_boosts) ? currentUser.active_boosts : [];
+                const boosts = activeBoosts.filter(boost => Number(boost?.end_time) > Date.now());
+                return boosts.length !== activeBoosts.length
+                    ? { ...currentUser, active_boosts: boosts }
+                    : undefined;
             });
+        } catch (error) {
+            logError('handleBoostTimers:user', error, { userId });
+        }
+    }
+}
 
-            if (dmLines.length > 0 && client?.users?.fetch) {
+async function handleDuplicateManagerPurge(clientInstance) {
+    const allUsers = await getAllUsers();
+    for (const user of Object.values(allUsers)) {
+        const userId = user.user_id || user.userId;
+        if (!userId) continue;
+        try {
+            const dmLines = [];
+            let updated = false;
+            await updateUserTransaction(userId, currentUser => {
+                if (!currentUser) return undefined;
+                let changedThisAttempt = false;
+                dmLines.length = 0;
+                for (const mine of Array.isArray(currentUser.mines) ? currentUser.mines : []) {
+                    const result = purgeDuplicateManagersFromMine(currentUser, mine);
+                    if (!result) continue;
+                    changedThisAttempt = true;
+                    dmLines.push(result.compensationEvents.map(event =>
+                        `- ${mine.mine_name} | ${event.area}: ${event.managerName} (${event.managerDisplayId}) -> ${numberFormat(event.compensation)} ${event.walletLabel}`
+                    ).join('\n'));
+                }
+                updated = changedThisAttempt;
+                return changedThisAttempt ? currentUser : undefined;
+            });
+            if (updated && dmLines.length && clientInstance?.users?.fetch) {
                 try {
-                    const discordUser = await client.users.fetch(freshUser.user_id);
+                    const discordUser = await clientInstance.users.fetch(userId);
                     await discordUser.send(`Duplicate managers were purged automatically and compensated:\n${dmLines.join('\n')}`);
                 } catch (error) {
-                    logError('handleDuplicateManagerPurge:dm', error, { userId: freshUser.user_id });
+                    logError('handleDuplicateManagerPurge:dm', error, { userId });
                 }
             }
-        });
+        } catch (error) {
+            logError('handleDuplicateManagerPurge:user', error, { userId });
+        }
     }
 }
 
-// Handle Select Menu Interaction
-async function handleSelectMenuInteraction(interaction) {
-    const customId = interaction.customId;
-    const userId = interaction.user.id;
-    const user = await getUser(userId);
-
-    try {
-        // Handle selection menu interactions
-    } catch (error) {
-        handleInteractionError(interaction, 'There was an error trying to process the selection menu!');
-        logError('selectMenu:execute', error, { customId, userId });
-    }
-}
-
-// Handle Button Interaction
-async function handleButtonInteraction(interaction) {
-    const customId = interaction.customId;
-	const userId = interaction.user.id;
-    const user = await getUser(userId);
-
-    try {
-        // Handle button interactions
-    } catch (error) {
-        handleInteractionError(interaction, 'There was an error trying to process that button!');
-        logError('button:execute', error, { customId, userId });
-    }
-}
-
-// Handle Modal Form Interaction
-async function handleModalFormInteraction(interaction) {
-    const customId = interaction.customId;
-	const userId = interaction.user.id;
-    const user = await getUser(userId);
-
-    try {
-        // Handle modal form interactions
-    } catch (error) {
-        handleInteractionError(interaction, 'There was an error trying to submit this form!');
-        logError('modal:execute', error, { customId, userId });  
-    }
-}
-
-process.on('uncaughtException', (error) => {
-    logError('process:uncaughtException', error);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    logError('process:unhandledRejection', reason instanceof Error ? reason : new Error(String(reason)), {
-        promise: String(promise)
+function scheduleNextUpdate(clientInstance) {
+    return automatedTasks.scheduleAutomatedTasks({
+        client: clientInstance,
+        updateStatus: () => updateBotStatus(clientInstance),
+        missingData: handleMissingData,
+        dailyProperties: async () => undefined,
+        barrierUnlocks: handleBarrierUnlockTime,
+        boostTimers: handleBoostTimers,
+        managerWork: async () => {
+            const users = await getAllUsers();
+            for (const user of Object.values(users)) {
+                const userId = user.user_id || user.userId;
+                if (!userId) continue;
+                try {
+                    await handleManagerWork(userId);
+                } catch (error) {
+                    logError('cron.handleManagerWork:user', error, { userId });
+                }
+                await delay(100);
+            }
+        },
+        duplicateManagerPurge: () => handleDuplicateManagerPurge(clientInstance)
     });
-});
-
-console.log(' Starting Idle Miner Bot...');
-console.log(' Initializing database connection...');
-
-const dbStatus = await initializeDatabase();
-
-if (!dbStatus.allReady) {
-    console.warn('  Warning: Database tables may be missing. Some features may not work correctly.');
-    console.warn('   Run the SQL shown above in your Supabase dashboard to create missing tables.');
 }
 
+async function initializeBotTasks(clientInstance) {
+    if (!clientInstance.readyAt) {
+        console.warn('Bot is not ready or offline.');
+        return;
+    }
+    console.log('Bot is confirmed to be online. Proceeding with updates.');
+    await Promise.allSettled([
+        updateBotStatus(clientInstance),
+        cleanupComponentMessages(clientInstance, { closeAll: true })
+    ]);
+
+    automatedTasks.runStartupTasks({
+        client: clientInstance,
+        startupTasks: [
+            ['removeTestUsers', removeTestUsers],
+            ['handleMissingData', handleMissingData],
+            ['handleBarrierUnlockTime', handleBarrierUnlockTime],
+            ['handleBoostTimers', handleBoostTimers],
+            ['handleDuplicateManagerPurge', () => handleDuplicateManagerPurge(clientInstance)]
+        ]
+    });
+
+    scheduleNextUpdate(clientInstance);
+    await deployCommands(clientId, token, clientInstance.slashCommands);
+}
+
+client.once(Events.ClientReady, wrapAsync(async () => {
+    console.log('Bot is online!');
+    console.log(`Logged in as ${client.user.tag}`);
+    await initializeBotTasks(client);
+}, 'event.clientReady'));
+
+client.on('guildCreate', wrapAsync(async guild => {
+    const owner = await guild.fetchOwner();
+    await guildDM(owner.user, `Thank you for adding me to ${guild.name}! I'm here to help you manage your mining experience for your entire guild. Use im!help to see what I can do!`);
+}, 'event.guildCreate'));
+
+client.on('messageCreate', wrapAsync(async message => {
+    if (message.author.bot) return;
+    const mention = client.user?.id ? new RegExp(`^<@!?${client.user.id}>`) : null;
+    const prefix = prefixes.find(value => message.content.startsWith(value));
+    const mentionMatch = mention?.exec(message.content);
+    const activePrefix = mentionMatch ? mentionMatch[0] : prefix;
+    if (!activePrefix) return;
+
+    if (mentionMatch && !message.content.slice(mentionMatch[0].length).trim()) {
+        return collectIdleCashForMention(message);
+    }
+
+    const args = message.content.slice(activePrefix.length).trim().split(/ +/);
+    const commandName = args.shift()?.toLowerCase();
+    if (!commandName) return;
+    const command = client.commands.get(commandName);
+    if (!command) return;
+    const requiredPermissions = command.permissions || ['SendMessages', 'ViewChannel', 'ReadMessageHistory'];
+    if (!await checkPermissions(message, requiredPermissions)) return;
+    if (!await checkBotPermissions(message, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;
+    await command.execute(message, args);
+    await markUserAsActive(message.author.id);
+}, 'event.messageCreate', async (_error, message) => {
+    await safelyReplyToMessage(message, 'There was an error trying to execute that command!');
+}));
+
+async function replyToBusyComponent(interaction) {
+    const ownerId = getComponentCollectorOwner(interaction?.message?.id);
+    if (ownerId && ownerId !== interaction?.user?.id) {
+        await safelyReplyToInteraction(interaction, 'This control belongs to another user.');
+    }
+}
+
+async function handleSelectMenuInteraction(interaction) {
+    if (hasActiveComponentCollector(interaction.message?.id)) {
+        await replyToBusyComponent(interaction);
+        return;
+    }
+    const handler = getStandaloneHandler(client.interactions, interaction.customId);
+    if (!handler) return safelyReplyToInteraction(interaction, 'This selection menu is no longer active.');
+    const release = claimComponentAction(interaction);
+    if (!release) return safelyReplyToInteraction(interaction, 'That selection is already being processed.');
+    try {
+        if (!await acknowledgeComponent(interaction, 'interaction.selectMenu')) return;
+        await handler.execute(interaction, interaction.user.id, await getUser(interaction.user.id));
+    } finally {
+        release();
+    }
+}
+
+async function handleButtonInteraction(interaction) {
+    if (hasActiveComponentCollector(interaction.message?.id)) {
+        await replyToBusyComponent(interaction);
+        return;
+    }
+    const handler = getStandaloneHandler(client.interactions, interaction.customId);
+    if (!handler) return safelyReplyToInteraction(interaction, 'This button is no longer active.');
+    const release = claimComponentAction(interaction);
+    if (!release) return safelyReplyToInteraction(interaction, 'That button action is already being processed.');
+    try {
+        if (!await acknowledgeComponent(interaction, 'interaction.button')) return;
+        await handler.execute(interaction, interaction.user.id, await getUser(interaction.user.id));
+    } finally {
+        release();
+    }
+}
+
+async function handleModalFormInteraction(interaction) {
+    const handler = getStandaloneHandler(client.interactions, interaction.customId);
+    if (!handler) return safelyReplyToInteraction(interaction, 'This form is no longer active.');
+    const release = claimComponentAction(interaction);
+    if (!release) return safelyReplyToInteraction(interaction, 'That form is already being processed.');
+    try {
+        if (!await acknowledgeComponent(interaction, 'interaction.modal')) return;
+        await handler.execute(interaction, interaction.user.id, await getUser(interaction.user.id));
+    } finally {
+        release();
+    }
+}
+
+client.on(Events.InteractionCreate, wrapAsync(async interaction => {
+    if (interaction.isChatInputCommand?.() || interaction.isCommand?.()) {
+        const command = client.slashCommands.get(interaction.commandName);
+        if (!command) return safelyReplyToInteraction(interaction, 'That slash command is unavailable.');
+        const requiredPermissions = command.permissions || ['SendMessages', 'ViewChannel', 'ReadMessageHistory'];
+        if (!await checkPermissions(interaction, requiredPermissions)) return;
+        if (!await checkBotPermissions(interaction, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;
+        await command.execute(interaction);
+    } else if (interaction.isStringSelectMenu?.()) {
+        await handleSelectMenuInteraction(interaction);
+    } else if (interaction.isButton?.()) {
+        await handleButtonInteraction(interaction);
+    } else if (interaction.isModalSubmit?.()) {
+        await handleModalFormInteraction(interaction);
+    } else {
+        logError('event.interactionCreate', new Error('Received an unhandled interaction type.'), getInteractionContext(interaction));
+        await safelyReplyToInteraction(interaction, 'This interaction is no longer supported.');
+    }
+    await markUserAsActive(interaction.user?.id);
+}, 'event.interactionCreate', async (_error, interaction) => {
+    await safelyReplyToInteraction(interaction, 'There was an error processing this interaction. Please try again.');
+}));
+
+console.log('Starting Idle Miner Bot...');
+console.log('Initializing database connection...');
+const dbStatus = await initializeDatabase();
+if (!dbStatus.allReady) console.warn('Some database tables are missing or incompatible; run tools/supabase-init.sql.');
 await startPremiumPaymentServer(client);
 
-// Log in to Discord
-client.login(token);
+if (!token) {
+    console.error('TOKEN is missing; the bot cannot log in.');
+} else {
+    wrapAsync(() => client.login(token), 'client.login')();
+}

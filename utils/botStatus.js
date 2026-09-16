@@ -1,67 +1,62 @@
-import supabase from './supabaseClient.js';
+'use strict';
+
+import { getSupabaseClient } from '../supabase.js';
 import { ActivityType } from 'discord.js';
 
 let lastKnownUserCount = null;
 
 function buildStatusText(userCount) {
-    if (userCount === 1) {
-        return '1 user is mining!';
-    }
-
-    return `${userCount} users are mining!`;
+    return `${userCount} ${userCount === 1 ? 'user is' : 'users are'} mining!`;
 }
 
 export async function updateBotStatus(client) {
+    if (!client?.user) return false;
+
     try {
-        if (!client?.user) {
-            return;
-        }
-
-        const { error: checkError } = await supabase
+        const { count, error } = await getSupabaseClient()
             .from('users')
-            .select('user_id', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .limit(1);
+        if (error) throw error;
 
-        if (checkError?.code === '42P01' || checkError?.message?.includes('relation') || checkError?.message?.includes('does not exist')) {
-            console.log('Users table not ready, skipping status update');
-            await client.user.setPresence({
-                status: 'online',
-                activities: [{ name: 'Idle Miner Bot', type: ActivityType.Playing }]
-            });
-            return;
-        }
-
-        const { count, error } = await supabase
-            .from('users')
-            .select('user_id', { count: 'exact', head: true });
-
-        if (error) {
-            throw new Error(`Error fetching users: ${error.message}`);
-        }
-
-        const userCount = count || 0;
+        const userCount = Number(count) || 0;
         lastKnownUserCount = userCount;
         const statusText = buildStatusText(userCount);
 
-        await client.user.setPresence({
-            status: 'online',
-            activities: [{ name: statusText, type: ActivityType.Playing }]
-        });
-        console.log(`Bot status updated: ${statusText}`);
-    } catch (error) {
-        console.error('Error updating bot status:', error.message);
-
-        try {
-            const fallbackText = lastKnownUserCount !== null
-                ? buildStatusText(lastKnownUserCount)
-                : 'Waiting for conquest...';
-
+        if (typeof client.user.setActivity === 'function') {
+            await client.user.setActivity(statusText, { type: ActivityType.Playing });
+        } else if (typeof client.user.setPresence === 'function') {
             await client.user.setPresence({
                 status: 'online',
-                activities: [{ name: fallbackText, type: ActivityType.Playing }]
+                activities: [{ name: statusText, type: ActivityType.Playing }]
             });
-        } catch {
-            // Ignore if this also fails
         }
+        console.log(`Bot status updated: ${statusText}`);
+        return true;
+    } catch (error) {
+        console.error('Error updating bot status:', error?.message || error);
+
+        try {
+            const fallbackText = lastKnownUserCount === null
+                ? 'Waiting for miners...'
+                : buildStatusText(lastKnownUserCount);
+            if (typeof client.user.setActivity === 'function') {
+                await client.user.setActivity(fallbackText, { type: ActivityType.Playing });
+            } else if (typeof client.user.setPresence === 'function') {
+                await client.user.setPresence({
+                    status: 'online',
+                    activities: [{ name: fallbackText, type: ActivityType.Playing }]
+                });
+            }
+        } catch {
+            // A presence failure must not terminate the bot or scheduler.
+        }
+        return false;
     }
 }
+
+export function resetBotStatusForTests() {
+    lastKnownUserCount = null;
+}
+
+export default { updateBotStatus, resetBotStatusForTests };

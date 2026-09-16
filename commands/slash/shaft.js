@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
-import prefixCommand from '../prefix/shaft.js';
-import { executePrefixCommandFromInteraction } from '../../utils/commandBridge.js';
+import sharedCommand from '../shared/shaft.js';
+import { executeSharedCommand } from '../../utils/commandBridge.js';
 import { getMaxCountTiers } from '../../utils/miscConfig.js';
 
 const maxShaftTiers = getMaxCountTiers();
@@ -47,6 +47,6 @@ export default {
         if (upgradeCount !== null) {
             args.push(String(upgradeCount));
         }
-        return executePrefixCommandFromInteraction(interaction, prefixCommand, args);
+        return executeSharedCommand(interaction, sharedCommand, args);
     }
 };

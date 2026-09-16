@@ -159,14 +159,15 @@ export function userOwnsContinent(user, continentName) {
 }
 
 export function normalizeMineData(mine) {
-    const mineNumber = parseInt(mine.mine_number, 10) || getMineNumber(mine.mine_name);
+    const source = mine && typeof mine === 'object' && !Array.isArray(mine) ? mine : {};
+    const mineNumber = parseInt(source.mine_number, 10) || getMineNumber(source.mine_name) || 1;
     const continent = getContinentByMineNumber(mineNumber);
 
     return {
-        ...mine,
+        ...source,
         mine_number: mineNumber,
         mine_name: getMineName(mineNumber),
-        continent_name: continent ? continent.name : mine.continent_name
+        continent_name: continent ? continent.name : source.continent_name || 'Start Continent'
     };
 }
 
