@@ -76,6 +76,7 @@ function createMessageAdapter(interaction) {
         __interactionAdapter: true,
         channelId: interaction.channelId,
         guildId: interaction.guildId,
+        commandName: interaction.commandName,
         author: interaction.user,
         member: interaction.member,
         guild: interaction.guild,

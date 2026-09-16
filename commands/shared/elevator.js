@@ -15,6 +15,7 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
+import commandContext from './context.js';
 
 const elevatorData = elevatorDataJson.elevators || [];
 
@@ -29,7 +30,7 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
@@ -38,7 +39,9 @@ export default {
             }
 
             if (args.length < 1) {
-                return message.reply(`<@${userId}>, to operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
+                const overviewRef = commandContext.commandReference(message, 'elevator', 'overview');
+                const upgradeRef = commandContext.commandReference(message, 'elevator', 'upgrade');
+                return message.reply(`<@${userId}>, use **${overviewRef}** to view your elevator's performance in **__${currentMine.mine_name}__**, or **${upgradeRef}** to upgrade it. You can quick-upgrade with **${commandContext.commandReference(message, 'elevator', 'upgrade 5')}**.`);
             }
 
             const subcommand = args[0].toLowerCase();
@@ -59,7 +62,7 @@ export default {
                 case 'upgrade':
                     return handleElevatorUpgrade(message, user, elevator, currentMine, args, userId);
                 default:
-                    return message.reply(`Invalid subcommand, <@${userId}>! To operate your elevator, you'll need to use **im!elevator overview** to view your elevator's performance in your **__${currentMine.mine_name}__** or **im!elevator upgrade** to upgrade your elevator (you can also quick-upgrade using **im!elevator upgrade 5** for example for 5 purchased elevator levels, if you have the cash for it!)`);
+                    return message.reply(`Invalid subcommand, <@${userId}>! Use **${commandContext.commandReference(message, 'elevator', 'overview')}** to view your elevator or **${commandContext.commandReference(message, 'elevator', 'upgrade')}** to upgrade it.`);
             }
         });
     }

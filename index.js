@@ -649,15 +649,22 @@ client.on('messageCreate', wrapAsync(async message => {
     const activePrefix = mentionMatch ? mentionMatch[0] : prefix;
     if (!activePrefix) return;
 
-    if (mentionMatch && !message.content.slice(mentionMatch[0].length).trim()) {
-        return collectIdleCashForMention(message);
+    const remainder = message.content.slice(activePrefix.length).trim();
+    if (mentionMatch && !remainder) {
+        const helloCommand = client.commands.get('hello');
+        if (helloCommand) return helloCommand.execute(message, []);
+        return safelyReplyToMessage(message, 'Hello fellow miner! Ready to dig some precious jewels?');
     }
 
-    const args = message.content.slice(activePrefix.length).trim().split(/ +/);
+    const normalizedRemainder = prefixes.some(value => remainder.startsWith(value))
+        ? remainder.slice(remainder.indexOf('!') + 1).trim()
+        : remainder;
+    const args = normalizedRemainder ? normalizedRemainder.split(/ +/) : [];
     const commandName = args.shift()?.toLowerCase();
     if (!commandName) return;
     const command = client.commands.get(commandName);
     if (!command) return;
+    message.commandPrefix = activePrefix;
     const requiredPermissions = command.permissions || ['SendMessages', 'ViewChannel', 'ReadMessageHistory'];
     if (!await checkPermissions(message, requiredPermissions)) return;
     if (!await checkBotPermissions(message, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;

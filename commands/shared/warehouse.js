@@ -15,6 +15,7 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
+import commandContext from './context.js';
 
 const warehouseData = warehouseDataJson.warehouses || [];
 
@@ -29,16 +30,14 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
             if (!currentMine) {
                 return message.reply('Current mine data not found.');
-            }
-		
-		    if (args.length < 1) {
-                return message.reply(`<@${userId}>, to operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!)`);
+            }            if (args.length < 1) {
+                return message.reply(`<@${userId}>, use **${commandContext.commandReference(message, 'warehouse', 'overview')}** to view your warehouse's performance in **__${currentMine.mine_name}__**, or **${commandContext.commandReference(message, 'warehouse', 'upgrade')}** to upgrade it. You can quick-upgrade with **${commandContext.commandReference(message, 'warehouse', 'upgrade 5')}**.`);
             }
 		
 		    const subcommand = args[0].toLowerCase();
@@ -58,8 +57,7 @@ export default {
                     return handleWarehouseOverview(message, user, warehouse, currentMine, args, userId);
                 case 'upgrade':
                     return handleWarehouseUpgrade(message, user, warehouse, currentMine, args, userId);
-                default:
-			        return message.reply(`Invalid subcommand, <@${userId}>! To operate your warehouse, you'll need to use **im!warehouse overview** to view your warehouse's performance in your **__${currentMine.mine_name}__** or **im!warehouse upgrade** to upgrade your warehouse (you can also quick-upgrade using **im!warehouse upgrade 5** for example for 5 purchased warehouse levels, if you have the cash for it!).`);
+                default:            			        return message.reply(`Invalid subcommand, <@${userId}>! Use **${commandContext.commandReference(message, 'warehouse', 'overview')}** to view your warehouse or **${commandContext.commandReference(message, 'warehouse', 'upgrade')}** to upgrade it.`);
             }
         });
     }

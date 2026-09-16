@@ -32,7 +32,7 @@ export default {
         await commandContext.defer(context);
 
         const user = await getUser(userId);
-        if (!user) return commandContext.reply(context, 'You need to start the game first by using `im!start` (or `/start` if using slash).');
+        if (!user) return commandContext.reply(context, `You need to start the game first by using \`${commandContext.commandReference(context, 'start')}\`.`);
         if (!isShopUnlocked(user)) return commandContext.reply(context, 'Shop unlocks after you buy Shaft Tier 3 on Coal Mine for the first time.');
 
         let page = 0;

@@ -47,6 +47,18 @@ export function getMineProductionPerSecond(currentMine) {
     );
 }
 
+export function getCombinedMineIdleCashPerSecond(mines = [], hasPremium = false) {
+    return (Array.isArray(mines) ? mines : []).reduce(
+        (total, mine) => total + getMineIdleCashPerSecond(mine, hasPremium),
+        0
+    );
+}
+
+export function getAverageMineIdleCashPerSecond(mines = [], totalMineCount = mines.length, hasPremium = false) {
+    const count = Math.max(0, Number(totalMineCount) || 0);
+    return count > 0 ? getCombinedMineIdleCashPerSecond(mines, hasPremium) / count : 0;
+}
+
 function getElevatorThroughputPerSecond(currentMine, managedTiers) {
     const elevator = currentMine?.elevator?.[0];
     if (!elevator || managedTiers.length === 0) {
@@ -118,6 +130,8 @@ export function getMineIdleCashPerSecond(currentMine, hasPremium = false) {
 export default {
     getMaxPrestigeCount,
     getMineProductionPerSecond,
+    getCombinedMineIdleCashPerSecond,
+    getAverageMineIdleCashPerSecond,
     getMineIdleCashPerSecond,
     getShaftProductionPerSecond
 };

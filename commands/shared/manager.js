@@ -8,6 +8,7 @@ import { logError, safeEditMessage, safeUpdateInteraction } from '../../utils/er
 import { acknowledgeComponent, trackComponentCollector } from '../../utils/interactionSessions.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
+import commandContext from './context.js';
 
 const managerData = managerDataJson.managers;
 const managerCosts = managerCostsJson.managerCosts;
@@ -202,7 +203,7 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);

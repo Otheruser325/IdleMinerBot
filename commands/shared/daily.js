@@ -15,7 +15,7 @@ async function handleDailyCommand(context) {
 
     const user = await getCommandUser(context);
     if (!user) {
-        return commandContext.reply(context, `You need to start the game first by using \`${commandContext.isInteraction(context) ? '/start' : 'im!start'}\`.`);
+        return commandContext.reply(context, `You need to start the game first by using \`${commandContext.commandReference(context, 'start')}\`.`);
     }
 
     if (!isDailyUnlocked(user) && getAccountAgeMs(user) < DAY) {

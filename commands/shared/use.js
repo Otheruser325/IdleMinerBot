@@ -1,6 +1,7 @@
 import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js';
 import numberFormat from '../../utils/numberFormat.js';
 import { logError } from '../../utils/errorHandling.js';
+import commandContext from './context.js';
 
 export default {
     name: 'use',
@@ -12,7 +13,7 @@ export default {
             const itemId = parseInt(args[0], 10);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             user.inventory = user.inventory || {};
@@ -21,7 +22,7 @@ export default {
             const booster = user.inventory.boosters.find(b => b.item_id === itemId);
 
             if (!booster) {
-                return message.reply('You do not have that booster in your inventory. Use `im!shop` to purchase boosters.');
+                return message.reply(`You do not have that booster in your inventory. Use \`${commandContext.commandReference(message, 'shop')}\` to purchase boosters.`);
             }
 
             if (booster.stock <= 0) {

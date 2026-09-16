@@ -31,11 +31,8 @@ export async function updateBotStatus(client) {
                 activities: [{ name: statusText, type: ActivityType.Playing }]
             });
         }
-        console.log(`Bot status updated: ${statusText}`);
         return true;
     } catch (error) {
-        console.error('Error updating bot status:', error?.message || error);
-
         try {
             const fallbackText = lastKnownUserCount === null
                 ? 'Waiting for miners...'

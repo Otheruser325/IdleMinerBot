@@ -15,7 +15,8 @@ import {
     resolveContinent,
     userOwnsContinent
 } from '../../utils/continentLooker.js';
-import { getMaxPrestigeCount, getMineIdleCashPerSecond } from '../../utils/mineOverview.js';
+import { getAverageMineIdleCashPerSecond, getCombinedMineIdleCashPerSecond, getMaxPrestigeCount, getMineIdleCashPerSecond } from '../../utils/mineOverview.js';
+import commandContext from './context.js';
 
 const continentData = continentDataJson.continents;
 
@@ -28,18 +29,18 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             normalizeUserContinentState(user);
 
-            const subcommand = args[0]?.toLowerCase();
+            const subcommand = args[0]?.toLowerCase() || 'manage';
 
             switch (subcommand) {
                 case 'buy':
                     return handleContinentBuy(message, args.slice(1).join(' '), user);
                 case 'manage':
-                    return handleContinentManage(message, user);
+                    return handleContinentManage(message, user, args.slice(1).join(' '));
                 default:
                     return message.reply(`<@${userId}>, to use the continent command for buying or managing continents, please use either \`buy\` or \`manage\` respectively.`);
             }
@@ -49,15 +50,9 @@ export default {
 
 function normalizeUserContinentState(user) {
     user.continents = normalizeOwnedContinents(user.continents);
-    if (!userOwnsContinent(user, 'Ice Continent') && (user.ice_cash || 0) === 10) {
-        user.ice_cash = 0;
-    }
-    if (!userOwnsContinent(user, 'Fire Continent') && (user.fire_cash || 0) === 10) {
-        user.fire_cash = 0;
-    }
-    if (!userOwnsContinent(user, 'Dawn Continent') && (user.dawn_cash || 0) === 10) {
-        user.dawn_cash = 0;
-    }
+    if (!userOwnsContinent(user, 'Ice Continent') && (user.ice_cash || 0) === 10) user.ice_cash = 0;
+    if (!userOwnsContinent(user, 'Fire Continent') && (user.fire_cash || 0) === 10) user.fire_cash = 0;
+    if (!userOwnsContinent(user, 'Dawn Continent') && (user.dawn_cash || 0) === 10) user.dawn_cash = 0;
     user.mines = (user.mines || [])
         .map(normalizeMineData)
         .sort((left, right) => (left.mine_number || 0) - (right.mine_number || 0));
@@ -79,45 +74,26 @@ function getMissingMineNamesForContinent(user, continentName) {
 }
 
 async function handleContinentBuy(message, continentInput, user) {
-    if (!continentInput) {
-        return message.reply('Please specify the continent you want to buy.');
-    }
+    if (!continentInput) return message.reply('Please specify the continent you want to buy.');
 
     const resolvedContinent = resolveContinent(continentInput);
-    if (!resolvedContinent) {
-        return message.reply('Invalid continent name. Try `Start`, `Ice`, `Fire`, or even a mine reference like `Mine 10`.');
-    }
+    if (!resolvedContinent) return message.reply('Invalid continent name. Try `Start`, `Ice`, `Fire`, or even a mine reference like `Mine 10`.');
 
     const continent = getContinentConfig(resolvedContinent.name);
-    if (!continent) {
-        return message.reply('That continent is not configured yet.');
-    }
-
-    if (userOwnsContinent(user, resolvedContinent.name)) {
-        return message.reply(`You have already unlocked ${resolvedContinent.name}.`);
-    }
+    if (!continent) return message.reply('That continent is not configured yet.');
+    if (userOwnsContinent(user, resolvedContinent.name)) return message.reply(`You have already unlocked ${resolvedContinent.name}.`);
 
     const previousContinent = getPreviousContinent(resolvedContinent.name);
-    if (!previousContinent) {
-        return message.reply(`${resolvedContinent.name} is your starting continent and does not need to be purchased.`);
-    }
-
-    if (!userOwnsContinent(user, previousContinent.name)) {
-        return message.reply(`You need to unlock ${previousContinent.name} before unlocking ${resolvedContinent.name}.`);
-    }
+    if (!previousContinent) return message.reply(`${resolvedContinent.name} is your starting continent and does not need to be purchased.`);
+    if (!userOwnsContinent(user, previousContinent.name)) return message.reply(`You need to unlock ${previousContinent.name} before unlocking ${resolvedContinent.name}.`);
 
     const missingMines = getMissingMineNamesForContinent(user, previousContinent.name);
-    if (missingMines.length > 0) {
-        return message.reply(`You need to own every mine in ${previousContinent.name} before unlocking ${resolvedContinent.name}. Missing: ${missingMines.join(', ')}.`);
-    }
+    if (missingMines.length > 0) return message.reply(`You need to own every mine in ${previousContinent.name} before unlocking ${resolvedContinent.name}. Missing: ${missingMines.join(', ')}.`);
 
     const cashField = getUnlockCashFieldForContinent(resolvedContinent.name);
     const cashLabel = getUnlockCashLabelForContinent(resolvedContinent.name);
     const availableCash = user[cashField] || 0;
-
-    if (availableCash < continent.Cost) {
-        return message.reply(`You don't have enough ${cashLabel} to unlock ${resolvedContinent.name}. It costs ${numberFormat(continent.Cost)} ${cashLabel}.`);
-    }
+    if (availableCash < continent.Cost) return message.reply(`You don't have enough ${cashLabel} to unlock ${resolvedContinent.name}. It costs ${numberFormat(continent.Cost)} ${cashLabel}.`);
 
     user[cashField] = availableCash - continent.Cost;
     user.continents = normalizeOwnedContinents([...user.continents, resolvedContinent.name]);
@@ -137,71 +113,36 @@ async function handleContinentBuy(message, continentInput, user) {
     return message.reply(`Congratulations! You unlocked ${resolvedContinent.name} using ${cashLabel} and received 10 ${targetCashLabel}. Your next step is to buy ${firstMineName} with ${targetCashLabel}.`);
 }
 
-async function handleContinentManage(message, user) {
-    const currentContinent = user.current_continent || 'Start Continent';
-    const continentLines = continentData.map(continent => {
-        const isUnlocked = userOwnsContinent(user, continent.ContinentName);
-        const previousContinent = getPreviousContinent(continent.ContinentName);
-
-        if (isUnlocked) {
-            const mineCount = getMinesForContinent(continent.ContinentName).length;
-            const ownedMineCount = mineCount - getMissingMineNamesForContinent(user, continent.ContinentName).length;
-            return `${continent.ContinentName}: Unlocked (${ownedMineCount}/${mineCount} mines owned)`;
-        }
-
-        if (!previousContinent) {
-            return `${continent.ContinentName}: Starting continent`;
-        }
-
-        const unlockCashLabel = getUnlockCashLabelForContinent(continent.ContinentName);
-        const missingMines = getMissingMineNamesForContinent(user, previousContinent.name);
-        const mineRequirement = missingMines.length === 0
-            ? 'Mine requirement met'
-            : `${missingMines.length} previous-continent mines still needed`;
-
-        return `${continent.ContinentName}: Locked | Cost ${numberFormat(continent.Cost)} ${unlockCashLabel} | ${mineRequirement}`;
-    });
-
-    const walletLines = [
-        `Starter Cash: ${numberFormat(user[getCashFieldForContinent('Start Continent')] || 0)}`,
-        `Ice Cash: ${numberFormat(user[getCashFieldForContinent('Ice Continent')] || 0)}`,
-        `Fire Cash: ${numberFormat(user[getCashFieldForContinent('Fire Continent')] || 0)}`,
-        `Dawn Cash: ${numberFormat(user[getCashFieldForContinent('Dawn Continent')] || 0)}`
-    ];
-
-    const continentMineFields = continentData.map(continent => {
-        const mineLines = getMinesForContinent(continent.ContinentName).map(mineNumber => {
-            const mineName = getMineName(mineNumber);
-            const ownedMine = (user.mines || []).find(mine => mine.mine_number === mineNumber);
-            if (!ownedMine) {
-                return `${mineName}: Locked`;
-            }
-
-            const maxPrestigeCount = getMaxPrestigeCount(mineNumber);
-            const idleCashPerSecond = getMineIdleCashPerSecond(ownedMine, user.has_premium);
-            return `${mineName}: ⭐ Prestige ${ownedMine.prestige_count || 0}/${maxPrestigeCount} | ⭐ Idle/sec ${numberFormat(idleCashPerSecond)}`;
-        });
-
-        return {
-            name: continent.ContinentName,
-            value: mineLines.join('\n').slice(0, 1024),
-            inline: false
-        };
+async function handleContinentManage(message, user, continentInput = '') {
+    const requestedContinent = continentInput ? resolveContinent(continentInput) : null;
+    if (continentInput && !requestedContinent) return message.reply('Invalid continent name.');
+    const currentContinent = requestedContinent?.name || user.current_continent || 'Start Continent';
+    const currentMineNumbers = getMinesForContinent(currentContinent);
+    const ownedMines = (user.mines || []).filter(mine => currentMineNumbers.includes(mine.mine_number));
+    const combinedIdleCash = getCombinedMineIdleCashPerSecond(ownedMines, user.has_premium);
+    const averageIdleCash = getAverageMineIdleCashPerSecond(ownedMines, currentMineNumbers.length, user.has_premium);
+    const cashField = getCashFieldForContinent(currentContinent);
+    const cashLabel = getCashLabelForContinent(currentContinent);
+    const mineLines = currentMineNumbers.map(mineNumber => {
+        const mineName = getMineName(mineNumber);
+        const mine = ownedMines.find(candidate => candidate.mine_number === mineNumber);
+        if (!mine) return `${mineName}: Locked | Idle/sec 0`;
+        const idleCash = getMineIdleCashPerSecond(mine, user.has_premium);
+        return `${mineName}: Prestige ${mine.prestige_count || 0}/${getMaxPrestigeCount(mineNumber)} | Idle/sec ${numberFormat(idleCash)}`;
     });
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle('Continent Management')
+        .setTitle(`${currentContinent} Management`)
         .setDescription([
             `Current Continent: ${currentContinent}`,
+            `Cash: ${numberFormat(user[cashField] || 0)} ${cashLabel}`,
+            `Owned Mines: ${ownedMines.length}/${currentMineNumbers.length}`,
+            `Average Idle Cash/sec (including locked mines): ${numberFormat(averageIdleCash)} ${cashLabel}`,
+            `Combined Idle Cash/sec: ${numberFormat(combinedIdleCash)} ${cashLabel}`,
             '',
-            'Continents:',
-            continentLines.join('\n'),
-            '',
-            'Wallets:',
-            walletLines.join('\n')
+            ...mineLines
         ].join('\n'))
-        .addFields(continentMineFields)
         .setTimestamp();
 
     return message.reply({ embeds: [embed] });

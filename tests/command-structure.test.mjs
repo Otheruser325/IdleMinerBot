@@ -2,9 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import prefixHello from '../commands/prefix/hello.js';
 import slashHello from '../commands/slash/hello.js';
+import slashProfile from '../commands/slash/profile.js';
+import slashMine from '../commands/slash/mine.js';
+import slashSettings from '../commands/slash/settings.js';
 import { createMessageAdapter, executeSharedCommand } from '../utils/commandBridge.js';
-import help, { collectCommands, pagePayload } from '../commands/shared/help.js';
+import help, { collectCommands, formatGuidance, pagePayload } from '../commands/shared/help.js';
 import { getStandaloneHandler, registerInteraction } from '../utils/interactionDispatcher.js';
+import commandContext from '../commands/shared/context.js';
 
 function createInteraction() {
     const calls = [];
@@ -55,6 +59,27 @@ test('help exposes shared command guidance and prefix/slash usage', () => {
     assert.equal(payload.embeds[0].data.fields.some(field => /Advice:/i.test(field.value)), false);
 });
 
+test('command references preserve mention prefixes and slash references', () => {
+    assert.equal(commandContext.commandReference({ commandPrefix: '<@!123>' }, 'work', 'shaft 1'), '<@!123> work shaft 1');
+    assert.equal(commandContext.commandReference({ commandName: 'work' }, 'work', 'shaft 1'), '/work shaft 1');
+    assert.equal(commandContext.prefixReference({ commandName: 'work' }, 'work'), 'im!work');
+    assert.equal(commandContext.slashReference('work', 'shaft 1'), '/work shaft 1');
+    assert.equal(formatGuidance({ commandName: 'help' }, 'Use `im!work shaft 1`.'), 'Use `/work shaft 1`.');
+    assert.equal(formatGuidance({ commandPrefix: '<@!123>' }, 'Use `im!work shaft 1`.'), 'Use `<@!123> work shaft 1`.');
+});
+
+test('profile, mine, and settings slash contracts support optional display/configuration flows', () => {
+    assert.equal(slashProfile.data.toJSON().name, 'profile');
+    assert.equal(slashMine.data.toJSON().name, 'mine');
+    assert.equal(slashSettings.data.toJSON().name, 'settings');
+    const profileOptions = slashProfile.data.toJSON().options;
+    assert.equal(profileOptions.some(option => option.name === 'section'), true);
+    const mineManage = slashMine.data.toJSON().options.find(option => option.name === 'manage');
+    assert.equal(mineManage.options[0].required, false);
+    const settingsSet = slashSettings.data.toJSON().options.find(option => option.name === 'set');
+    assert.equal(settingsSet.options.every(option => option.required === false), true);
+});
+
 test('interaction handlers route exact and pattern custom IDs while excluding collector-owned handlers', () => {
     const registry = new Map();
     const exact = { customId: 'test', execute() {} };
@@ -71,14 +96,14 @@ test('interaction handlers route exact and pattern custom IDs while excluding co
 test('prefix and slash adapters expose the same shared hello behavior', async () => {
     const prefixReplies = [];
     await prefixHello.execute({ author: { id: '1' }, reply: value => prefixReplies.push(value) });
-    assert.deepEqual(prefixReplies, ['Hello!']);
+    assert.deepEqual(prefixReplies, ['Hello fellow miner! Ready to dig some precious jewels?']);
 
     assert.equal(slashHello.data.toJSON().name, 'hello');
     const interaction = createInteraction();
     await slashHello.execute(interaction);
     assert.equal(interaction.calls.filter(([name]) => name === 'deferReply').length, 1);
     assert.equal(interaction.calls.at(-1)[0], 'editReply');
-    assert.equal(interaction.calls.at(-1)[1].content, 'Hello!');
+    assert.equal(interaction.calls.at(-1)[1].content, 'Hello fellow miner! Ready to dig some precious jewels?');
 });
 
 test('shared command bridge acknowledges once and adapts channel sends to the interaction response', async () => {
@@ -104,6 +129,8 @@ test('message adapter provides a stable interaction-shaped channel contract', as
     assert.equal(message.author, interaction.user);
     assert.equal(message.channel.id, interaction.channelId);
     assert.equal(message.guildId, interaction.guildId);
+    assert.equal(message.commandName, interaction.commandName);
+    assert.equal(commandContext.commandReference(message, 'start'), '/start');
     assert.equal(message.channel.isDMBased(), false);
 
     await message.edit('progress update');

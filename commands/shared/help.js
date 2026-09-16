@@ -47,23 +47,29 @@ function collectCommands(context) {
         if (!name || name === 'help' || seen.has(name)) continue;
         seen.add(name);
         const aliases = Array.isArray(command.aliases) ? command.aliases.map(String) : [];
-        const usage = formatUsage(name, command.usage);
+        const usage = formatUsage(context, name, command.usage);
         commands.push({
             name,
             aliases,
             description: command.data?.description || command.description || 'No description available.',
             usage,
-            guidance: command.guidance || COMMAND_GUIDANCE[name] || 'Use the command description and usage as a starting point, then check the response for the next recommended gameplay step.'
+            guidance: formatGuidance(context, command.guidance || COMMAND_GUIDANCE[name] || 'Use the command description and usage as a starting point, then check the response for the next recommended gameplay step.')
         });
     }
     return commands.sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function formatUsage(name, usage) {
+function formatGuidance(context, guidance) {
+    const activeReferencePrefix = commandContext.commandReference(context, '');
+    return String(guidance || '').replaceAll('im!', activeReferencePrefix);
+}
+
+function formatUsage(context, name, usage) {
     const raw = String(usage || '').trim();
-    if (!raw) return `im!${name} | /${name}`;
-    if (raw.includes('im!') || raw.includes(`/${name}`)) return raw;
-    return `im!${name} ${raw} | /${name} ${raw}`;
+    const prefixUsage = commandContext.prefixReference(context, name, raw);
+    const slashUsage = commandContext.slashReference(name, raw);
+    if (!raw) return `${prefixUsage} | ${slashUsage}`;
+    return `${prefixUsage} | ${slashUsage}`;
 }
 
 function commandLookup(commands, input) {
@@ -72,7 +78,7 @@ function commandLookup(commands, input) {
 }
 
 function commandDetail(context, command) {
-    const aliases = command.aliases.length ? command.aliases.map(alias => `im!${alias}`).join(', ') : 'None';
+    const aliases = command.aliases.length ? command.aliases.map(alias => commandContext.prefixReference(context, alias)).join(', ') : 'None';
     const embed = new EmbedBuilder()
         .setColor('#3498db')
         .setTitle(`Command help: ${command.name}`)
@@ -82,12 +88,12 @@ function commandDetail(context, command) {
             { name: 'Usage', value: `\`${command.usage}\`` },
             { name: 'Gameplay advice', value: command.guidance }
         )
-        .setFooter({ text: 'Prefix commands use im! (case-insensitive); slash commands use /.' })
+        .setFooter({ text: `Prefix commands use ${commandContext.prefixReference(context, '')} (case-insensitive); slash commands use ${commandContext.slashReference('')}.` })
         .setTimestamp();
     return commandContext.reply(context, { embeds: [embed] });
 }
 
-function pagePayload(commands, page, totalPages, sessionId) {
+function pagePayload(commands, page, totalPages, sessionId, context = null) {
     const visible = commands.slice((page - 1) * COMMANDS_PER_PAGE, page * COMMANDS_PER_PAGE);
     const embed = new EmbedBuilder()
         .setColor('#3498db')
@@ -97,7 +103,7 @@ function pagePayload(commands, page, totalPages, sessionId) {
         .setTimestamp();
 
     for (const command of visible) {
-        const aliases = command.aliases.length ? ` | Aliases: ${command.aliases.map(alias => `im!${alias}`).join(', ')}` : '';
+        const aliases = command.aliases.length ? ` | Aliases: ${command.aliases.map(alias => commandContext.prefixReference(context, alias)).join(', ')}` : '';
         embed.addFields({
             name: `${command.name}${aliases}`,
             value: `${command.description}\nUsage: \`${command.usage}\``.slice(0, 1024),
@@ -118,7 +124,7 @@ async function paginate(context, commands) {
     const totalPages = Math.max(1, Math.ceil(commands.length / COMMANDS_PER_PAGE));
     let page = 1;
 
-    const render = () => pagePayload(commands, page, totalPages, sessionId);
+    const render = () => pagePayload(commands, page, totalPages, sessionId, context);
     let message = commandContext.isInteraction(context)
         ? await commandContext.reply(context, render())
         : await context.reply({ ...render(), fetchReply: true });
@@ -173,7 +179,7 @@ export async function handleHelpCommand(context, { args = [] } = {}) {
     return paginate(context, commands);
 }
 
-export { COMMAND_GUIDANCE, collectCommands, commandDetail, pagePayload };
+export { COMMAND_GUIDANCE, collectCommands, commandDetail, pagePayload, formatGuidance, formatUsage };
 export default {
     name: 'help',
     description: 'Browse Idle Miner commands and gameplay advice.',

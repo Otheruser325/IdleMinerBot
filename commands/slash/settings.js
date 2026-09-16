@@ -9,7 +9,7 @@ export default {
         .addSubcommand(sub => sub.setName('overview').setDescription('View your settings.'))
         .addSubcommand(sub => sub.setName('reset').setDescription('Reset your settings.'))
         .addSubcommand(sub => sub.setName('set').setDescription('Set a preference.')
-            .addStringOption(o => o.setName('setting').setDescription('Setting key').setRequired(true)
+            .addStringOption(o => o.setName('setting').setDescription('Optional setting; omit to choose from a menu.').setRequired(false)
                 .addChoices(
                     { name: 'number_format', value: 'number_format' },
                     { name: 'idle_cash_alerts', value: 'idle_cash_alerts' },
@@ -18,7 +18,7 @@ export default {
                     { name: 'bottleneck_alerts', value: 'bottleneck_alerts' },
                     { name: 'idle_time', value: 'idle_time' }
                 ))
-            .addStringOption(o => o.setName('value').setDescription('New value').setRequired(true))
+            .addStringOption(o => o.setName('value').setDescription('Optional value; omit to choose from a menu.').setRequired(false))
         ),
     async execute(interaction) {
         const sub = interaction.options.getSubcommand();

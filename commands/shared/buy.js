@@ -45,7 +45,7 @@ export default {
       const itemInput = args.join(' ');
 
       if (!user) {
-        return commandContext.reply(message, 'You need to start the game first by using `im!start` (or `/start` if using slash).');
+        return commandContext.reply(message, `You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
       }
 
       if (!isShopUnlocked(user)) {

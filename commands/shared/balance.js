@@ -45,7 +45,7 @@ async function handleBalanceCommand(context, { rawArg = null, targetUser = null 
     if (target.bot) return commandContext.reply(context, 'This is not a real user.');
 
     const user = await getUser(target.id);
-    if (!user) return commandContext.reply(context, `${target.username} needs to start the game first by using \`im!start\` (or \`/start\` if using slash).`);
+    if (!user) return commandContext.reply(context, `${target.username} needs to start the game first by using \`${commandContext.commandReference(context, 'start')}\` (or \`/start\` if using slash).`);
 
     const embed = new EmbedBuilder()
         .setColor('#0099ff')

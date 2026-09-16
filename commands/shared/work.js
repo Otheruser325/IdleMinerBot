@@ -20,6 +20,7 @@ import {
 } from '../../utils/movementTimes.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { logError, safeEditMessage } from '../../utils/errorHandling.js';
+import commandContext from './context.js';
 
 const shaftData = shaftDataJson.shafts || [];
 const elevatorData = elevatorDataJson.elevators || [];
@@ -153,7 +154,7 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return commandContext.reply(message, `You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
@@ -162,7 +163,7 @@ export default {
             }
 
             if (args.length < 1) {
-                return message.reply(`<@${userId}>, to start working your __${currentMine.mine_name}__, you'll need to do: use either **shaft**, **elevator** or **warehouse** as the subcommand to operate them in your mine. For shafts, you'll need to use **im!work shaft (shaftNum)** to operate a specific mineshaft in a specified order of their tier you own (i.e. **im!work shaft 1**).`);
+                return message.reply(`<@${userId}>, to start working your __${currentMine.mine_name}__, use either **shaft**, **elevator** or **warehouse**. For shafts, use **${commandContext.commandReference(message, 'work', 'shaft <tier>')}**, for example **${commandContext.commandReference(message, 'work', 'shaft 1')}**.`);
             }
 
             const subcommand = args[0].toLowerCase();
@@ -171,7 +172,7 @@ export default {
                 case 'shaft': {
                     const tier = parseInt(args[1], 10);
                     if (isNaN(tier) || tier < 1 || tier > 40) {
-                        return message.reply('Please provide a valid shaft tier number between 1 and 40. Usage: im!work shaft <tier>');
+                        return message.reply(`Please provide a valid shaft tier number between 1 and 40. Usage: ${commandContext.commandReference(message, 'work', 'shaft <tier>')}`);
                     }
 
                     if (isShaftTierManaged(currentMine, tier)) {
@@ -250,7 +251,7 @@ export default {
                     }
                 }
                 default:
-                    return message.reply(`<@${userId}>! To start working your __${currentMine.mine_name}__, use either **shaft**, **elevator** or **warehouse**. For shafts, use **im!work shaft (shaftNum)**, for example **im!work shaft 1**.`);
+                    return message.reply(`<@${userId}>! To start working your __${currentMine.mine_name}__, use either **shaft**, **elevator** or **warehouse**. For shafts, use **${commandContext.commandReference(message, 'work', 'shaft <tier>')}**, for example **${commandContext.commandReference(message, 'work', 'shaft 1')}**.`);
             }
         });
     }

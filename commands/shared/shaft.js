@@ -19,6 +19,7 @@ import { getCashField, getCashLabelByField } from '../../utils/continentLooker.j
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
 import { getShaftProductionPerSecond } from '../../utils/mineOverview.js';
+import commandContext from './context.js';
 
 const shaftData = shaftDataJson.shafts || [];
 
@@ -46,16 +47,14 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
             if (!currentMine) {
                 return message.reply('Current mine data not found.');
-            }
-		
-		    if (args.length < 1) {
-                return message.reply(`<@${userId}>, to operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **__${currentMine.mine_name}__**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **__${currentMine.mine_name}__** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
+            }            if (args.length < 1) {
+                return message.reply(`<@${userId}>, use **${commandContext.commandReference(message, 'shaft', 'overview <tier>')}** to inspect a shaft, **${commandContext.commandReference(message, 'shaft', 'buy <tier>')}** to purchase one, or **${commandContext.commandReference(message, 'shaft', 'upgrade <tier>')}** to improve it. You can quick-upgrade with **${commandContext.commandReference(message, 'shaft', 'upgrade 1 5')}**.`);
             }
 		
 		    const subcommand = args[0].toLowerCase();
@@ -72,7 +71,7 @@ export default {
                 case 'upgrade':
                     return handleUpgrade(message, user, currentMine, args, userId);
                 default:
-                    return message.reply(`Invalid subcommand, <@${userId}>! To operate your shafts, you'll need to use **im!shaft overview** to view your shaft's performance in your **__${currentMine.mine_name}__**, based on the tier you provide (i.e. **im!shaft overview 1**), **im!shaft buy** for purchasing a new shaft in your **__${currentMine.mine_name}__** or **im!shaft upgrade** to upgrade your shaft of your choice (i.e. **im!shaft upgrade 1**, or you can also quick-upgrade using **im!shaft upgrade 1 5** for example for 5 purchased shaft levels on the 1st shaft, if you have the cash for it!).`);
+                    return message.reply(`Invalid subcommand, <@${userId}>! Use **${commandContext.commandReference(message, 'shaft', 'overview <tier>')}**, **${commandContext.commandReference(message, 'shaft', 'buy <tier>')}**, or **${commandContext.commandReference(message, 'shaft', 'upgrade <tier>')}**.`);
             }
         });
     }

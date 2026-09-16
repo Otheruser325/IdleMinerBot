@@ -14,6 +14,7 @@ import {
 } from '../../utils/continentLooker.js';
 import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getMaxPrestigeCount, getMineIdleCashPerSecond, getMineProductionPerSecond } from '../../utils/mineOverview.js';
+import commandContext from './context.js';
 
 const mineFactors = mineFactorsJson.mines;
 const mineRegions = mineRegionsJson.regions;
@@ -27,21 +28,23 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return commandContext.reply(message, `You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             normalizeUserMineState(user);
 
             if (args.length < 1) {
-                return message.reply(`<@${userId}>, to use the mine command for buying, visiting, or managing mines, please use \`buy\`, \`visit\`, \`manage\`, or \`prestige\` respectively.`);
+                return message.reply(`<@${userId}>, use \`${commandContext.commandReference(message, 'mine', 'buy')}\`, \`${commandContext.commandReference(message, 'mine', 'visit')}\`, \`${commandContext.commandReference(message, 'mine', 'manage')}\`, or \`${commandContext.commandReference(message, 'mine', 'prestige')}\`.`);
             }
 
             const subcommand = args[0].toLowerCase();
             const mineName = args.slice(1).join(' ');
 
-            if (!mineName && ['buy', 'visit', 'manage', 'prestige'].includes(subcommand)) {
+            if (!mineName && ['buy', 'visit', 'prestige'].includes(subcommand)) {
                 return message.reply(`Please specify the name or number of the mine to \`${subcommand}\`.`);
             }
+
+            const selectedMineName = mineName || (subcommand === 'manage' ? user.current_mine : mineName);
 
             switch (subcommand) {
                 case 'buy':
@@ -49,7 +52,7 @@ export default {
                 case 'visit':
                     return handleMineVisit(message, mineName, user, userId);
                 case 'manage':
-                    return handleMineManage(message, mineName, user);
+                    return handleMineManage(message, selectedMineName, user);
                 case 'prestige':
                     return handleMinePrestige(message, mineName, user, userId);
                 default:

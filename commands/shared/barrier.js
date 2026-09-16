@@ -1,6 +1,7 @@
 import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js';
 import { EmbedBuilder } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
+import commandContext from './context.js';
 
 export default {
     name: 'barrier',
@@ -13,7 +14,7 @@ export default {
             const user = await getUser(userId);
 
             if (!user) {
-                return message.reply('You need to start the game first by using `im!start` (or `/start` if using slash).');
+                return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
             const currentMine = user.mines.find(mine => mine.mine_name === user.current_mine);
@@ -22,7 +23,7 @@ export default {
             }
 
             if (args.length < 1) {
-                return message.reply(`<@${userId}>, to manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
+                return message.reply(`<@${userId}>, manage barriers with **${commandContext.commandReference(message, 'barrier', 'unlock <index>')}**, **${commandContext.commandReference(message, 'barrier', 'overview')}**, or **${commandContext.commandReference(message, 'barrier', 'remove <index>')}** in **__${currentMine.mine_name}__**.`);
             }
 
             const subcommand = args[0].toLowerCase();
@@ -35,7 +36,7 @@ export default {
                 case 'remove':
                     return handleRemove(message, user, currentMine, args, userId);
                 default:
-                    return message.reply(`Invalid subcommand, <@${userId}>! To manage your barriers, you'll need to do: unlock a new barrier from the order in your __${currentMine.mine_name}__ using **im!barrier unlock (index)**, view all current barriers in your mine using **im!barrier overview** or demolish a barrier that is finished using **im!barrier remove (index)**.`);
+                    return message.reply(`Invalid subcommand, <@${userId}>! Use **${commandContext.commandReference(message, 'barrier', 'unlock <index>')}**, **${commandContext.commandReference(message, 'barrier', 'overview')}**, or **${commandContext.commandReference(message, 'barrier', 'remove <index>')}**.`);
             }
         });
     }

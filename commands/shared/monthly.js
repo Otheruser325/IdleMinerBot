@@ -13,7 +13,7 @@ async function handleMonthlyCommand(context) {
     await commandContext.defer(context);
     const user = await getCommandUser(context);
     if (!user) {
-        return commandContext.reply(context, `You need to start the game first by using \`${commandContext.isInteraction(context) ? '/start' : 'im!start'}\`.`);
+        return commandContext.reply(context, `You need to start the game first by using \`${commandContext.commandReference(context, 'start')}\`.`);
     }
     if (!user.has_premium) return commandContext.reply(context, 'This is a premium feature. You need a premium pass to access it.');
     if (!isMonthlyUnlocked(user)) return commandContext.reply(context, 'Monthly is locked until you unlock Shaft Tier 5 on Coal Mine for the first time.');

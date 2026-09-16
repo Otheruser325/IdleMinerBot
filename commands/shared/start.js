@@ -16,13 +16,23 @@ async function handleStartCommand(context) {
         if (await getUser(userId)) return commandContext.reply(context, 'You are already in the game!');
         await initializeUser(userId, actor.username);
 
+        const helpRef = commandContext.commandReference(context, 'help');
+        const shaftRef = commandContext.commandReference(context, 'shaft');
+        const shaftBuyRef = commandContext.commandReference(context, 'shaft', 'buy');
+        const workShaftRef = commandContext.commandReference(context, 'work', 'shaft 1');
+        const workElevatorRef = commandContext.commandReference(context, 'work', 'elevator');
+        const workWarehouseRef = commandContext.commandReference(context, 'work', 'warehouse');
+        const managerRef = commandContext.commandReference(context, 'manager');
+        const mineRef = commandContext.commandReference(context, 'mine');
+        const mineOverviewRef = commandContext.commandReference(context, 'mine', 'overview');
+
         const embed = new EmbedBuilder()
             .setColor('#FFD700')
             .setTitle('Welcome to Idle Miner!')
-            .setDescription(`Welcome to the mining world, <@${userId}>! Please use \`im!help\` to get you ready and started!`)
+            .setDescription(`Welcome to the mining world, <@${userId}>! Please use \`${helpRef}\` to get you ready and started!`)
             .addFields({
                 name: 'Getting Started',
-                value: '1. **__Intro__**: Start by using the `im!shaft` command on your channel. You\'ll need to use `im!shaft buy` to purchase your first shaft.\n\n2. **__Operating the Mine__**: After purchasing, operate it using `im!work shaft 1`. Use `im!work elevator` and `im!work warehouse` to manage minerals.\n\n3. **__Upgrading & Managing__**: Upgrade your shafts using `im!shaft upgrade`. Hire managers using `im!manager` after upgrading to Level 5.\n\n4. **__Managing Mines__**: Use `im!mine` to operate new mines or check your status with `im!mine overview`.'
+                value: `1. **__Intro__**: Start with the ${shaftRef} command. Use ${shaftBuyRef} to purchase your first shaft.\n\n2. **__Operating the Mine__**: After purchasing, use ${workShaftRef}. Then use ${workElevatorRef} and ${workWarehouseRef} to move and sell minerals.\n\n3. **__Upgrading & Managing__**: Upgrade your shafts with ${commandContext.commandReference(context, 'shaft', 'upgrade')}. Hire managers with ${managerRef} after upgrading to Level 5.\n\n4. **__Managing Mines__**: Use ${mineRef} to operate new mines or check your status with ${mineOverviewRef}.`
             })
             .setFooter({ text: 'Happy mining!' });
 
