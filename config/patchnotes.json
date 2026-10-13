@@ -1,34 +1,60 @@
 {
-  "patchnotes": [
-    {
-      "version": "1.2.2",
-      "features": "Security and economy hardening. Fixed a data-loss bug where partial profile updates could overwrite unrelated fields, and made insert retries tolerate more database error codes. Full-table scans are now paginated so large servers no longer spike memory. Prestige correctly scales mine production again, barrier unlocks use per-barrier tier gates, shop and settings buttons use opaque IDs, and activity tracking no longer slows commands down. All money math now uses overflow-safe helpers.",
-      "date": "2026-10-13"
-    },
-    {
-      "version": "1.2.1",
-      "features": "Aligned the infrastructure with VivacityAPI and introduced a shared command layer so prefix and slash commands run the same implementation. Normalized gameplay data keys, added player profiles, and removed a committed service-account credential from the repository.",
-      "date": "2026-09-16"
-    },
-    {
-      "version": "1.2.0",
-      "features": "Added the settings command, richer idle-cash overviews, and improved manager hiring and overview flows. Hardened runtime scheduling and startup validation, and added sanity checks for command loading.",
-      "date": "2026-05-04"
-    },
-    {
-      "version": "1.1.1",
-      "features": "Reduced database costs and added global error handling so unexpected errors no longer crash the bot.",
-      "date": "2024-10-19"
-    },
-    {
-      "version": "1.1.0",
-      "features": "Major data-layer rework with a new database manager, leaderboard, and improved work and upgrade flows. Added premium content and boosters.",
-      "date": "2024-09-21"
-    },
-    {
-      "version": "1.0.0",
-      "features": "Bot release! Idle Miner Tycoon in your Discord chat with mines, shafts, elevators, warehouses, managers, and barriers.",
-      "date": "2024-08-22"
-    }
-  ]
+    "patchnotes": [
+        {
+            "version": "1.2.2",
+            "date": "2026-10-13",
+            "changes": [
+                "Fixed a data-loss bug where a partial profile update could overwrite unrelated fields, so your cash, mines and progress are always preserved!",
+                "Insert retries now tolerate more database error codes, so new accounts and concurrent saves no longer fail spuriously.",
+                "Full-table scans are now paginated, keeping Idle Miner Bot snappy and memory-light as more miners join.",
+                "Prestige now correctly scales mine production again - rebuilding after a prestige uses the right factor!",
+                "Barrier unlocks now use per-barrier tier gates, so every barrier checks the shafts it actually needs.",
+                "Shop and settings buttons now use opaque IDs with ownership checks - only you can press your own buttons.",
+                "Activity tracking is throttled and off the command path, so commands respond faster.",
+                "All money maths now uses overflow-safe helpers, so late-game balances always add up."
+            ]
+        },
+        {
+            "version": "1.2.1",
+            "date": "2026-09-16",
+            "changes": [
+                "Aligned the infrastructure with VivacityAPI and introduced a shared command layer so prefix and slash commands run the same implementation.",
+                "Normalized gameplay data keys and added player profiles.",
+                "Removed a committed service-account credential from the repository."
+            ]
+        },
+        {
+            "version": "1.2.0",
+            "date": "2026-05-04",
+            "changes": [
+                "Added the settings command for alerts, number formatting and premium idle-time preferences.",
+                "Added richer idle-cash overviews and improved manager hiring and overview flows.",
+                "Hardened runtime scheduling and startup validation, and added sanity checks for command loading."
+            ]
+        },
+        {
+            "version": "1.1.1",
+            "date": "2024-10-19",
+            "changes": [
+                "Reduced database costs.",
+                "Added global error handling so unexpected errors no longer crash the bot."
+            ]
+        },
+        {
+            "version": "1.1.0",
+            "date": "2024-09-21",
+            "changes": [
+                "Major data-layer rework with a new database manager and leaderboard.",
+                "Improved work and upgrade flows.",
+                "Added premium content and boosters."
+            ]
+        },
+        {
+            "version": "1.0.0",
+            "date": "2024-08-22",
+            "changes": [
+                "Bot release! Idle Miner Tycoon in your Discord chat with mines, shafts, elevators, warehouses, managers and barriers."
+            ]
+        }
+    ]
 }
