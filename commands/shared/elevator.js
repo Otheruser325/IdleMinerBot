@@ -15,6 +15,8 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
+import { moneyAdd } from '../../utils/economyConstants.js';
+import { planUpgrade } from '../../utils/upgradeEngine.js';
 import commandContext from './context.js';
 
 const elevatorData = elevatorDataJson.elevators || [];
@@ -76,7 +78,7 @@ async function handleElevatorOverview(message, user, elevator, currentMine, args
         return message.reply('Elevator data not found.');
     }
 
-    const mineFactor = getMineFactor(currentMine.mine_name);
+    const mineFactor = getMineFactor(currentMine);
     const adjustedCapacity = elevatorInfo.Capacity * mineFactor;
     const adjustedLoadingRate = elevatorInfo.LoadingPerSecond * mineFactor;
     const effects = getActiveEffects(currentMine);
@@ -116,84 +118,47 @@ async function handleElevatorUpgrade(message, user, elevator, currentMine, args,
         return message.reply(purchaseAmount.message);
     }
 
-    let totalCost = 0;
-    let superCashEarned = 0;
-    let lastLevel = elevator.level;
     const maxLevel = getMaxElevatorLevel();
-    const desiredUpgradeCount = purchaseAmount.isMax ? Infinity : purchaseAmount.amount;
-    let affordableUpgradeCount = 0;
-    let availableCash = user[walletField] || 0;
+    const availableCash = user[walletField] || 0;
+    const plan = planUpgrade({
+        records: elevatorData,
+        currentLevel: elevator.level,
+        maxLevel,
+        availableCash,
+        purchaseAmount,
+        scaleCost: record => scaleMineCost(record.Cost, currentMine),
+        superCashPerBigUpdate: 15
+    });
 
-    for (let i = 0; i < desiredUpgradeCount; i++) {
-        const nextLevel = lastLevel + 1;
-
-        if (nextLevel > maxLevel) {
-            break;
-        }
-
-        const nextElevatorInfo = elevatorData.find(e => e.Level === nextLevel);
-
-        if (!nextElevatorInfo) {
-            break;
-        }
-
-        const nextCost = scaleMineCost(nextElevatorInfo.Cost, currentMine);
-        if (availableCash < nextCost) {
-            break;
-        }
-
-        totalCost += nextCost;
-        availableCash -= nextCost;
-        lastLevel = nextLevel;
-        affordableUpgradeCount++;
-    }
-
-    if (affordableUpgradeCount < 1) {
+    if (plan.affordableCount < 1) {
         if (purchaseAmount.isMax) {
             return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator any further right now.`);
         }
-
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(availableCash)} ${walletLabel}.`);
     }
 
-    if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
-        if (lastLevel >= maxLevel) {
+    if (plan.exceededRequest) {
+        if (plan.finalLevel >= maxLevel) {
             return message.reply(`The elevator cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
         }
-
-        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade the elevator ${purchaseAmount.label}. Available: ${numberFormat(availableCash)} ${walletLabel}.`);
     }
 
-    // Apply upgrades
-    let currentLevel = elevator.level;
-    for (let i = 0; i < affordableUpgradeCount; i++) {
-        const nextLevel = currentLevel + 1;
-        const nextElevatorInfo = elevatorData.find(e => e.Level === nextLevel);
-
-        if (nextElevatorInfo) {
-            user[walletField] -= scaleMineCost(nextElevatorInfo.Cost, currentMine);
-            elevator.level = nextLevel;
-            elevator.speed = nextElevatorInfo.Speed;
-            elevator.capacity = nextElevatorInfo.Capacity * getMineFactor(currentMine.mine_name);
-            elevator.loading_per_second = nextElevatorInfo.LoadingPerSecond * getMineFactor(currentMine.mine_name);
-
-            if (nextElevatorInfo.BigUpdate === 1) {
-                superCashEarned += 15;
-            }
-
-            currentLevel = nextLevel;
-        } else {
-            break;
-        }
+    const mineFactor = getMineFactor(currentMine);
+    for (const nextElevatorInfo of plan.appliedLevels) {
+        elevator.level = nextElevatorInfo.Level;
+        elevator.speed = nextElevatorInfo.Speed;
+        elevator.capacity = nextElevatorInfo.Capacity * mineFactor;
+        elevator.loading_per_second = nextElevatorInfo.LoadingPerSecond * mineFactor;
     }
 
-    // Add Super Cash if earned
-    if (superCashEarned > 0) {
-        user.super_cash = (user.super_cash || 0) + superCashEarned;
+    user[walletField] = plan.remainingCash;
+    if (plan.superCashEarned > 0) {
+        user.super_cash = moneyAdd(user.super_cash, plan.superCashEarned);
     }
 
     await commitUserSnapshot(userId, user);
 
-    const purchaseLabel = purchaseAmount.isMax ? `MAX (${affordableUpgradeCount} levels)` : purchaseAmount.label;
-    return message.reply(`Elevator upgraded to Level ${elevator.level} using ${purchaseLabel} for ${numberFormat(totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    const purchaseLabel = purchaseAmount.isMax ? `MAX (${plan.appliedCount} levels)` : purchaseAmount.label;
+    return message.reply(`Elevator upgraded to Level ${elevator.level} using ${purchaseLabel} for ${numberFormat(plan.totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${plan.superCashEarned > 0 ? `You earned ${plan.superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

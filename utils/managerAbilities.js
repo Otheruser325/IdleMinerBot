@@ -5,6 +5,7 @@
 
 import managerDataJson from '../config/managers.json' with { type: 'json' };
 import managerEffectsJson from '../config/managerEffects.json' with { type: 'json' };
+import { toMoney } from './economyConstants.js';
 
 const managerData = managerDataJson.managers;
 const managerEffects = managerEffectsJson.managerEffects || [];
@@ -284,19 +285,27 @@ export function getActiveEffects(currentMine) {
  * @param {Object} currentMine - Current mine data
  * @returns {Object} - { finalCash, multiplier, breakdown }
  */
-export function applyIncomeMultiplier(baseCash, currentMine) {
+export function applyIncomeMultiplier(baseCash, currentMine, playerBoostMultiplier = 1) {
     const effects = getActiveEffects(currentMine);
-    
-    // Warehouse income multiplier affects final sale
-    const multiplier = effects.income_multiplier.warehouse;
-    const finalCash = baseCash * multiplier;
+
+    // Warehouse income multiplier affects the final sale, and the player's
+    // active booster is folded in so purchased boosters change payout.
+    const managerMultiplier = effects.income_multiplier.warehouse;
+    const boostMultiplier = Number.isFinite(playerBoostMultiplier) && playerBoostMultiplier > 1
+        ? playerBoostMultiplier
+        : 1;
+    const multiplier = managerMultiplier * boostMultiplier;
+    const finalCash = toMoney(baseCash * multiplier);
 
     return {
         finalCash,
         multiplier,
+        managerMultiplier,
+        boostMultiplier,
         breakdown: multiplier > 1 ? [
             `Base: ${baseCash}`,
-            `Manager Multiplier: ${multiplier.toFixed(2)}x`,
+            `Manager Multiplier: ${managerMultiplier.toFixed(2)}x`,
+            `Booster Multiplier: ${boostMultiplier.toFixed(2)}x`,
             `Final: ${Math.floor(finalCash)}`
         ] : null
     };

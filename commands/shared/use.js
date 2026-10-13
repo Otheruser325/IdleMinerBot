@@ -1,7 +1,17 @@
-import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js';
+import { getUser, updateUserTransaction, withUserLock } from '../../dataManager.js';
 import numberFormat from '../../utils/numberFormat.js';
 import { logError } from '../../utils/errorHandling.js';
+import { normalizeBooster } from '../../utils/boosts.js';
+import { getCashField } from '../../utils/continentLooker.js';
+import { getMineIdleCashPerSecond, getMineProductionPerSecond } from '../../utils/mineOverview.js';
+import { toMoney } from '../../utils/economyConstants.js';
 import commandContext from './context.js';
+
+function resolveInstantCashRate(currentMine, hasPremium) {
+    const productionRate = getMineProductionPerSecond(currentMine);
+    const idleRate = getMineIdleCashPerSecond(currentMine, hasPremium);
+    return Math.max(productionRate || 0, idleRate || 0);
+}
 
 export default {
     name: 'use',
@@ -16,49 +26,97 @@ export default {
                 return message.reply(`You need to start the game first by using \`${commandContext.commandReference(message, 'start')}\`.`);
             }
 
-            user.inventory = user.inventory || {};
-            user.inventory.boosters = user.inventory.boosters || [];
+            if (!Number.isInteger(itemId)) {
+                return message.reply(`Please provide a valid booster ID. Usage: ${commandContext.commandReference(message, 'use', '<item id>')}`);
+            }
 
-            const booster = user.inventory.boosters.find(b => b.item_id === itemId);
+            const currentMine = (user.mines || []).find(mine => mine.mine_name === user.current_mine)
+                || (user.mines || [])[0];
+            if (!currentMine) {
+                return message.reply('Current mine data not found.');
+            }
 
-            if (!booster) {
+            const inventory = user.inventory || {};
+            const boosters = Array.isArray(inventory.boosters) ? inventory.boosters : [];
+            const inventoryItem = boosters.find(booster => Number(booster.item_id) === itemId);
+
+            if (!inventoryItem) {
                 return message.reply(`You do not have that booster in your inventory. Use \`${commandContext.commandReference(message, 'shop')}\` to purchase boosters.`);
             }
 
-            if (booster.stock <= 0) {
+            const normalized = normalizeBooster(inventoryItem);
+            if (!normalized) {
+                return message.reply('That item is missing a valid duration or instant-cash value and cannot be used.');
+            }
+
+            if (Number(inventoryItem.stock || 0) <= 0) {
                 return message.reply('You do not have enough stock of that booster.');
             }
 
-            booster.stock -= 1;
+            const walletField = getCashField(currentMine.mine_number);
+            const now = Date.now();
+            const instantRate = normalized.isInstantItem
+                ? resolveInstantCashRate(currentMine, user.has_premium)
+                : 0;
+            const instantCash = normalized.isInstantItem
+                ? toMoney(instantRate * normalized.instantCashSeconds)
+                : 0;
 
-            const activeBoost = {
-                item_id: booster.item_id,
-                item_name: booster.item_name,
-                active_time: booster.active_time,
-                income_factor: booster.income_factor,
-                end_time: Date.now() + (booster.active_time * 1000)
-            };
-		
-		    if (!user.active_boosts) {
-		        user.active_boosts = [];
-		    }
+            const result = await updateUserTransaction(userId, current => {
+                if (!current) return undefined;
 
-            const existingBoostIndex = user.active_boosts.findIndex(b => b.income_factor === activeBoost.income_factor);
+                const currentInventory = current.inventory || {};
+                const currentBoosters = Array.isArray(currentInventory.boosters) ? currentInventory.boosters : [];
+                const liveItem = currentBoosters.find(booster => Number(booster.item_id) === itemId);
+                if (!liveItem || Number(liveItem.stock || 0) <= 0) return undefined;
 
-            if (existingBoostIndex > -1) {
-                const existingBoost = user.active_boosts[existingBoostIndex];
-                if (existingBoost.end_time < activeBoost.end_time) {
-                    existingBoost.end_time = activeBoost.end_time;
+                const liveNormalized = normalizeBooster(liveItem);
+                if (!liveNormalized) return undefined;
+
+                liveItem.stock = Number(liveItem.stock || 0) - 1;
+
+                const activeBoosts = Array.isArray(current.active_boosts) ? current.active_boosts : [];
+                const nextBoosts = activeBoosts.filter(boost => Number(boost?.end_time) > now);
+
+                if (liveNormalized.isInstantItem) {
+                    current[walletField] = toMoney((current[walletField] || 0) + instantCash);
+                } else {
+                    const activeBoost = {
+                        item_id: liveNormalized.itemId,
+                        item_name: liveNormalized.itemName,
+                        active_time: liveNormalized.activeTimeSeconds,
+                        income_factor: liveNormalized.incomeFactor,
+                        end_time: now + (liveNormalized.activeTimeSeconds * 1000)
+                    };
+                    const existingIndex = nextBoosts.findIndex(boost => Number(boost.income_factor) === activeBoost.income_factor);
+                    if (existingIndex > -1) {
+                        const existingBoost = nextBoosts[existingIndex];
+                        if (Number(existingBoost.end_time) < activeBoost.end_time) {
+                            existingBoost.end_time = activeBoost.end_time;
+                        }
+                    } else {
+                        nextBoosts.push(activeBoost);
+                    }
                 }
-            } else {
-                user.active_boosts.push(activeBoost);
+
+                return {
+                    ...current,
+                    inventory: { ...currentInventory, boosters: currentBoosters },
+                    active_boosts: nextBoosts
+                };
+            });
+
+            if (!result.committed) {
+                return message.reply('That booster could not be used right now. Please try again.');
             }
 
             try {
-                await commitUserSnapshot(userId, user);
-                return message.reply(`You have successfully used the ${booster.item_name}!`);
+                if (normalized.isInstantItem) {
+                    return message.reply(`You used ${normalized.itemName} and received ${numberFormat(instantCash)} Cash instantly!`);
+                }
+                return message.reply(`You have successfully used the ${normalized.itemName}!`);
             } catch (error) {
-			    logError('use:execute', error, { userId, itemId });
+                logError('use:execute', error, { userId, itemId });
                 return message.reply('An error occurred while using the booster.');
             }
         });

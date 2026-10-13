@@ -7,7 +7,7 @@ import shopDataJson from '../../config/shopData.json' with { type: 'json' };
 import numberFormat from '../../utils/numberFormat.js';
 import { isShopUnlocked } from '../../utils/progression.js';
 import { logError, safeUpdateInteraction, safeEditMessage } from '../../utils/errorHandling.js';
-import { acknowledgeComponent, trackComponentCollector } from '../../utils/interactionSessions.js';
+import { acknowledgeComponent, trackComponentCollector, createComponentToken, isComponentOwner } from '../../utils/interactionSessions.js';
 import { isPremiumPassItem } from '../../utils/premiumPayments.js';
 
 const shopData = shopDataJson.items;
@@ -36,6 +36,7 @@ export default {
         if (!isShopUnlocked(user)) return commandContext.reply(context, 'Shop unlocks after you buy Shaft Tier 3 on Coal Mine for the first time.');
 
         let page = 0;
+        const token = createComponentToken();
         const itemsPerPage = 4;
         const maxPage = Math.max(0, Math.ceil(shopData.length / itemsPerPage) - 1);
         const generateEmbed = currentPage => {
@@ -59,8 +60,8 @@ export default {
             return embed;
         };
         const buildRow = currentPage => new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`shop_prev_${userId}`).setLabel('Previous').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 0),
-            new ButtonBuilder().setCustomId(`shop_next_${userId}`).setLabel('Next').setStyle(ButtonStyle.Primary).setDisabled(currentPage === maxPage)
+            new ButtonBuilder().setCustomId(`shop_prev_${token}`).setLabel('Previous').setStyle(ButtonStyle.Primary).setDisabled(currentPage === 0),
+            new ButtonBuilder().setCustomId(`shop_next_${token}`).setLabel('Next').setStyle(ButtonStyle.Primary).setDisabled(currentPage === maxPage)
         );
 
         try {
@@ -77,8 +78,9 @@ export default {
             );
             collector.on('collect', async interaction => {
                 try {
-                    if (interaction.customId === `shop_prev_${userId}` && page > 0) page--;
-                    if (interaction.customId === `shop_next_${userId}` && page < maxPage) page++;
+                    if (!isComponentOwner(interaction, userId)) return;
+                    if (interaction.customId === `shop_prev_${token}` && page > 0) page--;
+                    if (interaction.customId === `shop_next_${token}` && page < maxPage) page++;
                     if (!await acknowledgeComponent(interaction, 'shop.collector')) return;
                     await safeUpdateInteraction(interaction, { embeds: [generateEmbed(page)], components: [buildRow(page)] }, 'shop:collector:update', {
                         userId: interaction.user?.id,

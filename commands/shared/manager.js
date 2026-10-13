@@ -9,6 +9,7 @@ import { acknowledgeComponent, trackComponentCollector } from '../../utils/inter
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import commandContext from './context.js';
+import { moneyAdd, moneySub } from '../../utils/economyConstants.js';
 
 const managerData = managerDataJson.managers;
 const managerCosts = managerCostsJson.managerCosts;
@@ -169,7 +170,7 @@ function getManagerHireWallet(currentMine) {
 function creditDuplicateManagerCompensation(user, currentMine, cost) {
     const walletField = getManagerHireWallet(currentMine);
     const compensation = Math.floor(cost * 0.5);
-    user[walletField] = (user[walletField] || 0) + compensation;
+    user[walletField] = moneyAdd(user[walletField], compensation);
     return { walletField, compensation };
 }
 
@@ -346,7 +347,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
         }
     }
 
-    user[walletField] = availableCash - cost;
+    user[walletField] = moneySub(availableCash, cost);
     currentMine.managers[area].push({
         manager_id: getManagerBaseId(newManager),
 		name: newManager.Name,

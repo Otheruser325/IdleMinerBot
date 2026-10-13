@@ -2,6 +2,7 @@ import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js'
 import { EmbedBuilder } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
 import commandContext from './context.js';
+import { moneyLt, moneySub } from '../../utils/economyConstants.js';
 
 export default {
     name: 'barrier',
@@ -47,29 +48,51 @@ function barrierCost(barrier) {
 }
 
 function barrierBuildTimeSeconds(barrier) {
-    return Number(barrier?.BuildTimeInSeconds ?? 0);
+    const seconds = Number(barrier?.BuildTimeInSeconds ?? 0);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+}
+
+function barrierTier(barrier, key) {
+    return Number(barrier?.[key === 'from' ? 'FromTier' : 'ToTier'] ?? 0);
+}
+
+function formatBuildTime(seconds) {
+    const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${safeSeconds}s`;
 }
 
 async function handleUnlock(message, user, currentMine, args, userId) {
     const barrierOrder = parseInt(args[1], 10);
 
-    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
+    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder > currentMine.barriers.length) {
         return message.reply('Please provide a valid barrier order number.');
     }
 
-    const barrier = currentMine.barriers[barrierOrder];
-    const previousBarrier = currentMine.barriers[barrierOrder - 1];
+    const barrierIndex = barrierOrder - 1;
+    const barrier = currentMine.barriers[barrierIndex];
+    const previousBarrier = currentMine.barriers[barrierIndex - 1];
 
     if (!barrier) {
         return message.reply('Barrier data not found.');
     }
 
-    if (!previousBarrier.unlocked && barrierOrder > 1) {
+    // Order matters: barrier 1 has no predecessor, so check the order first to
+    // avoid dereferencing an undefined previous barrier.
+    if (barrierOrder > 1 && !previousBarrier?.unlocked) {
         return message.reply(`You must unlock Barrier ${barrierOrder - 1} before unlocking Barrier ${barrierOrder}.`);
     }
 
-    const requiredTier = barrierOrder === 1 ? 5 : 10;
-    const requiredShaftsUnlocked = currentMine.mineshafts.some(shaft => shaft.tier >= requiredTier);
+    // The gate is the last tier of the previous region, derived from this
+    // barrier's own range so it stays correct for every barrier (not just the
+    // first two, which is all a hardcoded 5/10 covered).
+    const requiredTier = Math.max(0, barrierTier(barrier, 'from') - 1);
+    const requiredShaftsUnlocked = requiredTier === 0
+        || currentMine.mineshafts.some(shaft => Number(shaft.tier) >= requiredTier);
 
     if (!requiredShaftsUnlocked) {
         return message.reply(`You must have unlocked shafts of tier ${requiredTier} to unlock Barrier ${barrierOrder}.`);
@@ -86,16 +109,16 @@ async function handleUnlock(message, user, currentMine, args, userId) {
     const cost = barrierCost(barrier);
     const buildTimeSeconds = barrierBuildTimeSeconds(barrier);
 
-    if (user.cash < cost) {
+    if (moneyLt(user.cash, cost)) {
         return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(cost)}`);
     }
 
-    user.cash -= cost;
+    user.cash = moneySub(user.cash, cost);
     barrier.unlock_time = Date.now() + buildTimeSeconds * 1000;
 
     await commitUserSnapshot(userId, user);
 
-    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder}. It will be removed in ${buildTimeSeconds} seconds.`);
+    return message.reply(`Successfully paid to unlock Barrier ${barrierOrder} (Tiers ${barrierTier(barrier, 'from')}-${barrierTier(barrier, 'to')}). It will be removed in ${formatBuildTime(buildTimeSeconds)}.`);
 }
 
 async function handleOverview(message, currentMine) {
@@ -113,7 +136,9 @@ async function handleOverview(message, currentMine) {
             status = `Unlocking in ${secondsRemaining}s`;
         } else {
             const cost = barrierCost(barrier);
-            status = cost > 0 ? `Locked (${numberFormat(cost)} Cash)` : 'Locked';
+            const buildLabel = formatBuildTime(barrierBuildTimeSeconds(barrier));
+            const range = `Tiers ${barrierTier(barrier, 'from')}-${barrierTier(barrier, 'to')}`;
+            status = cost > 0 ? `Locked | ${range} | ${numberFormat(cost)} Cash | ${buildLabel}` : `Locked | ${range}`;
         }
 
         embed.addFields({ name: `Barrier ${index + 1}`, value: status, inline: true });
@@ -125,11 +150,11 @@ async function handleOverview(message, currentMine) {
 async function handleRemove(message, user, currentMine, args, userId) {
     const barrierOrder = parseInt(args[1], 10);
 
-    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder >= currentMine.barriers.length) {
+    if (isNaN(barrierOrder) || barrierOrder < 1 || barrierOrder > currentMine.barriers.length) {
         return message.reply('Please provide a valid barrier order number.');
     }
 
-    const barrier = currentMine.barriers[barrierOrder];
+    const barrier = currentMine.barriers[barrierOrder - 1];
 
     if (!barrier) {
         return message.reply('Barrier data not found.');

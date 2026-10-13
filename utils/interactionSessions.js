@@ -1,5 +1,6 @@
 'use strict';
 
+import { randomUUID } from 'node:crypto';
 import dataManager from '../dataManager.js';
 import { getInteractionContext, logError } from './errorHandling.js';
 
@@ -384,7 +385,28 @@ export async function cleanupComponentMessages(client, { closeAll = false, now =
     return { closed, removed };
 }
 
+/**
+ * Opaque per-session token for component custom IDs. Embedding a raw Discord
+ * user ID leaks it to anyone who can see the message, so custom IDs carry an
+ * unguessable token instead and ownership is verified against the collector.
+ */
+export function createComponentToken() {
+    return randomUUID().replace(/-/g, '').slice(0, 16);
+}
+
+/**
+ * Defence-in-depth ownership check for a collector `collect` handler. The
+ * collector filter already scopes interactions to the owner, but a handler
+ * should never act on another user's component if that filter is ever relaxed.
+ */
+export function isComponentOwner(interaction, ownerId) {
+    if (!interaction || !ownerId) return false;
+    return String(interaction.user?.id || interaction.userId || '') === String(ownerId);
+}
+
 export default {
+    createComponentToken,
+    isComponentOwner,
     trackComponentMessage,
     trackComponentCollector,
     hasActiveComponentCollector,

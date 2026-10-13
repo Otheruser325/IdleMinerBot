@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { EventEmitter } from 'node:events';
 
 import { deployCommands } from './deploy-commands.js';
-import { getUser, getAllUsers, updateUser, updateUserTransaction, withUserLock, removeTestUsers } from './dataManager.js';
+import { getUser, forEachUserPage, updateUser, updateUserTransaction, withUserLock, removeTestUsers, markUserActive } from './dataManager.js';
 import { updateBotStatus } from './utils/botStatus.js';
 import numberFormat from './utils/numberFormat.js';
 import guildDM from './utils/guildDM.js';
@@ -27,7 +27,9 @@ import {
     getShaftTravelTimeMs,
     getWarehouseTravelTimeMs
 } from './utils/movementTimes.js';
-import { getMineIdleCashPerSecond } from './utils/mineOverview.js';
+import { getMineIdleCashPerSecond, getMineProductionPerSecond } from './utils/mineOverview.js';
+import { getActiveBoostMultiplier, getActiveInstantCashSeconds, filterActiveBoosts } from './utils/boosts.js';
+import { moneyAdd, moneySub, toMoney } from './utils/economyConstants.js';
 import mineRegionsJson from './config/mineRegions.json' with { type: 'json' };
 import continentDataJson from './config/continentData.json' with { type: 'json' };
 import {
@@ -167,21 +169,18 @@ for (const file of fs.readdirSync(path.join(__dirname, 'commands/slash')).filter
     client.slashCommands.set(command.data.name, wrapCommand(command, 'slash'));
 }
 
-async function markUserAsActive(userId) {
+// Activity marking is best-effort and must never delay a command response.
+// The throttled, single-read touch lives in the data manager; here we only
+// schedule it and swallow failures.
+function scheduleActivityTouch(userId) {
     if (!userId) return;
-    try {
-        await withUserLock(userId, async () => {
-            if (await getUser(userId)) {
-                const now = Date.now();
-                await updateUser(userId, {
-                    last_idle: now,
-                    last_idle_accrued_at: now
-                });
-            }
-        });
-    } catch (error) {
-        logError('markUserAsActive', error, { userId });
-    }
+    wrapAsync(async () => {
+        try {
+            await markUserActive(userId);
+        } catch (error) {
+            logError('markUserActive', error, { userId });
+        }
+    }, 'activity.touch')();
 }
 
 async function collectIdleCashForMention(message) {
@@ -208,36 +207,46 @@ async function collectIdleCashForMention(message) {
             return;
         }
 
+        // Accrue manager work first, then collect inside a single transaction so
+        // the amount credited is read from the same committed row it is zeroed
+        // in. The previous read-then-write could credit a stale snapshot.
         await handleManagerWork(userId);
-        const user = await getUser(userId);
-        const currentMine = user?.mines?.find(mine =>
-            mine.mine_name?.toLowerCase() === user.current_mine?.toLowerCase()
-        );
-        if (!user || !currentMine) {
+
+        const collection = await updateUserTransaction(userId, current => {
+            if (!current) return undefined;
+            const mine = (current.mines || []).find(candidate =>
+                candidate.mine_name?.toLowerCase() === current.current_mine?.toLowerCase()
+            );
+            if (!mine) return undefined;
+
+            const field = getCashField(mine.mine_number);
+            const idleField = getIdleCashField(mine.mine_number);
+            const accrued = toMoney(current[idleField] || 0);
+            current[field] = moneyAdd(current[field], accrued);
+            current[idleField] = 0;
+            current.last_idle = now;
+            current.last_idle_accrued_at = now;
+            return current;
+        });
+
+        if (!collection.committed) {
             response = 'Current mine data not found.';
             return;
         }
 
+        const collectedUser = collection.user;
+        const currentMine = collectedUser.mines.find(mine =>
+            mine.mine_name?.toLowerCase() === collectedUser.current_mine?.toLowerCase()
+        );
         const cashField = getCashField(currentMine.mine_number);
         const idleCashField = getIdleCashField(currentMine.mine_number);
-        const idleCash = Number(user[idleCashField] || 0);
+        const idleCash = moneySub(collectedUser[cashField], toMoney(initialUser[cashField] || 0));
         const cashLabel = getCashLabelByField(cashField);
         const awayMinutes = Math.floor(Math.max(0, now - lastActive) / 60000);
         const awayHours = Math.floor(awayMinutes / 60);
         const awayTimeLabel = awayHours > 0
             ? `${awayHours}h ${awayMinutes % 60}m`
             : `${awayMinutes}m`;
-
-        user[cashField] = (user[cashField] || 0) + idleCash;
-        user[idleCashField] = 0;
-        user.last_idle = now;
-        user.last_idle_accrued_at = now;
-        await updateUser(userId, {
-            [cashField]: user[cashField],
-            [idleCashField]: 0,
-            last_idle: now,
-            last_idle_accrued_at: now
-        });
 
         if (idleCash > 0) {
             response = `💰 You collected **${numberFormat(idleCash)}** ${cashLabel} from your idle workers!\n🕒 You were away for **${awayTimeLabel}**.`;
@@ -327,7 +336,7 @@ function automateElevatorWork(currentMine) {
     return { extracted, beamCash };
 }
 
-function automateWarehouseWork(currentMine) {
+function automateWarehouseWork(currentMine, playerBoostMultiplier = 1) {
     const warehouse = currentMine.warehouse?.[0];
     const elevator = currentMine.elevator?.[0];
     if (!warehouse || !elevator) return 0;
@@ -354,7 +363,7 @@ function automateWarehouseWork(currentMine) {
     for (let index = 0; index < cyclesCompleted; index += 1) {
         const extracted = Math.min(extractable, elevator.total_deposit || 0);
         elevator.total_deposit = Math.max(0, (elevator.total_deposit || 0) - extracted);
-        totalCash += applyIncomeMultiplier(extracted, currentMine).finalCash;
+        totalCash += applyIncomeMultiplier(extracted, currentMine, playerBoostMultiplier).finalCash;
     }
     return totalCash;
 }
@@ -391,29 +400,50 @@ async function handleManagerWork(userId) {
             if (managedTiers.length > 0) {
                 automateShaftWork(currentMine, managedTiers);
                 if (currentMine._beamCash > 0) {
-                    user[cashField] = (user[cashField] || 0) + currentMine._beamCash;
+                    user[cashField] = moneyAdd(user[cashField], currentMine._beamCash);
                     currentMine._beamCash = 0;
                 }
             }
 
             if (getManagerAutomationStatus(currentMine).elevator) {
                 const elevatorResult = automateElevatorWork(currentMine);
-                if (elevatorResult?.beamCash > 0) user[cashField] = (user[cashField] || 0) + elevatorResult.beamCash;
+                if (elevatorResult?.beamCash > 0) user[cashField] = moneyAdd(user[cashField], elevatorResult.beamCash);
             }
-            if (getManagerAutomationStatus(currentMine).warehouse) generatedCash = automateWarehouseWork(currentMine);
+            if (getManagerAutomationStatus(currentMine).warehouse) {
+                generatedCash = automateWarehouseWork(currentMine, getActiveBoostMultiplier(user, currentTime));
+            }
             user.last_idle_accrued_at = currentTime;
         }
 
-        if (generatedCash > 0) user[isIdle ? idleCashField : cashField] = (user[isIdle ? idleCashField : cashField] || 0) + generatedCash;
+        if (generatedCash > 0) {
+            const boostMultiplier = getActiveBoostMultiplier(user, currentTime);
+            generatedCash = toMoney(generatedCash * boostMultiplier);
+            user[isIdle ? idleCashField : cashField] = moneyAdd(user[isIdle ? idleCashField : cashField], generatedCash);
+        }
+
+        // Instant-cash items are paid once, on the next manager tick, then
+        // removed so they cannot pay out again.
+        const instantSeconds = getActiveInstantCashSeconds(user, currentTime);
+        if (instantSeconds > 0) {
+            const rate = Math.max(
+                getMineIdleCashPerSecond(currentMine, user.has_premium),
+                getMineProductionPerSecond(currentMine)
+            );
+            user[cashField] = moneyAdd(user[cashField], toMoney(rate * instantSeconds));
+            user.active_boosts = filterActiveBoosts(user.active_boosts, currentTime).filter(boost => {
+                const seconds = Number(boost?.instant_cash ?? boost?.instantCash ?? 0);
+                return !(Number.isFinite(seconds) && seconds > 0);
+            });
+        }
+
         return user;
     });
 }
 
 async function handleMissingData() {
-    const allUsers = await getAllUsers();
-    for (const user of Object.values(allUsers)) {
-        const userId = user.user_id || user.userId;
-        if (!userId) continue;
+    await forEachUserPage(async row => {
+        const userId = row.id || row.data?.user_id || row.data?.userId;
+        if (!userId) return;
 
         try {
             // Mutate the freshly read row inside the optimistic transaction. This
@@ -493,14 +523,13 @@ async function handleMissingData() {
         } catch (error) {
             logError('handleMissingData:user', error, { userId });
         }
-    }
+    });
 }
 
 async function handleBarrierUnlockTime() {
-    const allUsers = await getAllUsers();
-    for (const user of Object.values(allUsers)) {
-        const userId = user.user_id || user.userId;
-        if (!userId) continue;
+    await forEachUserPage(async row => {
+        const userId = row.id || row.data?.user_id || row.data?.userId;
+        if (!userId) return;
         try {
             await updateUserTransaction(userId, currentUser => {
                 if (!currentUser) return undefined;
@@ -519,14 +548,13 @@ async function handleBarrierUnlockTime() {
         } catch (error) {
             logError('handleBarrierUnlockTime:user', error, { userId });
         }
-    }
+    });
 }
 
 async function handleBoostTimers() {
-    const allUsers = await getAllUsers();
-    for (const user of Object.values(allUsers)) {
-        const userId = user.user_id || user.userId;
-        if (!userId) continue;
+    await forEachUserPage(async row => {
+        const userId = row.id || row.data?.user_id || row.data?.userId;
+        if (!userId) return;
         try {
             await updateUserTransaction(userId, currentUser => {
                 if (!currentUser) return undefined;
@@ -539,14 +567,13 @@ async function handleBoostTimers() {
         } catch (error) {
             logError('handleBoostTimers:user', error, { userId });
         }
-    }
+    });
 }
 
 async function handleDuplicateManagerPurge(clientInstance) {
-    const allUsers = await getAllUsers();
-    for (const user of Object.values(allUsers)) {
-        const userId = user.user_id || user.userId;
-        if (!userId) continue;
+    await forEachUserPage(async row => {
+        const userId = row.id || row.data?.user_id || row.data?.userId;
+        if (!userId) return;
         try {
             const dmLines = [];
             let updated = false;
@@ -576,7 +603,7 @@ async function handleDuplicateManagerPurge(clientInstance) {
         } catch (error) {
             logError('handleDuplicateManagerPurge:user', error, { userId });
         }
-    }
+    });
 }
 
 function scheduleNextUpdate(clientInstance) {
@@ -588,17 +615,16 @@ function scheduleNextUpdate(clientInstance) {
         barrierUnlocks: handleBarrierUnlockTime,
         boostTimers: handleBoostTimers,
         managerWork: async () => {
-            const users = await getAllUsers();
-            for (const user of Object.values(users)) {
-                const userId = user.user_id || user.userId;
-                if (!userId) continue;
+            await forEachUserPage(async row => {
+                const userId = row.id || row.data?.user_id || row.data?.userId;
+                if (!userId) return;
                 try {
                     await handleManagerWork(userId);
                 } catch (error) {
                     logError('cron.handleManagerWork:user', error, { userId });
                 }
                 await delay(100);
-            }
+            });
         },
         duplicateManagerPurge: () => handleDuplicateManagerPurge(clientInstance)
     });
@@ -669,7 +695,7 @@ client.on('messageCreate', wrapAsync(async message => {
     if (!await checkPermissions(message, requiredPermissions)) return;
     if (!await checkBotPermissions(message, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;
     await command.execute(message, args);
-    await markUserAsActive(message.author.id);
+    scheduleActivityTouch(message.author.id);
 }, 'event.messageCreate', async (_error, message) => {
     await safelyReplyToMessage(message, 'There was an error trying to execute that command!');
 }));
@@ -746,7 +772,7 @@ client.on(Events.InteractionCreate, wrapAsync(async interaction => {
         logError('event.interactionCreate', new Error('Received an unhandled interaction type.'), getInteractionContext(interaction));
         await safelyReplyToInteraction(interaction, 'This interaction is no longer supported.');
     }
-    await markUserAsActive(interaction.user?.id);
+    scheduleActivityTouch(interaction.user?.id);
 }, 'event.interactionCreate', async (_error, interaction) => {
     await safelyReplyToInteraction(interaction, 'There was an error processing this interaction. Please try again.');
 }));

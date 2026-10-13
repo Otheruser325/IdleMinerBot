@@ -5,6 +5,7 @@ import { formatTime } from '../../utils/dailyManager.js';
 import { isMonthlyUnlocked } from '../../utils/progression.js';
 import commandContext from './context.js';
 import { commitUserTransaction, getCommandUser } from './transactions.js';
+import { moneyAdd } from '../../utils/economyConstants.js';
 
 const MONTH = 30 * 24 * 60 * 60 * 1000;
 const MONTHLY_REWARD = 3000;
@@ -23,7 +24,7 @@ async function handleMonthlyCommand(context) {
         if (!current || !current.has_premium || !isMonthlyUnlocked(current)) return undefined;
         if (now - Number(current.last_monthly || 0) < MONTH) return undefined;
         current.last_monthly = now;
-        current.super_cash = (current.super_cash || 0) + MONTHLY_REWARD;
+        current.super_cash = moneyAdd(current.super_cash, MONTHLY_REWARD);
         return current;
     });
 

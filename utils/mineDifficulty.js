@@ -1,5 +1,6 @@
 import mineDifficultyJson from '../config/mineDifficulty.json' with { type: 'json' };
 import { getMineNumber } from './mineLooker.js';
+import { toMoney } from './economyConstants.js';
 
 const difficultyEntries = mineDifficultyJson.mineDifficulties || [];
 
@@ -27,7 +28,7 @@ export function scaleMineCost(baseCost, mineInput, options = {}) {
     }
 
     const multiplier = options.ignoreDifficulty ? 1 : getMineDifficultyMultiplier(mineInput);
-    return Math.ceil(numericCost * multiplier);
+    return toMoney(Math.ceil(numericCost * multiplier));
 }
 
 export default {
