@@ -1,5 +1,6 @@
 import managerCostsJson from '../config/managerCosts.json' with { type: 'json' };
 import { getCashField, getCashLabelByField } from './continentLooker.js';
+import { moneyAdd } from './economyConstants.js';
 import { getMineNumber } from './mineLooker.js';
 
 const managerCosts = managerCostsJson.managerCosts || [];
@@ -55,7 +56,7 @@ export function purgeDuplicateManagersFromMine(user, currentMine) {
                 const baseCost = getDuplicateCompensationCost(area, index);
                 const compensation = Math.floor(baseCost * 0.5);
                 if (compensation > 0) {
-                    user[walletField] = (user[walletField] || 0) + compensation;
+                    user[walletField] = moneyAdd(user[walletField], compensation);
                 }
 
                 compensationEvents.push({

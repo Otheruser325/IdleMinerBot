@@ -10,6 +10,13 @@ const continentData = continentDataJson.continents || [];
 const MAX_TRANSACTION_RETRIES = 25;
 const DB_TIMEOUT_MS = 8_000;
 const READ_CACHE_TTL_MS = 1_000;
+const USER_PAGE_SIZE = 500;
+const INSERT_RETRY_CODES = new Set(['23505', '23P01']);
+// Activity marking is best-effort: collapse repeat touches and cap the map so
+// it cannot grow without bound across a long-lived process.
+const ACTIVITY_TOUCH_INTERVAL_MS = 2_000;
+const ACTIVITY_TOUCH_MAX_ENTRIES = 50_000;
+const lastActivityTouch = new Map();
 const userLockStorage = new AsyncLocalStorage();
 const USER_SNAPSHOT = Symbol('idleMinerUserSnapshot');
 
@@ -135,22 +142,31 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
     }
 
     async function mutateRow(table, id, mutator) {
+        // Each attempt re-reads the row and re-runs the mutator against that
+        // fresh document. A mutator must therefore be a pure transform of the
+        // document it is given: it is invoked at most once per committed write,
+        // and never against a document that a previous attempt already mutated.
+        // The version-guarded UPDATE is compare-and-swap, so a lost race simply
+        // retries instead of replaying an already-applied change.
         for (let attempt = 0; attempt < MAX_TRANSACTION_RETRIES; attempt += 1) {
             const row = await fetchRow(table, id);
             const current = table === 'users'
                 ? normalizeUserDocument(row)
                 : clone(row?.data ?? null);
-            const nextValue = await mutator(clone(current));
-            const next = table === 'users' && nextValue
-                ? normalizeUserDocument({ id, data: nextValue })
-                : nextValue;
 
-            if (next === undefined || next === null) {
+            // Hand the mutator an isolated clone so its in-place edits cannot
+            // alias the row we use for the version check below.
+            const nextValue = await mutator(clone(current));
+            if (nextValue === undefined || nextValue === null) {
                 return { committed: false, user: current };
             }
-            if (typeof next !== 'object' || Array.isArray(next)) {
+            if (typeof nextValue !== 'object' || Array.isArray(nextValue)) {
                 throw new TypeError('Data transaction mutator must return an object or undefined.');
             }
+
+            const next = table === 'users'
+                ? normalizeUserDocument({ id, data: clone(nextValue) })
+                : clone(nextValue);
 
             if (!row) {
                 const { error } = await dbProvider().from(table).insert({
@@ -162,7 +178,7 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
                     if (table === 'users') cacheSet(id, next);
                     return { committed: true, user: next };
                 }
-                if (error.code === '23505') continue;
+                if (INSERT_RETRY_CODES.has(String(error.code))) continue;
                 throw error;
             }
 
@@ -177,6 +193,9 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
                 .select('*')
                 .maybeSingle();
             if (error) throw error;
+
+            // `updated === null` means another writer advanced the version
+            // between our read and write; nothing was applied, so retry.
             if (updated) {
                 if (table === 'users') cacheSet(id, updated.data);
                 return { committed: true, user: updated.data };
@@ -248,7 +267,7 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
                 data: user,
                 version: 1
             });
-            if (error && error.code !== '23505') throw error;
+            if (error && !INSERT_RETRY_CODES.has(String(error.code))) throw error;
             if (!error) {
                 const normalizedUser = normalizeUserDocument({ id: userId, data: user });
                 cacheSet(userId, normalizedUser);
@@ -281,6 +300,61 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         }
     }
 
+    /**
+     * Best-effort activity marker for idle detection. It performs a single
+     * read plus one version-guarded write, skips repeat touches inside a short
+     * window, and never throws for a lost version race -- a missed touch only
+     * means idle detection is a couple of seconds less precise. Commands call
+     * this after they finish, so it must stay off the command's critical path.
+     */
+    async function markUserActive(userId, { intervalMs = ACTIVITY_TOUCH_INTERVAL_MS } = {}) {
+        if (!userId || (!allowSyntheticUserIds && isTestUser(userId))) return false;
+
+        const now = Date.now();
+        const previous = lastActivityTouch.get(userId) || 0;
+        if (now - previous < intervalMs) return false;
+
+        if (lastActivityTouch.size >= ACTIVITY_TOUCH_MAX_ENTRIES) {
+            for (const [key, touchedAt] of lastActivityTouch) {
+                if (now - touchedAt >= intervalMs) lastActivityTouch.delete(key);
+            }
+        }
+        lastActivityTouch.set(userId, now);
+
+        return runUserWrite(userId, async () => {
+            const row = await fetchRow('users', userId);
+            if (!row) {
+                lastActivityTouch.delete(userId);
+                return false;
+            }
+
+            const current = normalizeUserDocument(row);
+            const currentVersion = Number.isFinite(Number(row.version)) && Number(row.version) >= 0
+                ? Number(row.version)
+                : 0;
+            const next = { ...current, last_idle: now };
+
+            const { data: updated, error } = await dbProvider()
+                .from('users')
+                .update({ data: next, version: currentVersion + 1 })
+                .eq('id', userId)
+                .eq('version', currentVersion)
+                .select('id')
+                .maybeSingle();
+            if (error) throw error;
+
+            if (updated) {
+                cacheSet(userId, next);
+                return true;
+            }
+
+            // Version raced with a real command write; skip this touch rather
+            // than retrying and contending. The next call will pick it up.
+            lastActivityTouch.delete(userId);
+            return false;
+        });
+    }
+
     async function updateUser(userId, updates) {
         if (!userId || (!allowSyntheticUserIds && isTestUser(userId))) {
             throw new TypeError('updateUser requires a valid Discord user ID.');
@@ -290,25 +364,37 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         }
 
         return runUserWrite(userId, async () => {
-            // Commands commonly work against a cloned user document. When that
-            // full snapshot came from getUser(), only persist fields that the
-            // command actually changed. The transaction then merges that patch
-            // into the latest row instead of replaying a stale snapshot over a
-            // concurrent command's writes.
+            // Snapshot callers pass a full document from getUser(); derive only
+            // the changed fields against that snapshot so the transaction
+            // merges a patch instead of replaying a stale snapshot.
             const baseline = updates?.[USER_SNAPSHOT] || cacheGet(userId);
             const candidate = clone(updates);
-            const patch = candidate.user_id || candidate.userId
-                ? deriveUserPatch(baseline, candidate)
-                : candidate;
+            const patch = deriveUserPatch(baseline, candidate);
+
             if (!Object.keys(patch || {}).length) {
                 return normalizeUserDocument({ id: userId, data: baseline || candidate });
             }
 
-            const result = await mutateRow('users', userId, current => ({
-                ...(current || {}),
-                ...patch
-            }));
-            if (!result.committed) throw new Error(`User update for ${userId} was not committed.`);
+            // For partial updates there is no snapshot baseline. Diff the
+            // supplied fields against the live row inside the transaction so a
+            // caller can never overwrite unrelated fields (previously a partial
+            // object replaced the whole document). Fields the caller did not
+            // mention are compared against themselves and therefore untouched.
+            const applyPatch = async current => {
+                if (!current) return undefined;
+                const livePatch = deriveUserPatch(current, { ...current, ...patch });
+                if (!Object.keys(livePatch).length) return undefined;
+                return { ...current, ...livePatch };
+            };
+
+            const result = await mutateRow('users', userId, applyPatch);
+            if (!result.committed) {
+                // The mutation was a no-op because the row already matched the
+                // requested values; return the committed row instead of failing.
+                const current = await fetchRow('users', userId);
+                if (!current) throw new Error(`User update for ${userId} was not committed.`);
+                return normalizeUserDocument(current);
+            }
             return normalizeUserDocument({ id: userId, data: result.user });
         });
     }
@@ -353,35 +439,52 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         return true;
     }
 
-    async function removeTestUsers() {
-        const { data, error } = await withTimeout(
-            dbProvider().from('users').select('*'),
-            'Database read timed out for users.'
-        );
-        if (error) throw error;
+    /**
+     * Stream user rows one page at a time. Paging keeps a full-table scan out
+     * of a single response so the cron jobs cannot balloon process memory.
+     */
+    async function forEachUserPage(handler, { pageSize = USER_PAGE_SIZE } = {}) {
+        const size = Math.max(1, Math.min(1000, Number(pageSize) || USER_PAGE_SIZE));
+        for (let offset = 0; ; offset += size) {
+            const { data, error } = await withTimeout(
+                dbProvider().from('users').select('*').range(offset, offset + size - 1),
+                'Database read timed out for users.'
+            );
+            if (error) throw error;
 
-        let removed = 0;
-        for (const row of data || []) {
-            if (await removeUser(row.id, row.data)) removed += 1;
+            const rows = data || [];
+            for (const row of rows) {
+                await handler(row);
+            }
+            if (rows.length < size) break;
         }
+    }
+
+    async function removeTestUsers() {
+        let removed = 0;
+        await forEachUserPage(async row => {
+            if (await removeUser(row.id, row.data)) removed += 1;
+        });
         return removed;
     }
 
-    async function getAllUsers() {
-        const { data, error } = await withTimeout(
-            dbProvider().from('users').select('*'),
-            'Database read timed out for users.'
-        );
-        if (error) throw error;
+    /**
+     * Stream normalized user documents (test users filtered out) without
+     * building an in-memory snapshot of the whole table.
+     */
+    async function forEachUser(handler) {
+        await forEachUserPage(async row => {
+            if (!allowSyntheticUserIds && isTestUser(row.id, row.data)) return;
+            const user = normalizeUserDocument({ id: row.id, data: row.data ?? {} });
+            if (user) await handler(user);
+        });
+    }
 
+    async function getAllUsers() {
         const users = {};
-        for (const row of data || []) {
-            if (!allowSyntheticUserIds && isTestUser(row.id, row.data)) continue;
-            users[row.id] = normalizeUserDocument({
-                id: row.id,
-                data: row.data ?? {}
-            }) || {};
-        }
+        await forEachUser(user => {
+            users[user.user_id || user.userId] = user;
+        });
         return users;
     }
 
@@ -468,10 +571,13 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         getUser,
         updateUser,
         updateUserTransaction,
+        markUserActive,
         commitUserSnapshot,
         mutateUser,
         withUserLock,
         getAllUsers,
+        forEachUserPage,
+        forEachUser,
         removeUser,
         removeTestUsers,
         createInteractionSession,
@@ -488,10 +594,13 @@ export const {
     getUser,
     updateUser,
     updateUserTransaction,
+    markUserActive,
     commitUserSnapshot,
     mutateUser,
     withUserLock,
     getAllUsers,
+    forEachUserPage,
+    forEachUser,
     removeUser,
     removeTestUsers,
     createInteractionSession,

@@ -2,7 +2,7 @@
 
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
-import { getAllUsers } from '../../dataManager.js';
+import { forEachUser } from '../../dataManager.js';
 import { logError, safeEditMessage, safeUpdateInteraction } from '../../utils/errorHandling.js';
 import { acknowledgeComponent, trackComponentCollector } from '../../utils/interactionSessions.js';
 import commandContext from './context.js';
@@ -17,8 +17,6 @@ export default {
             if (!context.guild) return commandContext.reply(context, 'Leaderboards are only available in servers.');
 
             const guildMembers = await context.guild.members.fetch();
-            const allUsers = await getAllUsers();
-            if (!allUsers || Object.keys(allUsers).length === 0) return commandContext.reply(context, 'No users found.');
 
             const actor = commandContext.getActor(context);
             const ownerId = actor?.id;
@@ -31,12 +29,29 @@ export default {
                 super_cash: 'Super Cash'
             };
 
-            const getTopUsers = cashType => Object.values(allUsers)
-                .filter(user => guildMembers.has(user.user_id || user.userId)
-                    && ((cashType === 'super_cash' && user[cashType] > 0)
-                        || (user[cashType] && user[cashType] >= minCashThreshold)))
-                .sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0))
-                .slice(0, 15);
+            // Stream users and keep only the top 15 per cash type instead of
+            // materializing the whole users table, which degraded memory as the
+            // table grew.
+            const topByType = {};
+            for (const cashType of Object.keys(cashTypeLabels)) topByType[cashType] = [];
+            let guildUserCount = 0;
+            await forEachUser(user => {
+                const uid = user.user_id || user.userId;
+                if (!guildMembers.has(uid)) return;
+                guildUserCount += 1;
+                for (const cashType of Object.keys(cashTypeLabels)) {
+                    const value = Number(user[cashType] || 0);
+                    const qualifies = cashType === 'super_cash' ? value > 0 : value >= minCashThreshold;
+                    if (!qualifies) continue;
+                    const list = topByType[cashType];
+                    list.push(user);
+                    list.sort((a, b) => (b[cashType] || 0) - (a[cashType] || 0));
+                    if (list.length > 15) list.pop();
+                }
+            });
+            if (guildUserCount === 0) return commandContext.reply(context, 'No users found.');
+
+            const getTopUsers = cashType => topByType[cashType];
 
             const buildPayload = cashType => {
                 const topUsers = getTopUsers(cashType);

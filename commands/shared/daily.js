@@ -5,6 +5,7 @@ import { calculateDailyReward, formatTime } from '../../utils/dailyManager.js';
 import { getAccountAgeMs, isDailyUnlocked } from '../../utils/progression.js';
 import commandContext from './context.js';
 import { commitUserTransaction, getCommandUser } from './transactions.js';
+import { moneyAdd } from '../../utils/economyConstants.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -32,7 +33,7 @@ async function handleDailyCommand(context) {
         const reward = calculateDailyReward(current);
         current.last_daily = now;
         current.streak = (current.streak || 0) + 1;
-        current.super_cash = (current.super_cash || 0) + reward;
+        current.super_cash = moneyAdd(current.super_cash, reward);
         return current;
     });
 

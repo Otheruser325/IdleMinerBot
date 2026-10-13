@@ -1,7 +1,7 @@
 import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder } from 'discord.js';
 import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js';
 import { DEFAULT_USER_PREFERENCES, isValidNumberFormat, normalizeUserPreferences } from '../../utils/userPreferences.js';
-import { acknowledgeComponent, trackComponentCollector } from '../../utils/interactionSessions.js';
+import { acknowledgeComponent, trackComponentCollector, createComponentToken, isComponentOwner } from '../../utils/interactionSessions.js';
 import { safeEditMessage, safeUpdateInteraction } from '../../utils/errorHandling.js';
 import commandContext from './context.js';
 
@@ -80,7 +80,7 @@ async function persistSetting(userId, user, key, value) {
 }
 
 async function showSettingSelector(message, userId, user, initialKey = null) {
-    const token = `${userId}:${Date.now()}`;
+    const token = createComponentToken();
     const settingId = initialKey ? null : `settings:key:${token}`;
     const valuePrefix = `settings:value:${token}:`;
     const initialValueId = `${valuePrefix}${initialKey || ''}`;
@@ -103,6 +103,7 @@ async function showSettingSelector(message, userId, user, initialKey = null) {
     );
 
     collector.on('collect', async interaction => {
+        if (!isComponentOwner(interaction, userId)) return;
         if (!await acknowledgeComponent(interaction, 'settings.collector')) return;
         if (settingId && interaction.customId === settingId) {
             const key = interaction.values?.[0];

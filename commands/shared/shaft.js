@@ -18,6 +18,8 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
+import { moneyAdd } from '../../utils/economyConstants.js';
+import { planUpgrade } from '../../utils/upgradeEngine.js';
 import { getShaftProductionPerSecond } from '../../utils/mineOverview.js';
 import commandContext from './context.js';
 
@@ -107,7 +109,7 @@ async function handleOverview(message, user, currentMine, args, userId) {
     }
 
     // Adjust shaft stats based on the mine's factor
-    const mineFactor = getMineFactor(currentMine.mine_name);
+    const mineFactor = getMineFactor(currentMine);
     const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
     const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
     const effects = getActiveEffects(currentMine);
@@ -216,7 +218,7 @@ async function handleBuy(message, user, currentMine, args, userId) {
     user[walletField] -= scaledCost;
 
     // Adjust shaft stats based on the mine's factor
-    const mineFactor = getMineFactor(currentMine.mine_name);
+    const mineFactor = getMineFactor(currentMine);
     const adjustedGain = shaftInfo.GainPerSecondPerWorker * mineFactor;
     const adjustedCapacity = shaftInfo.CapacityPerWorker * mineFactor;
 
@@ -283,7 +285,6 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
     }
 
     const shaft = currentMine.mineshafts.find(s => s.tier === tier);
-
     if (!shaft) {
         return message.reply(`You do not own a shaft of Tier ${tier} in the ${currentMine.mine_name}.`);
     }
@@ -293,84 +294,48 @@ async function handleUpgrade(message, user, currentMine, args, userId) {
         return message.reply(`Shaft Tier ${tier} is already at the maximum level of ${maxLevel}.`);
     }
 
-    let totalCost = 0;
-	let superCashEarned = 0;
-    let lastLevel = shaft.level;
-    let affordableUpgradeCount = 0;
-    const desiredUpgradeCount = purchaseAmount.isMax ? Infinity : purchaseAmount.amount;
-    let availableCash = user[walletField] || 0;
+    const tierRecords = shaftData.filter(record => record.Tier === tier);
+    const availableCash = user[walletField] || 0;
+    const plan = planUpgrade({
+        records: tierRecords,
+        currentLevel: shaft.level,
+        maxLevel,
+        availableCash,
+        purchaseAmount,
+        scaleCost: record => scaleMineCost(record.Cost, currentMine),
+        superCashPerBigUpdate: 2
+    });
 
-    for (let i = 0; i < desiredUpgradeCount; i++) {
-        const nextLevel = lastLevel + 1;
-
-        if (nextLevel > maxLevel) {
-            break;
-        }
-
-        const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
-
-        if (!nextShaftInfo) {
-            break;
-        }
-
-        const nextCost = scaleMineCost(nextShaftInfo.Cost, currentMine);
-        if (availableCash < nextCost) {
-            break;
-        }
-
-        totalCost += nextCost;
-        availableCash -= nextCost;
-        lastLevel = nextLevel;
-        affordableUpgradeCount++;
-    }
-
-    if (affordableUpgradeCount < 1) {
+    if (plan.affordableCount < 1) {
         if (purchaseAmount.isMax) {
             return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} any further right now.`);
         }
-
-        return message.reply(`You do not have enough ${walletLabel} to upgrade this shaft ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade this shaft ${purchaseAmount.label}. Available: ${numberFormat(availableCash)} ${walletLabel}.`);
     }
 
-    if (!purchaseAmount.isMax && affordableUpgradeCount < purchaseAmount.amount) {
-        if (lastLevel >= maxLevel) {
+    if (plan.exceededRequest) {
+        if (plan.finalLevel >= maxLevel) {
             return message.reply(`Shaft Tier ${tier} cannot be upgraded ${purchaseAmount.label} because it would exceed the maximum level of ${maxLevel}.`);
         }
-
-        return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} ${purchaseAmount.label}. Available: ${numberFormat(user[walletField] || 0)} ${walletLabel}.`);
+        return message.reply(`You do not have enough ${walletLabel} to upgrade Shaft Tier ${tier} ${purchaseAmount.label}. Available: ${numberFormat(availableCash)} ${walletLabel}.`);
     }
 
-    // Apply upgrades
-    let currentLevel = shaft.level;
-    for (let i = 0; i < affordableUpgradeCount; i++) {
-        const nextLevel = currentLevel + 1;
-        const nextShaftInfo = shaftData.find(s => s.Tier === tier && s.Level === nextLevel);
-
-        if (nextShaftInfo) {
-            user[walletField] -= scaleMineCost(nextShaftInfo.Cost, currentMine);
-            shaft.level = nextLevel;
-            shaft.number_of_workers = nextShaftInfo.NumberOfWorkers;
-            shaft.gain_per_second_per_worker = nextShaftInfo.GainPerSecondPerWorker * getMineFactor(currentMine.mine_name);
-            shaft.capacity_per_worker = nextShaftInfo.CapacityPerWorker * getMineFactor(currentMine.mine_name);
-            shaft.worker_walking_speed_per_second = nextShaftInfo.WorkerWalkingSpeedPerSecond;
-
-            if (nextShaftInfo.BigUpdate === 1) {
-                superCashEarned += 2;
-            }
-
-            currentLevel = nextLevel;
-        } else {
-            break; // Stop upgrading if no further upgrades are available
-        }
+    const mineFactor = getMineFactor(currentMine);
+    for (const nextShaftInfo of plan.appliedLevels) {
+        shaft.level = nextShaftInfo.Level;
+        shaft.number_of_workers = nextShaftInfo.NumberOfWorkers;
+        shaft.gain_per_second_per_worker = nextShaftInfo.GainPerSecondPerWorker * mineFactor;
+        shaft.capacity_per_worker = nextShaftInfo.CapacityPerWorker * mineFactor;
+        shaft.worker_walking_speed_per_second = nextShaftInfo.WorkerWalkingSpeedPerSecond;
     }
-	
-	// Add Super Cash if earned
-    if (superCashEarned > 0) {
-        user.super_cash = (user.super_cash || 0) + superCashEarned;
+
+    user[walletField] = plan.remainingCash;
+    if (plan.superCashEarned > 0) {
+        user.super_cash = moneyAdd(user.super_cash, plan.superCashEarned);
     }
 
     await commitUserSnapshot(userId, user);
 
-    const purchaseLabel = purchaseAmount.isMax ? `MAX (${affordableUpgradeCount} levels)` : purchaseAmount.label;
-    return message.reply(`Shaft Tier ${tier} upgraded to Level ${shaft.level} using ${purchaseLabel} for ${numberFormat(totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${superCashEarned > 0 ? `You earned ${superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
+    const purchaseLabel = purchaseAmount.isMax ? `MAX (${plan.appliedCount} levels)` : purchaseAmount.label;
+    return message.reply(`Shaft Tier ${tier} upgraded to Level ${shaft.level} using ${purchaseLabel} for ${numberFormat(plan.totalCost)} ${walletLabel} in the ${currentMine.mine_name}. ${plan.superCashEarned > 0 ? `You earned ${plan.superCashEarned} Super Cash for hitting major upgrades!` : ''}`);
 }

@@ -13,6 +13,7 @@ import {
     userOwnsContinent
 } from '../../utils/continentLooker.js';
 import { scaleMineCost } from '../../utils/mineDifficulty.js';
+import { moneyAdd, moneySub } from '../../utils/economyConstants.js';
 import { getMaxPrestigeCount, getMineIdleCashPerSecond, getMineProductionPerSecond } from '../../utils/mineOverview.js';
 import commandContext from './context.js';
 
@@ -185,7 +186,7 @@ async function handleMineBuy(message, mineInput, user, userId) {
         return message.reply(`You don't have enough ${cashLabel} to buy ${mineName}. It costs ${numberFormat(scaledMineCost)} ${cashLabel}.`);
     }
 
-    user[cashField] = availableCash - scaledMineCost;
+    user[cashField] = moneySub(availableCash, scaledMineCost);
     user.mines.push(createMineRecord(mine));
     user.mines.sort((left, right) => left.mine_number - right.mine_number);
     user.current_mine = mineName;
@@ -303,8 +304,8 @@ async function handleMinePrestige(message, mineInput, user, userId) {
         return message.reply(`You don't have enough ${cashLabel} to prestige ${mine.mine_name}. You need ${numberFormat(scaledPrestigeCost)} ${cashLabel}.`);
     }
 
-    user[cashField] = availableCash - scaledPrestigeCost;
-    user.super_cash += nextPrestigeLevel.SuperCashGained;
+    user[cashField] = moneySub(availableCash, scaledPrestigeCost);
+    user.super_cash = moneyAdd(user.super_cash, nextPrestigeLevel.SuperCashGained);
     resetMineAfterPrestige(mine, nextPrestigeLevel);
     user.mines.sort((left, right) => left.mine_number - right.mine_number);
 

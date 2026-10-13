@@ -2,6 +2,7 @@ import http from 'http';
 import { getUser, updateUser, withUserLock } from '../dataManager.js';
 import sendPremiumDM from './sendPremiumDM.js';
 import { logError } from './errorHandling.js';
+import { moneyAdd } from './economyConstants.js';
 
 const PREMIUM_PASS_PRODUCT = 'premium_pass';
 const DEFAULT_WEBHOOK_BODY_LIMIT_BYTES = 1024 * 1024;
@@ -131,7 +132,7 @@ async function grantPremiumPassToUser(userId, client = null, paymentReference = 
         const inventory = buildPremiumInventory(user);
         await updateUser(userId, {
             has_premium: true,
-            super_cash: (user.super_cash || 0) + 1000,
+            super_cash: moneyAdd(user.super_cash, 1000),
             inventory
         });
 

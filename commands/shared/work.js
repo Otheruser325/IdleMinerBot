@@ -20,6 +20,7 @@ import {
 } from '../../utils/movementTimes.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { logError, safeEditMessage } from '../../utils/errorHandling.js';
+import { getActiveBoostMultiplier } from '../../utils/boosts.js';
 import commandContext from './context.js';
 
 const shaftData = shaftDataJson.shafts || [];
@@ -456,7 +457,7 @@ async function handleWarehouseWork(message, user, currentMine, userId) {
     const cashReward = warehouse.total_deposit || 0;
     warehouse.total_deposit = 0;
 
-    const incomeResult = applyIncomeMultiplier(cashReward, currentMine);
+    const incomeResult = applyIncomeMultiplier(cashReward, currentMine, getActiveBoostMultiplier(user));
     const finalCash = incomeResult.finalCash;
     user[walletField] = (user[walletField] || 0) + finalCash;
 
