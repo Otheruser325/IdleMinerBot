@@ -1,20 +1,15 @@
 'use strict';
 
 import { SlashCommandBuilder } from 'discord.js';
-import info from '../shared/info.js';
+import infoCommand from '../shared/info.js';
+const { execute } = infoCommand;
 
 export default {
     data: new SlashCommandBuilder()
         .setName('info')
-        .setDescription('Get information about Idle Miner Bot and its patch notes.')
-        .addIntegerOption(option => option
-            .setName('page')
-            .setDescription('The page of the patch notes to view.')
-            .setRequired(false)
-        ),
+        .setDescription('Displays information about the bot.')
+        .addIntegerOption(option => option.setName('page').setDescription('The patch-note page to view.')),
     async execute(interaction) {
-        return info.handleInfoCommand(interaction, {
-            page: interaction.options.getInteger('page')
-        });
+        return execute(interaction, interaction.options.getInteger('page'));
     }
 };

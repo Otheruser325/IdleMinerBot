@@ -1,14 +1,14 @@
 'use strict';
 
-import info from '../shared/info.js';
+import infoCommand from '../shared/info.js';
+const { execute } = infoCommand;
 
 export default {
     name: 'info',
-    description: 'Get information about Idle Miner Bot and its patch notes.',
-    aliases: ['patch', 'patchnotes', 'version'],
-    usage: '(optional) <page>',
-    exampleUsage: 'im!info or im!info 2',
-    async execute(message, args = []) {
-        return info.handleInfoCommand(message, { page: args[0] });
+    description: 'Displays information about the bot.',
+    aliases: ['information', 'version', 'about'],
+    usage: '[page]',
+    async execute(message, args) {
+        return execute(message, args[0]);
     }
 };

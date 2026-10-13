@@ -19,7 +19,10 @@ Discord idle-miner bot (JavaScript, ESM, no TypeScript). ~9.5k LOC.
 - `utils/` — economy math, boosters, persistence helpers, formatting.
 - `config/*.json` — game data (mine factors, difficulty, regions, manager costs)
   plus `patchnotes.json`, which backs the `info` command. Add a new entry at the
-  top of the array for each release (newest first).
+  top of the array for each release (newest first), each shaped
+  `{ version, date, changes: [...] }`. The command mirrors VivacityAPI's browser:
+  a version select menu plus First/Newer/Older/Last buttons, with long change
+  lists chunked into `What's Changed` fields.
 
 ## Conventions and invariants
 - Money mutations must use `utils/economyConstants.js` helpers
