@@ -17,7 +17,9 @@ Discord idle-miner bot (JavaScript, ESM, no TypeScript). ~9.5k LOC.
 - `commands/shared/*.js` — shared command logic used by prefix + slash adapters.
 - `commands/interactions/*.js` — static custom-ID handlers (exact/pattern).
 - `utils/` — economy math, boosters, persistence helpers, formatting.
-- `config/*.json` — game data (mine factors, difficulty, regions, manager costs).
+- `config/*.json` — game data (mine factors, difficulty, regions, manager costs)
+  plus `patchnotes.json`, which backs the `info` command. Add a new entry at the
+  top of the array for each release (newest first).
 
 ## Conventions and invariants
 - Money mutations must use `utils/economyConstants.js` helpers
