@@ -4,6 +4,7 @@ import shopDataJson from '../../config/shopData.json' with { type: 'json' };
 import numberFormat from '../../utils/numberFormat.js';
 import { isShopUnlocked } from '../../utils/progression.js';
 import { logError } from '../../utils/errorHandling.js';
+import { moneyCovers } from '../../utils/economyConstants.js';
 import {
   createPremiumCheckoutSession,
   getPremiumPassDisplayPrice,
@@ -92,13 +93,13 @@ export default {
         }
       }
 
-      if (user.super_cash < item.SuperCashCost) {
+      if (!moneyCovers(user.super_cash, item.SuperCashCost)) {
         return message.reply('You do not have enough Super Cash to purchase this item.');
       }
 
       try {
         const result = await updateUserTransaction(userId, current => {
-          if (!current || (current.super_cash || 0) < item.SuperCashCost) return undefined;
+          if (!current || !moneyCovers(current.super_cash, item.SuperCashCost)) return undefined;
           const inventory = structuredClone(current.inventory || {});
           const category = item.Category || (item.InstantCashTime > 0 ? 'instants' : 'boosters');
           inventory[category] = Array.isArray(inventory[category]) ? inventory[category] : [];

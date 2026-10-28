@@ -42,6 +42,20 @@ export function moneyLt(left, right) {
     return !moneyGte(left, right);
 }
 
+/**
+ * Strict affordability check for spending.
+ *
+ * Unlike `moneyGte`, this deliberately does NOT treat values inside the relative
+ * epsilon as equal. `moneyLt`/`moneyGte` are correct for display and de-duplication,
+ * where a difference of one part in 1e9 is noise -- but they must never gate a
+ * debit. At late-game scale (1e170) the tolerant window spans ~1e161, so a wallet
+ * that is genuinely short of a cost would be accepted, and the subsequent
+ * subtraction would drive the balance negative (making every later purchase free).
+ */
+export function moneyCovers(available, cost) {
+    return toMoney(available) >= toMoney(cost);
+}
+
 export default {
     MONEY_EPSILON,
     MAX_SAFE_MONEY,
@@ -51,5 +65,6 @@ export default {
     moneySub,
     moneyEquals,
     moneyGte,
-    moneyLt
+    moneyLt,
+    moneyCovers
 };

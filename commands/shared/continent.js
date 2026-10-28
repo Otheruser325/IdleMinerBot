@@ -16,7 +16,7 @@ import {
     userOwnsContinent
 } from '../../utils/continentLooker.js';
 import { getAverageMineIdleCashPerSecond, getCombinedMineIdleCashPerSecond, getMaxPrestigeCount, getMineIdleCashPerSecond } from '../../utils/mineOverview.js';
-import { moneyAdd, moneySub } from '../../utils/economyConstants.js';
+import { moneyAdd, moneyCovers, moneySub } from '../../utils/economyConstants.js';
 import commandContext from './context.js';
 
 const continentData = continentDataJson.continents;
@@ -94,7 +94,7 @@ async function handleContinentBuy(message, continentInput, user) {
     const cashField = getUnlockCashFieldForContinent(resolvedContinent.name);
     const cashLabel = getUnlockCashLabelForContinent(resolvedContinent.name);
     const availableCash = user[cashField] || 0;
-    if (availableCash < continent.Cost) return message.reply(`You don't have enough ${cashLabel} to unlock ${resolvedContinent.name}. It costs ${numberFormat(continent.Cost)} ${cashLabel}.`);
+    if (!moneyCovers(availableCash, continent.Cost)) return message.reply(`You don't have enough ${cashLabel} to unlock ${resolvedContinent.name}. It costs ${numberFormat(continent.Cost)} ${cashLabel}.`);
 
     user[cashField] = moneySub(availableCash, continent.Cost);
     user.continents = normalizeOwnedContinents([...user.continents, resolvedContinent.name]);

@@ -16,12 +16,15 @@ export function getSupabaseClient() {
     if (client) return client;
 
     const url = process.env.SUPABASE_URL || '';
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!url || !key) {
         throw new Error(
             'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY ' +
-            '(or SUPABASE_ANON_KEY) in your .env file.'
+            'in your .env file. The anon key is intentionally not accepted: this process ' +
+            'owns the players table and must connect with the service-role key so the ' +
+            'row-level-security policies in tools/supabase-init.sql are never bypassed ' +
+            'by a weaker credential.'
         );
     }
 

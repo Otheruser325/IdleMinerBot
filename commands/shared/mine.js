@@ -13,7 +13,7 @@ import {
     userOwnsContinent
 } from '../../utils/continentLooker.js';
 import { scaleMineCost } from '../../utils/mineDifficulty.js';
-import { moneyAdd, moneySub } from '../../utils/economyConstants.js';
+import { moneyAdd, moneyCovers, moneySub } from '../../utils/economyConstants.js';
 import { getMaxPrestigeCount, getMineIdleCashPerSecond, getMineProductionPerSecond } from '../../utils/mineOverview.js';
 import commandContext from './context.js';
 
@@ -182,7 +182,7 @@ async function handleMineBuy(message, mineInput, user, userId) {
     const availableCash = user[cashField] || 0;
 
     const scaledMineCost = scaleMineCost(mine.Cost, mine.MineNumber);
-    if (availableCash < scaledMineCost) {
+    if (!moneyCovers(availableCash, scaledMineCost)) {
         return message.reply(`You don't have enough ${cashLabel} to buy ${mineName}. It costs ${numberFormat(scaledMineCost)} ${cashLabel}.`);
     }
 
@@ -300,7 +300,7 @@ async function handleMinePrestige(message, mineInput, user, userId) {
     const availableCash = user[cashField] || 0;
 
     const scaledPrestigeCost = scaleMineCost(nextPrestigeLevel.Cost, mine.mine_number);
-    if (availableCash < scaledPrestigeCost) {
+    if (!moneyCovers(availableCash, scaledPrestigeCost)) {
         return message.reply(`You don't have enough ${cashLabel} to prestige ${mine.mine_name}. You need ${numberFormat(scaledPrestigeCost)} ${cashLabel}.`);
     }
 

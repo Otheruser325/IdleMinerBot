@@ -9,7 +9,7 @@
  */
 
 import { resolvePurchaseCount } from './purchaseAmount.js';
-import { moneyLt, toMoney } from './economyConstants.js';
+import { moneyCovers, toMoney } from './economyConstants.js';
 
 export function planUpgrade({
     records,
@@ -31,7 +31,9 @@ export function planUpgrade({
         const next = byLevel.get(level + 1);
         if (!next) break;
         const cost = toMoney(scaleCost(next));
-        if (moneyLt(cash, cost)) break;
+        // Strict comparison: a cost that merely rounds to the balance at this
+        // magnitude is not affordable, and must never be debited.
+        if (!moneyCovers(cash, cost)) break;
         cash -= cost;
         level += 1;
         affordableCount += 1;
@@ -50,13 +52,17 @@ export function planUpgrade({
         const next = byLevel.get(applyLevel + 1);
         if (!next) break;
         const cost = toMoney(scaleCost(next));
-        if (moneyLt(applyCash, cost)) break;
+        if (!moneyCovers(applyCash, cost)) break;
         applyCash -= cost;
         totalCost += cost;
         applyLevel += 1;
         if (next.BigUpdate === 1) superCashEarned += superCashPerBigUpdate;
         appliedLevels.push(next);
     }
+
+    // Belt-and-braces: the wallet written back is floored at zero so a rounding
+    // slip can never persist a negative balance that unlocks free purchases.
+    const remainingCash = applyCash > 0 ? applyCash : 0;
 
     return {
         byLevel,
@@ -66,7 +72,7 @@ export function planUpgrade({
         finalLevel: applyLevel,
         totalCost,
         superCashEarned,
-        remainingCash: applyCash,
+        remainingCash,
         appliedLevels
     };
 }
