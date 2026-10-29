@@ -30,6 +30,7 @@ import {
 import { getMineIdleCashPerSecond, getMineProductionPerSecond } from './utils/mineOverview.js';
 import { getActiveBoostMultiplier, getActiveInstantCashSeconds, filterActiveBoosts } from './utils/boosts.js';
 import { moneyAdd, moneySub, toMoney } from './utils/economyConstants.js';
+import { resolveAutomationCycles, clampIdleAccrualSeconds } from './utils/automationCycles.js';
 import mineRegionsJson from './config/mineRegions.json' with { type: 'json' };
 import continentDataJson from './config/continentData.json' with { type: 'json' };
 import {
@@ -56,12 +57,14 @@ import {
     claimComponentAction,
     hasActiveComponentCollector,
     getComponentCollectorOwner,
+    isComponentTokenOwner,
     trackComponentCollector,
     cleanupComponentMessages
 } from './utils/interactionSessions.js';
 import automatedTasks from './utils/automatedTasks.js';
 import { initializeDatabase } from './utils/dbInit.js';
 import { normalizeUserPreferences } from './utils/userPreferences.js';
+import { checkCommandCooldown } from './cooldownManager.js';
 
 EventEmitter.defaultMaxListeners = 20;
 installGlobalErrorHandlers();
@@ -137,6 +140,17 @@ async function checkBotPermissions(target, permissions = []) {
         logError('permissions.bot', error, getInteractionContext(target));
         return false;
     }
+}
+
+async function enforceCommandCooldown(target, commandName, { isInteraction = false } = {}) {
+    const userId = target?.user?.id || target?.author?.id;
+    const outcome = checkCommandCooldown(userId, commandName);
+    if (!outcome.limited) return true;
+
+    const text = `⏳ Slow down! \`${commandName}\` can be used again in ${outcome.remainingSeconds}s.`;
+    if (isInteraction) await safelyReplyToInteraction(target, text);
+    else await safelyReplyToMessage(target, text);
+    return false;
 }
 
 for (const file of fs.readdirSync(path.join(__dirname, 'commands/interactions')).filter(file => file.endsWith('.js'))) {
@@ -269,6 +283,10 @@ async function collectIdleCashForMention(message) {
     return safelyReplyToMessage(message, response || 'Unable to collect idle cash right now.');
 }
 
+// Idle accrual is credited as `rate * elapsed`. The elapsed window is bounded by
+// `clampIdleAccrualSeconds` so a stale `last_idle_accrued_at` cannot mint an
+// arbitrarily large balance in one tick; anything older simply stops accruing.
+
 function automateShaftWork(currentMine, managedTiers) {
     const now = Date.now();
     for (const shaft of currentMine.mineshafts || []) {
@@ -282,15 +300,19 @@ function automateShaftWork(currentMine, managedTiers) {
             shaft.manager_last_worked = now;
             continue;
         }
-        const cyclesCompleted = Math.floor((now - lastWorkTime) / totalCycleTime);
-        if (cyclesCompleted < 1) continue;
-        shaft.manager_last_worked = now - ((now - lastWorkTime) % totalCycleTime);
-        for (let index = 0; index < cyclesCompleted; index += 1) {
-            const deposit = (shaft.capacity_per_worker || 0) * (shaft.number_of_workers || 0);
-            const beamResult = applyShaftIncomeBeam(deposit, currentMine);
-            if (beamResult.beamAmount > 0) currentMine._beamCash = (currentMine._beamCash || 0) + beamResult.beamAmount;
-            shaft.total_deposit = (shaft.total_deposit || 0) + beamResult.remainingDeposit;
+        const { cyclesToProcess, nextLastWorked } = resolveAutomationCycles(lastWorkTime, totalCycleTime, now);
+        if (cyclesToProcess < 1) continue;
+        // Advance only past the cycles actually simulated; the rest stay queued.
+        shaft.manager_last_worked = nextLastWorked;
+
+        // The deposit and beam split are constant for the tick, so compute them
+        // once and scale by the cycle count instead of re-deriving per cycle.
+        const deposit = (shaft.capacity_per_worker || 0) * (shaft.number_of_workers || 0);
+        const beamResult = applyShaftIncomeBeam(deposit, currentMine);
+        if (beamResult.beamAmount > 0) {
+            currentMine._beamCash = (currentMine._beamCash || 0) + (beamResult.beamAmount * cyclesToProcess);
         }
+        shaft.total_deposit = (shaft.total_deposit || 0) + (beamResult.remainingDeposit * cyclesToProcess);
     }
 }
 
@@ -315,9 +337,10 @@ function automateElevatorWork(currentMine) {
         elevator.manager_last_worked = now;
         return null;
     }
-    const cyclesCompleted = Math.floor((now - lastWorkTime) / cycleTime);
-    if (cyclesCompleted < 1) return null;
-    elevator.manager_last_worked = now - ((now - lastWorkTime) % cycleTime);
+    const { cyclesToProcess, nextLastWorked } = resolveAutomationCycles(lastWorkTime, cycleTime, now);
+    if (cyclesToProcess < 1) return null;
+    // Advance only past the cycles actually simulated; the rest stay queued.
+    elevator.manager_last_worked = nextLastWorked;
 
     let extracted = 0;
     let beamCash = 0;
@@ -355,12 +378,13 @@ function automateWarehouseWork(currentMine, playerBoostMultiplier = 1) {
         warehouse.manager_last_worked = now;
         return 0;
     }
-    const cyclesCompleted = Math.floor((now - lastWorkTime) / cycleTime);
-    if (cyclesCompleted < 1) return 0;
-    warehouse.manager_last_worked = now - ((now - lastWorkTime) % cycleTime);
+    const { cyclesToProcess, nextLastWorked } = resolveAutomationCycles(lastWorkTime, cycleTime, now);
+    if (cyclesToProcess < 1) return 0;
+    // Advance only past the cycles actually simulated; the rest stay queued.
+    warehouse.manager_last_worked = nextLastWorked;
 
     let totalCash = 0;
-    for (let index = 0; index < cyclesCompleted; index += 1) {
+    for (let index = 0; index < cyclesToProcess; index += 1) {
         const extracted = Math.min(extractable, elevator.total_deposit || 0);
         elevator.total_deposit = Math.max(0, (elevator.total_deposit || 0) - extracted);
         totalCash += applyIncomeMultiplier(extracted, currentMine, playerBoostMultiplier).finalCash;
@@ -392,7 +416,11 @@ async function handleManagerWork(userId) {
 
         if (isIdle) {
             const accrualStart = Number(user.last_idle_accrued_at || user.last_idle || currentTime);
-            const elapsedSeconds = Math.max(0, (currentTime - accrualStart) / 1000);
+            // Clamp the accrual window: a process that was down for weeks, or a
+            // document carrying a stale/hostile timestamp, must not convert an
+            // unbounded gap into a single windfall. Negative windows (clock moved
+            // backwards) credit nothing.
+            const elapsedSeconds = clampIdleAccrualSeconds((currentTime - accrualStart) / 1000);
             generatedCash = getMineIdleCashPerSecond(currentMine, user.has_premium) * elapsedSeconds;
             user.last_idle_accrued_at = currentTime;
         } else {
@@ -677,6 +705,7 @@ client.on('messageCreate', wrapAsync(async message => {
 
     const remainder = message.content.slice(activePrefix.length).trim();
     if (mentionMatch && !remainder) {
+        if (!await enforceCommandCooldown(message, 'hello')) return;
         const helloCommand = client.commands.get('hello');
         if (helloCommand) return helloCommand.execute(message, []);
         return safelyReplyToMessage(message, 'Hello fellow miner! Ready to dig some precious jewels?');
@@ -691,6 +720,7 @@ client.on('messageCreate', wrapAsync(async message => {
     const command = client.commands.get(commandName);
     if (!command) return;
     message.commandPrefix = activePrefix;
+    if (!await enforceCommandCooldown(message, commandName)) return;
     const requiredPermissions = command.permissions || ['SendMessages', 'ViewChannel', 'ReadMessageHistory'];
     if (!await checkPermissions(message, requiredPermissions)) return;
     if (!await checkBotPermissions(message, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;
@@ -707,6 +737,34 @@ async function replyToBusyComponent(interaction) {
     }
 }
 
+/**
+ * Standalone components are addressed only by an opaque token in their custom ID,
+ * so the responder must prove they own that token.
+ *
+ * A handler with a static (exact-string) custom ID has no per-user token and is
+ * allowed through. A handler with a dynamic (RegExp) ID is user-scoped, so it
+ * must declare the token prefixes it accepts and the responder must own the
+ * token. A dynamic handler that declares no prefixes is refused: denying on an
+ * unbound or unverifiable token is deliberate, because these handlers can spend
+ * currency and an ownership check that "fails open" is worse than the control
+ * doing nothing.
+ */
+function extractComponentToken(customId, ...prefixes) {
+    const value = String(customId || '');
+    for (const prefix of prefixes) {
+        if (value.startsWith(prefix)) return value.slice(prefix.length);
+    }
+    return null;
+}
+
+function authorizeStandaloneComponent(interaction, handler) {
+    if (!(handler.customId instanceof RegExp)) return true;
+    const prefixes = Array.isArray(handler.tokenPrefixes) ? handler.tokenPrefixes : [];
+    if (!prefixes.length) return false;
+    const token = extractComponentToken(interaction.customId, ...prefixes);
+    return Boolean(token) && isComponentTokenOwner(interaction, token);
+}
+
 async function handleSelectMenuInteraction(interaction) {
     if (hasActiveComponentCollector(interaction.message?.id)) {
         await replyToBusyComponent(interaction);
@@ -714,6 +772,9 @@ async function handleSelectMenuInteraction(interaction) {
     }
     const handler = getStandaloneHandler(client.interactions, interaction.customId);
     if (!handler) return safelyReplyToInteraction(interaction, 'This selection menu is no longer active.');
+    if (!authorizeStandaloneComponent(interaction, handler)) {
+        return safelyReplyToInteraction(interaction, 'This selection menu belongs to another user.');
+    }
     const release = claimComponentAction(interaction);
     if (!release) return safelyReplyToInteraction(interaction, 'That selection is already being processed.');
     try {
@@ -731,6 +792,9 @@ async function handleButtonInteraction(interaction) {
     }
     const handler = getStandaloneHandler(client.interactions, interaction.customId);
     if (!handler) return safelyReplyToInteraction(interaction, 'This button is no longer active.');
+    if (!authorizeStandaloneComponent(interaction, handler)) {
+        return safelyReplyToInteraction(interaction, 'This button belongs to another user.');
+    }
     const release = claimComponentAction(interaction);
     if (!release) return safelyReplyToInteraction(interaction, 'That button action is already being processed.');
     try {
@@ -758,6 +822,7 @@ client.on(Events.InteractionCreate, wrapAsync(async interaction => {
     if (interaction.isChatInputCommand?.() || interaction.isCommand?.()) {
         const command = client.slashCommands.get(interaction.commandName);
         if (!command) return safelyReplyToInteraction(interaction, 'That slash command is unavailable.');
+        if (!await enforceCommandCooldown(interaction, interaction.commandName, { isInteraction: true })) return;
         const requiredPermissions = command.permissions || ['SendMessages', 'ViewChannel', 'ReadMessageHistory'];
         if (!await checkPermissions(interaction, requiredPermissions)) return;
         if (!await checkBotPermissions(interaction, ['SendMessages', 'ViewChannel', 'ReadMessageHistory'])) return;

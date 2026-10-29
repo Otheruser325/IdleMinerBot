@@ -1,5 +1,5 @@
 import http from 'http';
-import { getUser, updateUser, withUserLock } from '../dataManager.js';
+import { getUser, updateUser, withUserLock, createCheckoutSessionRecord, getCheckoutSessionRecord, claimCheckoutFulfilment } from '../dataManager.js';
 import sendPremiumDM from './sendPremiumDM.js';
 import { logError } from './errorHandling.js';
 import { moneyAdd } from './economyConstants.js';
@@ -200,6 +200,23 @@ async function createPremiumCheckoutSession(user) {
     }
 
     const session = await stripe.checkout.sessions.create(params);
+
+    // Record the payer server-side before the buyer ever sees the URL. The
+    // webhook later grants only to the account recorded here, so a forged
+    // `metadata.discord_user_id` cannot redirect the entitlement.
+    try {
+        await createCheckoutSessionRecord(session.id, {
+            kind: 'premium_checkout',
+            userId: String(user.id),
+            product: PREMIUM_PASS_PRODUCT,
+            createdAt: Date.now(),
+            fulfilled: false
+        });
+    } catch (error) {
+        logError('premiumPayments:checkout:record', error, { userId: user.id, sessionId: session.id });
+        return { ok: false, reason: 'checkout_record_failed' };
+    }
+
     return { ok: true, session };
 }
 
@@ -220,14 +237,45 @@ async function handleStripeWebhook(rawBody, signature, client) {
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session?.metadata?.discord_user_id || session?.client_reference_id;
+        const sessionId = session?.id;
         const product = session?.metadata?.product;
 
-        if (userId && product === PREMIUM_PASS_PRODUCT && session?.payment_status === 'paid') {
+        if (product === PREMIUM_PASS_PRODUCT && session?.payment_status === 'paid') {
+            let record = null;
             try {
-                await grantPremiumPassToUser(userId, client, session.id);
+                record = await getCheckoutSessionRecord(sessionId);
             } catch (error) {
-                logError('premiumPayments:webhook:grant', error, { userId, sessionId: session?.id });
+                logError('premiumPayments:webhook:lookup', error, { sessionId });
+                return { statusCode: 500, body: 'Failed to verify checkout.' };
+            }
+
+            // The authoritative payer is the account recorded when the checkout
+            // was created, never the metadata carried on the event. A session we
+            // never issued is refused outright.
+            const userId = record?.userId;
+            if (!userId || record?.product !== PREMIUM_PASS_PRODUCT) {
+                logError('premiumPayments:webhook:unbound', new Error('Webhook for an unknown checkout session.'), { sessionId });
+                return { statusCode: 200, body: JSON.stringify({ received: true }) };
+            }
+
+            let claimed = false;
+            try {
+                claimed = await claimCheckoutFulfilment(sessionId, sessionId);
+            } catch (error) {
+                logError('premiumPayments:webhook:claim', error, { sessionId, userId });
+                return { statusCode: 500, body: 'Failed to record fulfilment.' };
+            }
+
+            // A retried delivery of an already-granted session is acknowledged
+            // without granting again.
+            if (!claimed) {
+                return { statusCode: 200, body: JSON.stringify({ received: true }) };
+            }
+
+            try {
+                await grantPremiumPassToUser(userId, client, sessionId);
+            } catch (error) {
+                logError('premiumPayments:webhook:grant', error, { userId, sessionId });
                 return { statusCode: 500, body: 'Failed to grant premium pass.' };
             }
         }

@@ -2,7 +2,7 @@ import { getUser, commitUserSnapshot, withUserLock } from '../../dataManager.js'
 import { EmbedBuilder } from 'discord.js';
 import numberFormat from '../../utils/numberFormat.js';
 import commandContext from './context.js';
-import { moneyLt, moneySub } from '../../utils/economyConstants.js';
+import { moneyCovers, moneySub } from '../../utils/economyConstants.js';
 
 export default {
     name: 'barrier',
@@ -109,7 +109,7 @@ async function handleUnlock(message, user, currentMine, args, userId) {
     const cost = barrierCost(barrier);
     const buildTimeSeconds = barrierBuildTimeSeconds(barrier);
 
-    if (moneyLt(user.cash, cost)) {
+    if (!moneyCovers(user.cash, cost)) {
         return message.reply(`You do not have enough Cash to unlock this barrier. Cost: ${numberFormat(cost)}`);
     }
 

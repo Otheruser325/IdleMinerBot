@@ -518,6 +518,45 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         return true;
     }
 
+    /**
+     * Reserve a premium checkout for a specific Discord user. The record is keyed
+     * by the Stripe session id and written by the server before the buyer is sent
+     * the checkout URL, so the webhook can prove which account the payment belongs
+     * to instead of trusting the (client-supplied) `client_reference_id`.
+     */
+    async function createCheckoutSessionRecord(sessionId, record) {
+        if (!sessionId || !record || typeof record !== 'object') {
+            throw new TypeError('createCheckoutSessionRecord requires a session id and record.');
+        }
+        const { error } = await dbProvider().from('interaction_sessions').upsert({
+            id: sessionId,
+            data: clone({ ...record, id: sessionId })
+        });
+        if (error) throw error;
+        return record;
+    }
+
+    async function getCheckoutSessionRecord(sessionId) {
+        if (!sessionId) return null;
+        const row = await fetchRow('interaction_sessions', sessionId);
+        return row?.data || null;
+    }
+
+    /**
+     * Atomically mark a checkout as fulfilled. Returns false when another
+     * webhook delivery already claimed it, which makes grant-once idempotent
+     * even when Stripe retries the same event.
+     */
+    async function claimCheckoutFulfilment(sessionId, paymentReference = '') {
+        if (!sessionId) return false;
+        const result = await mutateRow('interaction_sessions', sessionId, current => {
+            if (!current) return undefined;
+            if (current.fulfilled) return undefined;
+            return { ...current, fulfilled: true, fulfilledAt: Date.now(), paymentReference };
+        });
+        return Boolean(result.committed);
+    }
+
     async function getAllInteractionSessions() {
         const { data, error } = await withTimeout(
             dbProvider().from('interaction_sessions').select('*'),
@@ -582,6 +621,9 @@ function createDataManager(dbProvider = getSupabaseClient, { allowSyntheticUserI
         removeTestUsers,
         createInteractionSession,
         closeInteractionSession,
+        createCheckoutSessionRecord,
+        getCheckoutSessionRecord,
+        claimCheckoutFulfilment,
         getAllInteractionSessions,
         removeInteractionSession
     };
@@ -605,6 +647,9 @@ export const {
     removeTestUsers,
     createInteractionSession,
     closeInteractionSession,
+    createCheckoutSessionRecord,
+    getCheckoutSessionRecord,
+    claimCheckoutFulfilment,
     getAllInteractionSessions,
     removeInteractionSession,
 } = dataManager;

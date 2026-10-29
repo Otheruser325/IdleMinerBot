@@ -80,7 +80,7 @@ async function persistSetting(userId, user, key, value) {
 }
 
 async function showSettingSelector(message, userId, user, initialKey = null) {
-    const token = createComponentToken();
+    const token = createComponentToken(userId, 15 * 60 * 1000);
     const settingId = initialKey ? null : `settings:key:${token}`;
     const valuePrefix = `settings:value:${token}:`;
     const initialValueId = `${valuePrefix}${initialKey || ''}`;

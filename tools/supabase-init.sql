@@ -3,8 +3,9 @@
 -- Run in the Supabase SQL editor, then reload PostgREST:
 -- NOTIFY pgrst, 'reload schema';
 --
--- The bot connects with the service-role key (or anon key). If these tables
--- are exposed to an untrusted client later, enable RLS and add policies.
+-- The bot connects with the service-role key, which bypasses RLS. If these
+-- tables are ever exposed to an untrusted client, RLS (enabled below) plus the
+-- revoked anon/authenticated grants keep the rows private.
 
 -- Migrate the original Idle Miner relational tables before creating the
 -- VivacityAPI-compatible document tables. The legacy rows are renamed rather
@@ -91,5 +92,42 @@ begin
     if not exists (select 1 from pg_trigger where tgname = 'interaction_sessions_touch_updated_at') then
         create trigger interaction_sessions_touch_updated_at before update on public.interaction_sessions
         for each row execute function public.touch_updated_at();
+    end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Access control
+--
+-- The bot connects with the service-role key and therefore bypasses RLS, which
+-- is what it needs to own the players table. Enabling RLS with no policy denies
+-- the `anon` and `authenticated` roles outright, so if this project is ever
+-- reached with the public anon key (a mobile client, a leaked key, a mis-set
+-- environment variable) the rows stay unreadable and unwritable instead of
+-- exposing every player's balance and premium flag.
+--
+-- Do not add permissive policies here. If a client-side reader is ever needed,
+-- add a policy that exposes only the columns it requires.
+-- ---------------------------------------------------------------------------
+alter table public.users enable row level security;
+alter table public.interaction_sessions enable row level security;
+
+-- Belt-and-braces: revoke the table grants from the API-facing roles as well, so
+-- even a future policy change cannot accidentally widen access. Guarded because
+-- `anon`/`authenticated`/`service_role` exist on Supabase but not on a plain
+-- PostgreSQL instance.
+do $$
+declare
+    role_name text;
+begin
+    foreach role_name in array array['anon', 'authenticated'] loop
+        if exists (select 1 from pg_roles where rolname = role_name) then
+            execute format('revoke all on table public.users from %I', role_name);
+            execute format('revoke all on table public.interaction_sessions from %I', role_name);
+        end if;
+    end loop;
+
+    if exists (select 1 from pg_roles where rolname = 'service_role') then
+        grant all on table public.users to service_role;
+        grant all on table public.interaction_sessions to service_role;
     end if;
 end $$;

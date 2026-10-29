@@ -36,7 +36,7 @@ export default {
         if (!isShopUnlocked(user)) return commandContext.reply(context, 'Shop unlocks after you buy Shaft Tier 3 on Coal Mine for the first time.');
 
         let page = 0;
-        const token = createComponentToken();
+        const token = createComponentToken(userId, 15 * 60 * 1000);
         const itemsPerPage = 4;
         const maxPage = Math.max(0, Math.ceil(shopData.length / itemsPerPage) - 1);
         const generateEmbed = currentPage => {

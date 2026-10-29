@@ -19,6 +19,18 @@ const activeCollectorMessageOwners = new Map();
 const activeCollectorOwners = new Map();
 const reservedComponentOwners = new Map();
 const activeComponentActions = new Set();
+const componentTokenOwners = new Map();
+const componentTokenExpiry = new Map();
+const MAX_COMPONENT_TOKENS = 50_000;
+
+function pruneComponentTokens(now) {
+    for (const [token, expiry] of componentTokenExpiry) {
+        if (expiry <= now) {
+            componentTokenExpiry.delete(token);
+            componentTokenOwners.delete(token);
+        }
+    }
+}
 
 function persistenceUnavailable(error) {
     return ["PGRST204", "PGRST205", "42P01", 404, "404", 408, 429, "429"].includes(error?.code)
@@ -388,17 +400,49 @@ export async function cleanupComponentMessages(client, { closeAll = false, now =
 /**
  * Opaque per-session token for component custom IDs. Embedding a raw Discord
  * user ID leaks it to anyone who can see the message, so custom IDs carry an
- * unguessable token instead and ownership is verified against the collector.
+ * unguessable token instead and ownership is checked with
+ * `isComponentTokenOwner`.
  */
-export function createComponentToken() {
-    return randomUUID().replace(/-/g, '').slice(0, 16);
+export function createComponentToken(ownerId = null, ttlMs = 15 * 60_000) {
+    const token = randomUUID().replace(/-/g, '').slice(0, 16);
+    // Bind the token to its owner the moment it is minted. Custom IDs are visible
+    // to anyone who can see the message, so the token is the only thing standing
+    // between "the player who opened this panel" and "anyone in the channel".
+    componentTokenOwners.set(token, String(ownerId || ''));
+    componentTokenExpiry.set(token, Date.now() + Math.max(1, Number(ttlMs) || 15 * 60_000));
+    if (componentTokenOwners.size > MAX_COMPONENT_TOKENS) pruneComponentTokens(Date.now());
+    return token;
 }
 
 /**
- * Defence-in-depth ownership check for a collector `collect` handler. The
- * collector filter already scopes interactions to the owner, but a handler
- * should never act on another user's component if that filter is ever relaxed.
+ * Ownership check for a component dispatched by exact/pattern custom ID.
+ *
+ * The ID carries an opaque token minted when the message was posted. Responding
+ * is only permitted by the user the token was bound to (see
+ * `bindComponentToken`). An unknown token, or any check made after the process
+ * restarted and lost the in-memory binding, is denied — failing closed means a
+ * restart degrades to "that control is no longer available" rather than letting
+ * one player drive another player's buttons.
  */
+export function isComponentTokenOwner(interaction, token) {
+    const actorId = String(interaction?.user?.id || interaction?.userId || '');
+    if (!actorId || !token) return false;
+    const key = String(token);
+    const ownerId = componentTokenOwners.get(key);
+    if (!ownerId) return false;
+    if ((componentTokenExpiry.get(key) || 0) <= Date.now()) {
+        componentTokenOwners.delete(key);
+        componentTokenExpiry.delete(key);
+        return false;
+    }
+    return String(ownerId) === actorId;
+}
+
+export function resetComponentTokensForTests() {
+    componentTokenOwners.clear();
+    componentTokenExpiry.clear();
+}
+
 export function isComponentOwner(interaction, ownerId) {
     if (!interaction || !ownerId) return false;
     return String(interaction.user?.id || interaction.userId || '') === String(ownerId);
@@ -407,6 +451,8 @@ export function isComponentOwner(interaction, ownerId) {
 export default {
     createComponentToken,
     isComponentOwner,
+    isComponentTokenOwner,
+    resetComponentTokensForTests,
     trackComponentMessage,
     trackComponentCollector,
     hasActiveComponentCollector,

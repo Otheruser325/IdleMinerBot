@@ -18,7 +18,7 @@ import { scaleMineCost } from '../../utils/mineDifficulty.js';
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import { parsePurchaseAmount } from '../../utils/purchaseAmount.js';
-import { moneyAdd } from '../../utils/economyConstants.js';
+import { moneyAdd, moneyCovers } from '../../utils/economyConstants.js';
 import { planUpgrade } from '../../utils/upgradeEngine.js';
 import { getShaftProductionPerSecond } from '../../utils/mineOverview.js';
 import commandContext from './context.js';
@@ -211,11 +211,11 @@ async function handleBuy(message, user, currentMine, args, userId) {
         ignoreDifficulty: tier === 1 && !currentMine.mineshafts.some(shaft => shaft.tier === 1)
     });
 
-    if ((user[walletField] || 0) < scaledCost) {
+    if (!moneyCovers(user[walletField] || 0, scaledCost)) {
         return message.reply(`You do not have enough ${walletLabel} to buy this shaft. Cost: ${numberFormat(scaledCost)} ${walletLabel}`);
     }
 
-    user[walletField] -= scaledCost;
+    user[walletField] = moneySub(user[walletField] || 0, scaledCost);
 
     // Adjust shaft stats based on the mine's factor
     const mineFactor = getMineFactor(currentMine);

@@ -9,7 +9,7 @@ import { acknowledgeComponent, trackComponentCollector } from '../../utils/inter
 import { getCashField, getCashLabelByField } from '../../utils/continentLooker.js';
 import { getMineNumber } from '../../utils/mineLooker.js';
 import commandContext from './context.js';
-import { moneyAdd, moneySub } from '../../utils/economyConstants.js';
+import { moneyAdd, moneyCovers, moneySub } from '../../utils/economyConstants.js';
 
 const managerData = managerDataJson.managers;
 const managerCosts = managerCostsJson.managerCosts;
@@ -316,7 +316,7 @@ async function handleManagerHire(message, user, currentMine, userId, area) {
     const walletLabel = getCashLabelByField(walletField);
     const availableCash = user[walletField] || 0;
 
-    if (availableCash < cost) {
+    if (!moneyCovers(availableCash, cost)) {
         return message.reply(`You need ${numberFormat(cost)} ${walletLabel} to hire a manager in the ${area}.`);
     }
 
